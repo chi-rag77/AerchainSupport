@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { supabase } from "@/integrations/supabase/client";
 import TicketTable from "@/components/TicketTable";
@@ -141,6 +143,8 @@ const Index = () => {
   const { session } = useSupabase();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("All");
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -158,7 +162,19 @@ const Index = () => {
 
   // Filter mock tickets to only show those associated with the current user's ID
   // In a real app, this would be handled by RLS on the Supabase query
-  const userTickets = MOCK_TICKETS.filter(ticket => ticket.customer_id === session?.user?.id || ticket.customer_id === "user123"); // "user123" is a placeholder for now
+  const userTickets = useMemo(() => {
+    const currentUserTickets = MOCK_TICKETS.filter(ticket => ticket.customer_id === session?.user?.id || ticket.customer_id === "user123"); // "user123" is a placeholder for now
+
+    return currentUserTickets.filter(ticket => {
+      const matchesSearch = searchTerm === "" ||
+        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = filterStatus === "All" || ticket.status === filterStatus;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [MOCK_TICKETS, session?.user?.id, searchTerm, filterStatus]);
 
   const ticketMessages = selectedTicket ? MOCK_MESSAGES.filter(msg => msg.ticket_id === selectedTicket.id) : [];
 
@@ -174,6 +190,27 @@ const Index = () => {
         <Button onClick={handleLogout} variant="destructive" className="mb-8">
           Logout
         </Button>
+
+        <div className="flex flex-col md:flex-row gap-4 mb-6 w-full max-w-6xl mx-auto">
+          <Input
+            placeholder="Search by subject or requester email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-grow"
+          />
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All Statuses</SelectItem>
+              <SelectItem value="Open">Open</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Resolved">Resolved</SelectItem>
+              <SelectItem value="Closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="mt-8">
           <TicketTable tickets={userTickets} onRowClick={handleRowClick} />
