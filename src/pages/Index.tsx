@@ -21,7 +21,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import FilterNotification from "@/components/FilterNotification"; // Import the new component
+import FilterNotification from "@/components/FilterNotification";
+import HandWaveIcon from "@/components/HandWaveIcon"; // Import the new HandWaveIcon
 
 // Define the type for the conversation summary returned by the new endpoint
 type ConversationSummary = {
@@ -31,22 +32,25 @@ type ConversationSummary = {
 
 const Index = () => {
   const { session } = useSupabase();
+  const user = session?.user;
+  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [filterPriority, setFilterPriority] = useState<string>("All");
   const [filterAssignee, setFilterAssignee] = useState<string>("All");
-  const [filterCompany, setFilterCompany] = useState<string>("All"); // New filter state
-  const [filterType, setFilterType] = useState<string>("All"); // New filter state
-  const [filterDependency, setFilterDependency] = useState<string>("All"); // New filter state
-  const [showSidebar, setShowSidebar] = useState(true); // State for sidebar visibility
+  const [filterCompany, setFilterCompany] = useState<string>("All");
+  const [filterType, setFilterType] = useState<string>("All");
+  const [filterDependency, setFilterDependency] = useState<string>("All");
+  const [showSidebar, setShowSidebar] = useState(true);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const ticketsPerPage = 25;
 
-  const queryClient = useQueryClient(); // Initialize query client
+  const queryClient = useQueryClient();
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -82,8 +86,8 @@ const Index = () => {
 
 
   const handleRefreshTickets = () => {
-    queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] }); // Invalidate and re-fetch
-    setCurrentPage(1); // Reset to first page on refresh
+    queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] });
+    setCurrentPage(1);
   };
 
   const handleRowClick = (ticket: Ticket) => {
@@ -94,7 +98,7 @@ const Index = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTicket(null);
-    queryClient.invalidateQueries({ queryKey: ["conversationSummary"] }); // Clear summary when modal closes
+    queryClient.invalidateQueries({ queryKey: ["conversationSummary"] });
   };
 
   const filteredTickets = useMemo(() => {
@@ -187,7 +191,7 @@ const Index = () => {
   }, [freshdeskTickets]);
 
 
-  if (isLoading && !isFetching) { // Only show full loading screen on initial load
+  if (isLoading && !isFetching) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <p className="text-gray-700 dark:text-gray-300">Loading tickets from Freshdesk...</p>
@@ -212,9 +216,14 @@ const Index = () => {
           {/* Header Section */}
           <div className="p-8 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-2">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Support & Ticketing
-              </h1>
+              <hgroup>
+                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                  Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
+                </p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Support & Ticketing
+                </h1>
+              </hgroup>
               <Button
                 onClick={handleRefreshTickets}
                 disabled={isFetching}
@@ -236,7 +245,7 @@ const Index = () => {
 
           {/* Search & Filters Bar */}
           <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
-            <div className="flex flex-wrap gap-4 w-full items-center"> {/* Changed to flex-wrap for better responsiveness */}
+            <div className="flex flex-wrap gap-4 w-full items-center">
               <div className="relative flex-grow min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input
