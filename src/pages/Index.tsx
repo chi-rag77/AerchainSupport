@@ -9,10 +9,18 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import Sidebar from "@/components/Sidebar";
 import { Ticket, TicketMessage } from "@/types";
-import { Search, PanelLeftOpen, PanelRightOpen, RefreshCw } from "lucide-react";
+import { Search, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, useQueryClient } from "@tanstack/react-query"; // Import useQueryClient
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Mock Messages for demonstration (since we're not fetching messages from Freshdesk yet)
 const MOCK_MESSAGES: TicketMessage[] = [
@@ -93,6 +101,10 @@ const Index = () => {
   const [filterAssignee, setFilterAssignee] = useState<string>("All");
   const [showSidebar, setShowSidebar] = useState(true); // State for sidebar visibility
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ticketsPerPage = 25;
+
   const queryClient = useQueryClient(); // Initialize query client
 
   const toggleSidebar = () => {
@@ -100,7 +112,7 @@ const Index = () => {
   };
 
   // Fetch tickets from Freshdesk via Supabase Edge Function
-  const { data: freshdeskTickets, isLoading, error, isFetching } = useQuery<Ticket[], Error>({ // Get isFetching state
+  const { data: freshdeskTickets, isLoading, error, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
@@ -113,6 +125,7 @@ const Index = () => {
 
   const handleRefreshTickets = () => {
     queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] }); // Invalidate and re-fetch
+    setCurrentPage(1); // Reset to first page on refresh
   };
 
   const handleRowClick = (ticket: Ticket) => {
@@ -144,6 +157,14 @@ const Index = () => {
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
     });
   }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, filterAssignee]);
+
+  // Pagination logic
+  const indexOfLastTicket = currentPage * ticketsPerPage;
+  const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
+  const currentTickets = filteredTickets.slice(indexOfFirstTicket, indexOfLastTicket);
+  const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
+
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   const ticketMessages = selectedTicket ? MOCK_MESSAGES.filter(msg => msg.ticket_id === selectedTicket.id) : [];
 
@@ -261,8 +282,39 @@ const Index = () => {
             </div>
 
             <div className="mt-8">
-              <TicketTable tickets={filteredTickets} onRowClick={handleRowClick} />
+              <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
             </div>
+
+            {totalPages > 1 && (
+              <Pagination className="mt-8">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
+                      aria-disabled={currentPage === 1}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  {[...Array(totalPages)].map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        onClick={() => paginate(i + 1)}
+                        isActive={currentPage === i + 1}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)}
+                      aria-disabled={currentPage === totalPages}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           </div>
           
           {selectedTicket && (
