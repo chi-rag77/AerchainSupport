@@ -21,6 +21,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import FilterNotification from "@/components/FilterNotification"; // Import the new component
 
 // Define the type for the conversation summary returned by the new endpoint
 type ConversationSummary = {
@@ -36,6 +37,9 @@ const Index = () => {
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [filterPriority, setFilterPriority] = useState<string>("All");
   const [filterAssignee, setFilterAssignee] = useState<string>("All");
+  const [filterCompany, setFilterCompany] = useState<string>("All"); // New filter state
+  const [filterType, setFilterType] = useState<string>("All"); // New filter state
+  const [filterDependency, setFilterDependency] = useState<string>("All"); // New filter state
   const [showSidebar, setShowSidebar] = useState(true); // State for sidebar visibility
 
   // Pagination states
@@ -53,8 +57,8 @@ const Index = () => {
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-        method: 'POST', // Changed to POST
-        body: { action: 'getTickets' }, // Added action to body
+        method: 'POST',
+        body: { action: 'getTickets' },
       });
       if (error) throw error;
       return data as Ticket[];
@@ -67,13 +71,13 @@ const Index = () => {
     queryFn: async () => {
       if (!selectedTicket?.id) return { initialMessage: "N/A", lastAgentReply: "N/A" };
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-        method: 'POST', // Changed to POST
-        body: { action: 'getConversationSummary', ticketId: selectedTicket.id }, // Added action and ticketId to body
+        method: 'POST',
+        body: { action: 'getConversationSummary', ticketId: selectedTicket.id },
       });
       if (error) throw error;
       return data as ConversationSummary;
     },
-    enabled: !!selectedTicket?.id && isModalOpen, // Only fetch when a ticket is selected and modal is open
+    enabled: !!selectedTicket?.id && isModalOpen,
   });
 
 
@@ -108,10 +112,14 @@ const Index = () => {
       const matchesStatus = filterStatus === "All" || ticket.status.toLowerCase().includes(filterStatus.toLowerCase());
       const matchesPriority = filterPriority === "All" || ticket.priority.toLowerCase() === filterPriority.toLowerCase();
       const matchesAssignee = filterAssignee === "All" || (ticket.assignee && ticket.assignee.toLowerCase() === filterAssignee.toLowerCase());
+      const matchesCompany = filterCompany === "All" || (ticket.cf_company && ticket.cf_company.toLowerCase() === filterCompany.toLowerCase());
+      const matchesType = filterType === "All" || (ticket.type && ticket.type.toLowerCase() === filterType.toLowerCase());
+      const matchesDependency = filterDependency === "All" || (ticket.cf_dependency && ticket.cf_dependency.toLowerCase() === filterDependency.toLowerCase());
 
-      return matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
+
+      return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesCompany && matchesType && matchesDependency;
     });
-  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, filterAssignee]);
+  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, filterAssignee, filterCompany, filterType, filterDependency]);
 
   // Pagination logic
   const indexOfLastTicket = currentPage * ticketsPerPage;
@@ -146,6 +154,36 @@ const Index = () => {
       priorities.add(ticket.priority);
     });
     return ["All", ...Array.from(priorities).sort()];
+  }, [freshdeskTickets]);
+
+  const uniqueCompanies = useMemo(() => {
+    const companies = new Set<string>();
+    freshdeskTickets?.forEach(ticket => {
+      if (ticket.cf_company) {
+        companies.add(ticket.cf_company);
+      }
+    });
+    return ["All", ...Array.from(companies).sort()];
+  }, [freshdeskTickets]);
+
+  const uniqueTypes = useMemo(() => {
+    const types = new Set<string>();
+    freshdeskTickets?.forEach(ticket => {
+      if (ticket.type) {
+        types.add(ticket.type);
+      }
+    });
+    return ["All", ...Array.from(types).sort()];
+  }, [freshdeskTickets]);
+
+  const uniqueDependencies = useMemo(() => {
+    const dependencies = new Set<string>();
+    freshdeskTickets?.forEach(ticket => {
+      if (ticket.cf_dependency) {
+        dependencies.add(ticket.cf_dependency);
+      }
+    });
+    return ["All", ...Array.from(dependencies).sort()];
   }, [freshdeskTickets]);
 
 
@@ -198,8 +236,8 @@ const Index = () => {
 
           {/* Search & Filters Bar */}
           <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
-            <div className="flex flex-col md:flex-row gap-4 w-full items-center">
-              <div className="relative flex-grow">
+            <div className="flex flex-wrap gap-4 w-full items-center"> {/* Changed to flex-wrap for better responsiveness */}
+              <div className="relative flex-grow min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input
                   placeholder="Search by Ticket ID, Title, or Assignee..."
@@ -247,10 +285,60 @@ const Index = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={filterCompany} onValueChange={setFilterCompany}>
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <SelectValue placeholder="All Companies" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueCompanies.map(company => (
+                    <SelectItem key={company} value={company}>
+                      {company}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueTypes.map(type => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterDependency} onValueChange={setFilterDependency}>
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <SelectValue placeholder="All Dependencies" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueDependencies.map(dependency => (
+                    <SelectItem key={dependency} value={dependency}>
+                      {dependency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="flex-grow overflow-y-auto p-8">
+            <FilterNotification
+              filteredCount={filteredTickets.length}
+              totalCount={freshdeskTickets?.length || 0}
+              searchTerm={searchTerm}
+              filterStatus={filterStatus}
+              filterPriority={filterPriority}
+              filterAssignee={filterAssignee}
+              filterCompany={filterCompany}
+              filterType={filterType}
+              filterDependency={filterDependency}
+            />
             <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
           </div>
 
