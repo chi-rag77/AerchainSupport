@@ -213,9 +213,9 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
+    <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
       <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
-      <div className="flex-1 p-8">
+      <div className="flex-1">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full flex flex-col">
           <div className="w-full max-w-full mb-8 mx-auto">
             <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white text-left">
@@ -281,13 +281,13 @@ const Index = () => {
               </Button>
             </div>
 
-            <div className="mt-8 flex-grow overflow-y-auto max-h-[calc(100vh-350px)]"> {/* Added max-h and overflow-y-auto */}
+            <div className="mt-8 flex-grow overflow-y-auto max-h-[calc(100vh-350px)]">
               <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
             </div>
 
             {totalPages > 1 && (
               <Pagination className="mt-8">
-                <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2"> {/* Added styling here */}
+                <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2">
                   <PaginationItem>
                     <PaginationPrevious
                       onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
