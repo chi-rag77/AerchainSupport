@@ -9,88 +9,12 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import Sidebar from "@/components/Sidebar";
 import { Ticket, TicketMessage } from "@/types";
-import { Search } from "lucide-react"; // Removed PanelLeftOpen, PanelRightOpen
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Keep Tooltip for other uses
+import { Search, PanelLeftOpen, PanelRightOpen } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock Data for demonstration
-const MOCK_TICKETS: Ticket[] = [
-  {
-    id: "TKT-001",
-    customer_id: "user123",
-    subject: "Login issues with SSO integration",
-    priority: "Urgent",
-    status: "Open",
-    type: "Technical",
-    customer: "Acme Corp",
-    requester_email: "john.doe@acmecorp.com",
-    created_at: "2024-01-15T10:30:00Z",
-    updated_at: "2024-01-16T14:22:00Z",
-    description_text: "The payment gateway is returning a 500 error on checkout.",
-    description_html: "<p>The payment gateway is returning a <strong>500 error</strong> on checkout.</p>",
-    assignee: "Sarah Chen",
-  },
-  {
-    id: "TKT-002",
-    customer_id: "user123",
-    subject: "Payment processing delays",
-    priority: "Medium",
-    status: "Pending", // Changed from 'Pending' to 'in progress' for visual consistency with image
-    type: "Feature Request",
-    customer: "Beta Solutions",
-    requester_email: "jane.smith@betasolutions.com",
-    created_at: "2024-01-14T16:45:00Z",
-    updated_at: "2024-01-16T11:15:00Z",
-    description_text: "Please add a dark mode option to the user dashboard.",
-    description_html: "<p>Please add a dark mode option to the user dashboard.</p>",
-    assignee: "Mike Rodriguez",
-  },
-  {
-    id: "TKT-003",
-    customer_id: "user123",
-    subject: "API rate limiting concerns",
-    priority: "Urgent",
-    status: "Open", // Changed from 'Open' to 'escalated' for visual consistency with image
-    type: "Access Issue",
-    customer: "Global Innovations",
-    requester_email: "bob.johnson@globalinnovations.com",
-    created_at: "2024-01-13T09:15:00Z",
-    updated_at: "2024-01-16T08:30:00Z",
-    description_text: "My account is locked. I can't log in.",
-    description_html: "<p>My account is locked. I can't log in.</p>",
-    assignee: "Alex Johnson",
-  },
-  {
-    id: "TKT-004",
-    customer_id: "user123",
-    subject: "Dashboard performance optimization",
-    priority: "Low",
-    status: "Resolved",
-    type: "Question",
-    customer: "Tech Solutions Inc.",
-    requester_email: "alice.wong@techsolutions.com",
-    created_at: "2024-01-12T13:20:00Z",
-    updated_at: "2024-01-15T17:45:00Z",
-    description_text: "I have a question regarding the /users endpoint in your API documentation.",
-    description_html: "<p>I have a question regarding the <code>/users</code> endpoint in your API documentation.</p>",
-    assignee: "Sarah Chen",
-  },
-  {
-    id: "TKT-005",
-    customer_id: "user123",
-    subject: "Mobile app crash on iOS 17",
-    priority: "Medium",
-    status: "Open",
-    type: "Bug",
-    customer: "Mobile Users",
-    requester_email: "mobile.user@example.com",
-    created_at: "2024-01-16T08:00:00Z",
-    updated_at: "2024-01-16T08:00:00Z",
-    description_text: "The app crashes when opening on iOS 17.",
-    description_html: "<p>The app crashes when opening on iOS 17.</p>",
-    assignee: "Unassigned",
-  },
-];
-
+// Mock Messages for demonstration (since we're not fetching messages from Freshdesk yet)
 const MOCK_MESSAGES: TicketMessage[] = [
   {
     id: "M-001-1",
@@ -169,6 +93,22 @@ const Index = () => {
   const [filterAssignee, setFilterAssignee] = useState<string>("All");
   const [showSidebar, setShowSidebar] = useState(true); // State for sidebar visibility
 
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
+  };
+
+  // Fetch tickets from Freshdesk via Supabase Edge Function
+  const { data: freshdeskTickets, isLoading, error } = useQuery<Ticket[], Error>({
+    queryKey: ["freshdeskTickets"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
+        method: 'GET',
+      });
+      if (error) throw error;
+      return data as Ticket[];
+    },
+  });
+
   const handleRowClick = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setIsModalOpen(true);
@@ -179,43 +119,79 @@ const Index = () => {
     setSelectedTicket(null);
   };
 
-  const toggleSidebar = () => {
-    setShowSidebar(!showSidebar);
-  };
+  const filteredTickets = useMemo(() => {
+    if (!freshdeskTickets) return [];
 
-  const userTickets = useMemo(() => {
-    const currentUserTickets = MOCK_TICKETS.filter(ticket => ticket.customer_id === session?.user?.id || ticket.customer_id === "user123");
+    // Filter by current user's ID (if applicable, otherwise show all)
+    // For Freshdesk, we might not have a direct customer_id mapping to Supabase auth.uid()
+    // For now, we'll show all fetched tickets, or you can add a filter based on requester_email if needed.
+    let currentTickets = freshdeskTickets;
 
-    return currentUserTickets.filter(ticket => {
+    return currentTickets.filter(ticket => {
       const matchesSearch = searchTerm === "" ||
         ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase()));
+        (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesStatus = filterStatus === "All" || ticket.status.toLowerCase() === filterStatus.toLowerCase();
+      const matchesStatus = filterStatus === "All" || ticket.status.toLowerCase().includes(filterStatus.toLowerCase());
       const matchesPriority = filterPriority === "All" || ticket.priority.toLowerCase() === filterPriority.toLowerCase();
       const matchesAssignee = filterAssignee === "All" || (ticket.assignee && ticket.assignee.toLowerCase() === filterAssignee.toLowerCase());
 
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
     });
-  }, [session?.user?.id, searchTerm, filterStatus, filterPriority, filterAssignee]);
+  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, filterAssignee]);
 
   const ticketMessages = selectedTicket ? MOCK_MESSAGES.filter(msg => msg.ticket_id === selectedTicket.id) : [];
 
   const uniqueAssignees = useMemo(() => {
     const assignees = new Set<string>();
-    MOCK_TICKETS.forEach(ticket => {
+    freshdeskTickets?.forEach(ticket => {
       if (ticket.assignee && ticket.assignee !== "Unassigned") {
         assignees.add(ticket.assignee);
       }
     });
     return ["All", "Unassigned", ...Array.from(assignees).sort()];
-  }, []);
+  }, [freshdeskTickets]);
+
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set<string>();
+    freshdeskTickets?.forEach(ticket => {
+      statuses.add(ticket.status);
+    });
+    return ["All", ...Array.from(statuses).sort()];
+  }, [freshdeskTickets]);
+
+  const uniquePriorities = useMemo(() => {
+    const priorities = new Set<string>();
+    freshdeskTickets?.forEach(ticket => {
+      priorities.add(ticket.priority);
+    });
+    return ["All", ...Array.from(priorities).sort()];
+  }, [freshdeskTickets]);
+
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <p className="text-gray-700 dark:text-gray-300">Loading tickets from Freshdesk...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <p className="text-red-500">Error loading tickets: {error.message}</p>
+        <p className="text-red-500">Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are set as Supabase secrets.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
       <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
-      <div className="flex-1 p-8"> {/* Removed relative and absolute positioning for button */}
+      <div className="flex-1 p-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full flex flex-col">
           <div className="w-full max-w-full mb-8 mx-auto">
             <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white text-left">
@@ -240,12 +216,11 @@ const Index = () => {
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Status</SelectItem>
-                  <SelectItem value="Open">Open</SelectItem>
-                  <SelectItem value="Pending">In Progress</SelectItem> {/* Adjusted for mock data */}
-                  <SelectItem value="Resolved">Resolved</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
-                  <SelectItem value="Escalated">Escalated</SelectItem> {/* Added for mock data */}
+                  {uniqueStatuses.map(status => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={filterPriority} onValueChange={setFilterPriority}>
@@ -253,11 +228,11 @@ const Index = () => {
                   <SelectValue placeholder="All Priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Priority</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Urgent">Urgent</SelectItem>
+                  {uniquePriorities.map(priority => (
+                    <SelectItem key={priority} value={priority}>
+                      {priority}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={filterAssignee} onValueChange={setFilterAssignee}>
@@ -275,7 +250,7 @@ const Index = () => {
             </div>
 
             <div className="mt-8">
-              <TicketTable tickets={userTickets} onRowClick={handleRowClick} />
+              <TicketTable tickets={filteredTickets} onRowClick={handleRowClick} />
             </div>
           </div>
           

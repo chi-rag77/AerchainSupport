@@ -21,9 +21,9 @@ interface TicketTableProps {
 const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
   const getStatusBadgeClasses = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'open':
+      case 'open (being processed)':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'pending': // Using 'pending' for 'in progress' from mock data
+      case 'pending (awaiting your reply)':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'resolved':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
@@ -31,6 +31,12 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
       case 'escalated':
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'waiting on customer':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'on tech':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+      case 'on product':
+        return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
@@ -79,7 +85,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
                 <TableCell>{ticket.subject}</TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClasses(ticket.status)}`}>
-                    {ticket.status === 'Pending' ? 'in progress' : ticket.status}
+                    {ticket.status === 'Pending (Awaiting your Reply)' ? 'in progress' : ticket.status}
                   </span>
                 </TableCell>
                 <TableCell>
