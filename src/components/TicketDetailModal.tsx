@@ -25,7 +25,7 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, messages }: TicketDetailMo
 
   const sortedMessages = [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  const freshdeskTicketUrl = `https://your-freshdesk-domain.freshdesk.com/a/tickets/${ticket.id}`; // Placeholder
+  const freshdeskTicketUrl = `http://aerchain.freshdesk.com/a/tickets/${ticket.id}`; // Updated Freshdesk URL
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
