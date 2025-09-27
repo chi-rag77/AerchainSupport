@@ -105,18 +105,18 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
   return (
     <div className="rounded-lg overflow-hidden shadow-md w-full bg-white dark:bg-gray-800">
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700"> {/* Sticky header with light grey background */}
           <TableRow>
-            <TableHead className="w-[120px] py-3">Ticket ID</TableHead>
-            <TableHead className="py-3">Title</TableHead>
-            <TableHead className="py-3">Company</TableHead>
-            <TableHead className="py-3">Type</TableHead>
-            <TableHead className="py-3">Dependency</TableHead>
-            <TableHead className="py-3">Status</TableHead>
-            <TableHead className="py-3">Priority</TableHead>
-            <TableHead className="py-3">Assignee</TableHead>
-            <TableHead className="py-3 text-right">Created</TableHead>
-            <TableHead className="py-3 text-right">Updated</TableHead>
+            <TableHead className="w-[120px] py-3 whitespace-nowrap">Ticket ID</TableHead>
+            <TableHead className="py-3 whitespace-nowrap">Title</TableHead>
+            <TableHead className="py-3 whitespace-nowrap">Company</TableHead>
+            <TableHead className="py-3 whitespace-nowrap">Type</TableHead>
+            <TableHead className="py-3 whitespace-nowrap">Dependency</TableHead>
+            <TableHead className="py-3 whitespace-nowrap">Status</TableHead>
+            <TableHead className="py-3 whitespace-nowrap">Priority</TableHead>
+            <TableHead className="py-3 whitespace-nowrap">Assignee</TableHead>
+            <TableHead className="py-3 text-right whitespace-nowrap">Created</TableHead>
+            <TableHead className="py-3 text-right whitespace-nowrap">Updated</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
