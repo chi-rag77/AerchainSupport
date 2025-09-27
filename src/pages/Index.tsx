@@ -281,7 +281,7 @@ const Index = () => {
               </Button>
             </div>
 
-            <div className="mt-8"> {/* Removed max-h and overflow-y-auto */}
+            <div className="mt-8 flex-grow overflow-y-auto max-h-[calc(100vh-350px)]"> {/* Added max-h and overflow-y-auto */}
               <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
             </div>
 
