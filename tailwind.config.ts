@@ -62,6 +62,8 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Added for alternate row coloring in dark mode
+        "gray-750": "hsl(217.2 25% 15%)", 
       },
       borderRadius: {
         lg: "var(--radius)",

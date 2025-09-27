@@ -9,7 +9,7 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import Sidebar from "@/components/Sidebar";
 import { Ticket, TicketMessage } from "@/types";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -215,17 +215,37 @@ const Index = () => {
   return (
     <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
       <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
-      <div className="flex-1">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full flex flex-col">
-          <div className="w-full max-w-full mb-8 mx-auto">
-            <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white text-left">
-              Support & Ticketing
-            </h1>
-            <p className="text-base text-gray-600 dark:text-gray-400 mb-6 text-left">
+      <div className="flex-1 flex flex-col p-4"> {/* Added p-4 here for overall content padding */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
+          {/* Header Section */}
+          <div className="p-8 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm"> {/* Added shadow-sm and border-b */}
+            <div className="flex justify-between items-center mb-2">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Support & Ticketing
+              </h1>
+              <Button
+                onClick={handleRefreshTickets}
+                disabled={isFetching}
+                className="h-12 px-6 text-lg font-semibold relative overflow-hidden group" // Larger button, group for hover effect
+              >
+                {isFetching ? (
+                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-5 w-5" />
+                )}
+                Fetch Latest Tickets
+                {/* Glowing hover effect */}
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
+              </Button>
+            </div>
+            <p className="text-base text-gray-600 dark:text-gray-400">
               Manage and track customer support tickets
             </p>
+          </div>
 
-            <div className="flex flex-col md:flex-row gap-4 mb-6 w-full items-center">
+          {/* Search & Filters Bar */}
+          <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner"> {/* Background fill, rounded corners, shadow-inner */}
+            <div className="flex flex-col md:flex-row gap-4 w-full items-center">
               <div className="relative flex-grow">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input
@@ -236,7 +256,8 @@ const Index = () => {
                 />
               </div>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-[160px] group"> {/* Added group for hover */}
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" /> {/* Filter icon */}
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -248,7 +269,8 @@ const Index = () => {
                 </SelectContent>
               </Select>
               <Select value={filterPriority} onValueChange={setFilterPriority}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-[160px] group"> {/* Added group for hover */}
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" /> {/* Filter icon */}
                   <SelectValue placeholder="All Priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -260,7 +282,8 @@ const Index = () => {
                 </SelectContent>
               </Select>
               <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-[160px] group"> {/* Added group for hover */}
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" /> {/* Filter icon */}
                   <SelectValue placeholder="All Assignees" />
                 </SelectTrigger>
                 <SelectContent>
@@ -271,51 +294,48 @@ const Index = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <Button onClick={handleRefreshTickets} disabled={isFetching} className="w-full md:w-auto">
-                {isFetching ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                Fetch Latest Tickets
-              </Button>
             </div>
-
-            <div className="mt-8 flex-grow overflow-y-auto max-h-[calc(100vh-350px)]">
-              <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
-            </div>
-
-            {totalPages > 1 && (
-              <Pagination className="mt-8">
-                <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2">
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
-                      aria-disabled={currentPage === 1}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                    />
-                  </PaginationItem>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <PaginationItem key={i}>
-                      <PaginationLink
-                        onClick={() => paginate(i + 1)}
-                        isActive={currentPage === i + 1}
-                      >
-                        {i + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)}
-                      aria-disabled={currentPage === totalPages}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
           </div>
+
+          <div className="flex-grow overflow-y-auto p-8"> {/* Adjusted padding */}
+            <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-4 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl"> {/* Sticky footer, shadow, rounded-b-xl */}
+              <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2">
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
+                    aria-disabled={currentPage === 1}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  </PaginationPrevious>
+                </PaginationItem>
+                {[...Array(totalPages)].map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      onClick={() => paginate(i + 1)}
+                      isActive={currentPage === i + 1}
+                      className={currentPage === i + 1 ? "bg-primary text-primary-foreground rounded-full" : "rounded-full"} // Pill shape, darker accent
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)}
+                    aria-disabled={currentPage === totalPages}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  >
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </PaginationNext>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
           
           {selectedTicket && (
             <TicketDetailModal

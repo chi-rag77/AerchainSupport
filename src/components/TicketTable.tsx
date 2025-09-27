@@ -10,8 +10,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Ticket } from '@/types';
-import { format } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CheckCircle, Hourglass, Laptop, AlertCircle, XCircle, Clock, Users, Shield, MessageSquare } from 'lucide-react';
 
 interface TicketTableProps {
   tickets: Ticket[];
@@ -57,69 +59,142 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'resolved':
+        return <CheckCircle className="h-3 w-3 mr-1" />;
+      case 'open (being processed)':
+        return <Hourglass className="h-3 w-3 mr-1" />;
+      case 'pending (awaiting your reply)':
+        return <Clock className="h-3 w-3 mr-1" />;
+      case 'on tech':
+        return <Laptop className="h-3 w-3 mr-1" />;
+      case 'escalated':
+        return <AlertCircle className="h-3 w-3 mr-1" />;
+      case 'closed':
+        return <XCircle className="h-3 w-3 mr-1" />;
+      case 'waiting on customer':
+        return <Users className="h-3 w-3 mr-1" />;
+      case 'on product':
+        return <Shield className="h-3 w-3 mr-1" />;
+      default:
+        return null;
+    }
+  };
+
+  const getPriorityIcon = (priority: string) => {
+    switch (priority.toLowerCase()) {
+      case 'urgent':
+        return <AlertCircle className="h-3 w-3 mr-1" />;
+      case 'high':
+        return <AlertCircle className="h-3 w-3 mr-1" />;
+      case 'medium':
+        return <MessageSquare className="h-3 w-3 mr-1" />;
+      case 'low':
+        return <Clock className="h-3 w-3 mr-1" />;
+      default:
+        return null;
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    return formatDistanceToNowStrict(date, { addSuffix: true });
+  };
+
   return (
-    <div className="rounded-md border w-full bg-white dark:bg-gray-800">
+    <div className="rounded-lg overflow-hidden shadow-md w-full bg-white dark:bg-gray-800">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[120px] py-2">Ticket ID</TableHead>
-            <TableHead className="py-2">Title</TableHead>
-            <TableHead className="py-2">Company</TableHead> {/* New Column */}
-            <TableHead className="py-2">Type</TableHead> {/* New Column */}
-            <TableHead className="py-2">Dependency</TableHead> {/* New Column */}
-            <TableHead className="py-2">Status</TableHead>
-            <TableHead className="py-2">Priority</TableHead>
-            <TableHead className="py-2">Assignee</TableHead>
-            <TableHead className="py-2">Date Created</TableHead>
-            <TableHead className="py-2">Last Updated</TableHead>
+            <TableHead className="w-[120px] py-3">Ticket ID</TableHead>
+            <TableHead className="py-3">Title</TableHead>
+            <TableHead className="py-3">Company</TableHead>
+            <TableHead className="py-3">Type</TableHead>
+            <TableHead className="py-3">Dependency</TableHead>
+            <TableHead className="py-3">Status</TableHead>
+            <TableHead className="py-3">Priority</TableHead>
+            <TableHead className="py-3">Assignee</TableHead>
+            <TableHead className="py-3 text-right">Created</TableHead>
+            <TableHead className="py-3 text-right">Updated</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {tickets.length > 0 ? (
-            tickets.map((ticket) => (
+            tickets.map((ticket, index) => (
               <TableRow 
                 key={ticket.id} 
                 onClick={() => onRowClick(ticket)} 
-                className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                  ticket.status.toLowerCase() === 'escalated' ? 'bg-red-50/50 dark:bg-red-950/30' : ''
-                }`}
+                className={`cursor-pointer transition-all duration-200 ease-in-out hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.005] 
+                  ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'} 
+                  ${ticket.status.toLowerCase() === 'escalated' ? 'bg-red-50/50 dark:bg-red-950/30' : ''}
+                `}
               >
-                <TableCell className="font-medium py-2">{ticket.id}</TableCell>
-                <TableCell className="py-2">{ticket.subject}</TableCell>
-                <TableCell className="py-2">{ticket.cf_company || 'N/A'}</TableCell> {/* Display Company */}
-                <TableCell className="py-2">{ticket.type || 'N/A'}</TableCell> {/* Display Type */}
-                <TableCell className="py-2">{ticket.cf_dependency || 'N/A'}</TableCell> {/* Display Dependency */}
-                <TableCell className="py-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClasses(ticket.status)}`}>
-                    {ticket.status === 'Pending (Awaiting your Reply)' ? 'in progress' : ticket.status}
+                <TableCell className="font-medium py-3">{ticket.id}</TableCell>
+                <TableCell className="py-3">{ticket.subject}</TableCell>
+                <TableCell className="py-3">{ticket.cf_company || 'N/A'}</TableCell>
+                <TableCell className="py-3">{ticket.type || 'N/A'}</TableCell>
+                <TableCell className="py-3">{ticket.cf_dependency || 'N/A'}</TableCell>
+                <TableCell className="py-3">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getStatusBadgeClasses(ticket.status)}`}>
+                    {getStatusIcon(ticket.status)}
+                    {ticket.status === 'Pending (Awaiting your Reply)' ? 'In Progress' : ticket.status}
                   </span>
                 </TableCell>
-                <TableCell className="py-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPriorityBadgeClasses(ticket.priority)}`}>
+                <TableCell className="py-3">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getPriorityBadgeClasses(ticket.priority)}`}>
+                    {getPriorityIcon(ticket.priority)}
                     {ticket.priority}
                   </span>
                 </TableCell>
-                <TableCell className="flex items-center py-2">
-                  {ticket.assignee && ticket.assignee !== "Unassigned" ? (
-                    <>
-                      <Avatar className="h-6 w-6 mr-2">
-                        <AvatarFallback className="text-xs bg-gray-200 dark:bg-gray-700">
-                          {ticket.assignee.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      {ticket.assignee}
-                    </>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400">Unassigned</span>
-                  )}
+                <TableCell className="py-3">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center">
+                        {ticket.assignee && ticket.assignee !== "Unassigned" ? (
+                          <>
+                            <Avatar className="h-7 w-7 mr-2 border border-gray-200 dark:border-gray-600 shadow-sm">
+                              <AvatarFallback className="text-xs bg-gray-200 dark:bg-gray-700">
+                                {ticket.assignee.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            {ticket.assignee}
+                          </>
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400">Unassigned</span>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {ticket.assignee || "Unassigned"}
+                    </TooltipContent>
+                  </Tooltip>
                 </TableCell>
-                <TableCell className="py-2">{format(new Date(ticket.created_at), 'MMM dd, hh:mm a')}</TableCell>
-                <TableCell className="py-2">{format(new Date(ticket.updated_at), 'MMM dd, hh:mm a')}</TableCell>
+                <TableCell className="py-3 text-right">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>{format(new Date(ticket.created_at), 'dd MMM · hh:mm a')}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {formatTimeAgo(ticket.created_at)}
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell className="py-3 text-right">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>{format(new Date(ticket.updated_at), 'dd MMM · hh:mm a')}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {formatTimeAgo(ticket.updated_at)}
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={10} className="h-24 text-center text-gray-500 dark:text-gray-400 py-2">
+              <TableCell colSpan={10} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3">
                 No tickets found.
               </TableCell>
             </TableRow>
