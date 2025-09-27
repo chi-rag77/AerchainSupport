@@ -53,8 +53,8 @@ const Index = () => {
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-        method: 'GET',
-        // The path is handled by the Edge Function's internal routing
+        method: 'POST', // Changed to POST
+        body: { action: 'getTickets' }, // Added action to body
       });
       if (error) throw error;
       return data as Ticket[];
@@ -67,8 +67,8 @@ const Index = () => {
     queryFn: async () => {
       if (!selectedTicket?.id) return { initialMessage: "N/A", lastAgentReply: "N/A" };
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-        method: 'GET', // The new endpoint uses GET
-        // The path is handled by the Edge Function's internal routing
+        method: 'POST', // Changed to POST
+        body: { action: 'getConversationSummary', ticketId: selectedTicket.id }, // Added action and ticketId to body
       });
       if (error) throw error;
       return data as ConversationSummary;
@@ -169,10 +169,10 @@ const Index = () => {
   return (
     <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
       <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
-      <div className="flex-1 flex flex-col p-4"> {/* Added p-4 here for overall content padding */}
+      <div className="flex-1 flex flex-col p-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
           {/* Header Section */}
-          <div className="p-8 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm"> {/* Added shadow-sm and border-b */}
+          <div className="p-8 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 Support & Ticketing
@@ -180,7 +180,7 @@ const Index = () => {
               <Button
                 onClick={handleRefreshTickets}
                 disabled={isFetching}
-                className="h-12 px-6 text-lg font-semibold relative overflow-hidden group" // Larger button, group for hover effect
+                className="h-12 px-6 text-lg font-semibold relative overflow-hidden group"
               >
                 {isFetching ? (
                   <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
@@ -188,7 +188,6 @@ const Index = () => {
                   <RefreshCw className="mr-2 h-5 w-5" />
                 )}
                 Fetch Latest Tickets
-                {/* Glowing hover effect */}
                 <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
               </Button>
             </div>
@@ -198,7 +197,7 @@ const Index = () => {
           </div>
 
           {/* Search & Filters Bar */}
-          <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner"> {/* Background fill, rounded corners, shadow-inner */}
+          <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
             <div className="flex flex-col md:flex-row gap-4 w-full items-center">
               <div className="relative flex-grow">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -210,8 +209,8 @@ const Index = () => {
                 />
               </div>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[160px] group"> {/* Added group for hover */}
-                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" /> {/* Filter icon */}
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -223,8 +222,8 @@ const Index = () => {
                 </SelectContent>
               </Select>
               <Select value={filterPriority} onValueChange={setFilterPriority}>
-                <SelectTrigger className="w-[160px] group"> {/* Added group for hover */}
-                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" /> {/* Filter icon */}
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                   <SelectValue placeholder="All Priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,8 +235,8 @@ const Index = () => {
                 </SelectContent>
               </Select>
               <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-                <SelectTrigger className="w-[160px] group"> {/* Added group for hover */}
-                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" /> {/* Filter icon */}
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                   <SelectValue placeholder="All Assignees" />
                 </SelectTrigger>
                 <SelectContent>
@@ -251,12 +250,12 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-8"> {/* Adjusted padding */}
+          <div className="flex-grow overflow-y-auto p-8">
             <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
           </div>
 
           {totalPages > 1 && (
-            <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-4 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl"> {/* Sticky footer, shadow, rounded-b-xl */}
+            <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-4 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl">
               <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2">
                 <PaginationItem>
                   <PaginationPrevious
@@ -272,7 +271,7 @@ const Index = () => {
                     <PaginationLink
                       onClick={() => paginate(i + 1)}
                       isActive={currentPage === i + 1}
-                      className={currentPage === i + 1 ? "bg-primary text-primary-foreground rounded-full" : "rounded-full"} // Pill shape, darker accent
+                      className={currentPage === i + 1 ? "bg-primary text-primary-foreground rounded-full" : "rounded-full"}
                     >
                       {i + 1}
                     </PaginationLink>
@@ -296,10 +295,10 @@ const Index = () => {
               isOpen={isModalOpen}
               onClose={handleCloseModal}
               ticket={selectedTicket}
-              conversationSummary={conversationSummary} // Pass the fetched summary
+              conversationSummary={conversationSummary}
               isLoadingSummary={isLoadingSummary}
               summaryError={summaryError}
-              onRefreshSummary={refetchConversationSummary} // Pass the refetch function
+              onRefreshSummary={refetchConversationSummary}
             />
           )}
         </div>
