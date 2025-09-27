@@ -62,13 +62,13 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[120px]">Ticket ID</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Priority</TableHead>
-            <TableHead>Assignee</TableHead>
-            <TableHead>Date Created</TableHead>
-            <TableHead>Last Updated</TableHead>
+            <TableHead className="w-[120px] py-2">Ticket ID</TableHead>
+            <TableHead className="py-2">Title</TableHead>
+            <TableHead className="py-2">Status</TableHead>
+            <TableHead className="py-2">Priority</TableHead>
+            <TableHead className="py-2">Assignee</TableHead>
+            <TableHead className="py-2">Date Created</TableHead>
+            <TableHead className="py-2">Last Updated</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -81,19 +81,19 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
                   ticket.status.toLowerCase() === 'escalated' ? 'bg-red-50/50 dark:bg-red-950/30' : ''
                 }`}
               >
-                <TableCell className="font-medium">{ticket.id}</TableCell>
-                <TableCell>{ticket.subject}</TableCell>
-                <TableCell>
+                <TableCell className="font-medium py-2">{ticket.id}</TableCell>
+                <TableCell className="py-2">{ticket.subject}</TableCell>
+                <TableCell className="py-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClasses(ticket.status)}`}>
                     {ticket.status === 'Pending (Awaiting your Reply)' ? 'in progress' : ticket.status}
                   </span>
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPriorityBadgeClasses(ticket.priority)}`}>
                     {ticket.priority}
                   </span>
                 </TableCell>
-                <TableCell className="flex items-center">
+                <TableCell className="flex items-center py-2">
                   {ticket.assignee && ticket.assignee !== "Unassigned" ? (
                     <>
                       <Avatar className="h-6 w-6 mr-2">
@@ -107,13 +107,13 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
                     <span className="text-gray-500 dark:text-gray-400">Unassigned</span>
                   )}
                 </TableCell>
-                <TableCell>{format(new Date(ticket.created_at), 'MMM dd, hh:mm a')}</TableCell>
-                <TableCell>{format(new Date(ticket.updated_at), 'MMM dd, hh:mm a')}</TableCell>
+                <TableCell className="py-2">{format(new Date(ticket.created_at), 'MMM dd, hh:mm a')}</TableCell>
+                <TableCell className="py-2">{format(new Date(ticket.updated_at), 'MMM dd, hh:mm a')}</TableCell>
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center text-gray-500 dark:text-gray-400">
+              <TableCell colSpan={7} className="h-24 text-center text-gray-500 dark:text-gray-400 py-2">
                 No tickets found.
               </TableCell>
             </TableRow>
