@@ -4,8 +4,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Chrome, SquareM } from 'lucide-react'; // Changed SquareMicrosoft to SquareM
-import { Provider } from '@supabase/supabase-js'; // Import Provider type
+import { Chrome, SquareM } from 'lucide-react';
+import { Provider } from '@supabase/supabase-js';
 
 interface SocialAuthButtonsProps {
   onAuthSuccess: () => void;
@@ -17,7 +17,7 @@ const SocialAuthButtons = ({ onAuthSuccess }: SocialAuthButtonsProps) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin + '/', // Redirect to home after login
+          redirectTo: window.location.origin + '/',
         },
       });
 
@@ -43,10 +43,10 @@ const SocialAuthButtons = ({ onAuthSuccess }: SocialAuthButtonsProps) => {
       </Button>
       <Button
         variant="outline"
-        onClick={() => handleSocialLogin('azure')} {/* Changed 'microsoft' to 'azure' */}
+        onClick={() => handleSocialLogin('azure')}
         className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
       >
-        <SquareM className="h-5 w-5" /> {/* Changed to SquareM */}
+        <SquareM className="h-5 w-5" />
         Sign up with Microsoft
       </Button>
     </div>
