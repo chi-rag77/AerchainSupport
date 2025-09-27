@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSupabase } from "@/components/SupabaseProvider";
-import { supabase } from "@/integrations/supabase/client";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import Sidebar from "@/components/Sidebar"; // Import the new Sidebar component
 import { Ticket, TicketMessage } from "@/types";
 
 // Mock Data for demonstration
@@ -146,10 +146,6 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("All");
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-
   const handleRowClick = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setIsModalOpen(true);
@@ -174,59 +170,61 @@ const Index = () => {
 
       return matchesSearch && matchesStatus;
     });
-  }, [MOCK_TICKETS, session?.user?.id, searchTerm, filterStatus]);
+  }, [session?.user?.id, searchTerm, filterStatus]); // MOCK_TICKETS is constant, no need to include in dependency array
 
   const ticketMessages = selectedTicket ? MOCK_MESSAGES.filter(msg => msg.ticket_id === selectedTicket.id) : [];
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-6xl text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-          Freshdesk Ticket Dashboard
-        </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
-          Welcome, {session?.user?.email}!
-        </p>
-        <Button onClick={handleLogout} variant="destructive" className="mb-8">
-          Logout
-        </Button>
+    <div className="min-h-screen flex gradient-background">
+      <Sidebar />
+      <div className="flex-1 p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full flex flex-col">
+          <div className="w-full max-w-6xl text-center mb-8 mx-auto">
+            <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+              Freshdesk Ticket Dashboard
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
+              Welcome, {session?.user?.email}!
+            </p>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-6 w-full max-w-6xl mx-auto">
-          <Input
-            placeholder="Search by subject or requester email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-grow"
-          />
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Statuses</SelectItem>
-              <SelectItem value="Open">Open</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="Resolved">Resolved</SelectItem>
-              <SelectItem value="Closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="flex flex-col md:flex-row gap-4 mb-6 w-full max-w-6xl mx-auto">
+              <Input
+                placeholder="Search by subject or requester email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-grow"
+              />
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Statuses</SelectItem>
+                  <SelectItem value="Open">Open</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Resolved">Resolved</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="mt-8">
-          <TicketTable tickets={userTickets} onRowClick={handleRowClick} />
+            <div className="mt-8">
+              <TicketTable tickets={userTickets} onRowClick={handleRowClick} />
+            </div>
+          </div>
+          
+          {selectedTicket && (
+            <TicketDetailModal
+              isOpen={isModalOpen}
+              onClose={handleCloseModal}
+              ticket={selectedTicket}
+              messages={ticketMessages}
+            />
+          )}
+
+          <MadeWithDyad />
         </div>
       </div>
-      
-      {selectedTicket && (
-        <TicketDetailModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          ticket={selectedTicket}
-          messages={ticketMessages}
-        />
-      )}
-
-      <MadeWithDyad />
     </div>
   );
 };
