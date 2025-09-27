@@ -9,9 +9,9 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import Sidebar from "@/components/Sidebar";
 import { Ticket, TicketMessage } from "@/types";
-import { Search, PanelLeftOpen, PanelRightOpen } from "lucide-react";
+import { Search, PanelLeftOpen, PanelRightOpen, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query"; // Import useQueryClient
 import { supabase } from "@/integrations/supabase/client";
 
 // Mock Messages for demonstration (since we're not fetching messages from Freshdesk yet)
@@ -93,12 +93,14 @@ const Index = () => {
   const [filterAssignee, setFilterAssignee] = useState<string>("All");
   const [showSidebar, setShowSidebar] = useState(true); // State for sidebar visibility
 
+  const queryClient = useQueryClient(); // Initialize query client
+
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
 
   // Fetch tickets from Freshdesk via Supabase Edge Function
-  const { data: freshdeskTickets, isLoading, error } = useQuery<Ticket[], Error>({
+  const { data: freshdeskTickets, isLoading, error, isFetching } = useQuery<Ticket[], Error>({ // Get isFetching state
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
@@ -108,6 +110,10 @@ const Index = () => {
       return data as Ticket[];
     },
   });
+
+  const handleRefreshTickets = () => {
+    queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] }); // Invalidate and re-fetch
+  };
 
   const handleRowClick = (ticket: Ticket) => {
     setSelectedTicket(ticket);
@@ -122,9 +128,6 @@ const Index = () => {
   const filteredTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
 
-    // Filter by current user's ID (if applicable, otherwise show all)
-    // For Freshdesk, we might not have a direct customer_id mapping to Supabase auth.uid()
-    // For now, we'll show all fetched tickets, or you can add a filter based on requester_email if needed.
     let currentTickets = freshdeskTickets;
 
     return currentTickets.filter(ticket => {
@@ -171,7 +174,7 @@ const Index = () => {
   }, [freshdeskTickets]);
 
 
-  if (isLoading) {
+  if (isLoading && !isFetching) { // Only show full loading screen on initial load
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <p className="text-gray-700 dark:text-gray-300">Loading tickets from Freshdesk...</p>
@@ -247,6 +250,14 @@ const Index = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <Button onClick={handleRefreshTickets} disabled={isFetching} className="w-full md:w-auto">
+                {isFetching ? (
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                Fetch Latest Tickets
+              </Button>
             </div>
 
             <div className="mt-8">
