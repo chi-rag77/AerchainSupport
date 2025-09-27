@@ -22,74 +22,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-// Mock Messages for demonstration (since we're not fetching messages from Freshdesk yet)
-const MOCK_MESSAGES: TicketMessage[] = [
-  {
-    id: "M-001-1",
-    ticket_id: "TKT-001",
-    sender: "John Doe",
-    body_html: "<p>Hi team, the payment gateway is consistently failing with a 500 error when customers try to complete their purchases. This is urgent.</p>",
-    created_at: "2024-01-15T10:30:00Z",
-    is_agent: false,
-  },
-  {
-    id: "M-001-2",
-    ticket_id: "TKT-001",
-    sender: "Agent Sarah",
-    body_html: "<p>Hi John, thanks for reporting this. I've escalated it to our engineering team. We'll investigate immediately.</p>",
-    created_at: "2024-01-15T10:45:00Z",
-    is_agent: true,
-  },
-  {
-    id: "M-001-3",
-    ticket_id: "TKT-001",
-    sender: "Agent Sarah",
-    body_html: "<p>Update: We've identified a configuration issue with the payment gateway. Working on a fix now.</p>",
-    created_at: "2024-01-16T11:00:00Z",
-    is_agent: true,
-  },
-  {
-    id: "M-002-1",
-    ticket_id: "TKT-002",
-    sender: "Jane Smith",
-    body_html: "<p>It would be great if the dashboard had a dark mode option. The current light theme is a bit harsh on the eyes during late-night work.</p>",
-    created_at: "2024-01-14T16:45:00Z",
-    is_agent: false,
-  },
-  {
-    id: "M-003-1",
-    ticket_id: "TKT-003",
-    sender: "Bob Johnson",
-    body_html: "<p>I tried logging in multiple times and now my account is locked. Please help me regain access.</p>",
-    created_at: "2024-01-13T09:15:00Z",
-    is_agent: false,
-  },
-  {
-    id: "M-003-2",
-    ticket_id: "TKT-003",
-    sender: "Agent Mark",
-    body_html: "<p>Hi Bob, I've unlocked your account. Please try logging in again. If you continue to have issues, please reset your password.</p>",
-    created_at: "2024-01-13T09:30:00Z",
-    is_agent: true,
-  },
-  {
-    id: "M-004-1",
-    ticket_id: "TKT-004",
-    sender: "Alice Wong",
-    body_html: "<p>The API documentation for the <code>/users</code> endpoint is a bit unclear. Could you provide an example of how to filter users by their creation date?</p>",
-    created_at: "2024-01-12T13:20:00Z",
-    is_agent: false,
-  },
-  {
-    id: "M-004-2",
-    ticket_id: "TKT-004",
-    sender: "Agent Emily",
-    body_html: "<p>Hi Alice, certainly! To filter users by creation date, you can use the <code>created_at_gte</code> and <code>created_at_lte</code> parameters. For example: <code>/users?created_at_gte=2023-01-01&created_at_lte=2023-01-31</code></p>",
-    created_at: "2024-01-12T13:50:00Z",
-    is_agent: true,
-  },
-];
-
 
 const Index = () => {
   const { session } = useSupabase();
@@ -123,6 +55,22 @@ const Index = () => {
     },
   });
 
+  // Fetch messages for the selected ticket
+  const { data: ticketMessages, isLoading: isLoadingMessages, error: messagesError } = useQuery<TicketMessage[], Error>({
+    queryKey: ["ticketMessages", selectedTicket?.id],
+    queryFn: async () => {
+      if (!selectedTicket?.id) return [];
+      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-messages', {
+        method: 'POST', // Use POST for sending body
+        body: { ticket_id: selectedTicket.id },
+      });
+      if (error) throw error;
+      return data as TicketMessage[];
+    },
+    enabled: !!selectedTicket?.id && isModalOpen, // Only fetch when a ticket is selected and modal is open
+  });
+
+
   const handleRefreshTickets = () => {
     queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] }); // Invalidate and re-fetch
     setCurrentPage(1); // Reset to first page on refresh
@@ -136,6 +84,7 @@ const Index = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTicket(null);
+    queryClient.invalidateQueries({ queryKey: ["ticketMessages"] }); // Clear messages when modal closes
   };
 
   const filteredTickets = useMemo(() => {
@@ -166,7 +115,6 @@ const Index = () => {
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
-  const ticketMessages = selectedTicket ? MOCK_MESSAGES.filter(msg => msg.ticket_id === selectedTicket.id) : [];
 
   const uniqueAssignees = useMemo(() => {
     const assignees = new Set<string>();
@@ -342,7 +290,7 @@ const Index = () => {
               isOpen={isModalOpen}
               onClose={handleCloseModal}
               ticket={selectedTicket}
-              messages={ticketMessages}
+              messages={ticketMessages || []} // Pass fetched messages, or an empty array if loading/error
             />
           )}
         </div>
