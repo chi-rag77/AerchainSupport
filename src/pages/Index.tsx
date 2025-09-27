@@ -9,7 +9,8 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import Sidebar from "@/components/Sidebar";
 import { Ticket, TicketMessage } from "@/types";
-import { Search } from "lucide-react";
+import { Search, PanelLeftOpen, PanelRightOpen } from "lucide-react"; // Import PanelLeftOpen and PanelRightOpen
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Import Tooltip components
 
 // Mock Data for demonstration
 const MOCK_TICKETS: Ticket[] = [
@@ -166,6 +167,7 @@ const Index = () => {
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [filterPriority, setFilterPriority] = useState<string>("All");
   const [filterAssignee, setFilterAssignee] = useState<string>("All");
+  const [showSidebar, setShowSidebar] = useState(true); // State for sidebar visibility
 
   const handleRowClick = (ticket: Ticket) => {
     setSelectedTicket(ticket);
@@ -175,6 +177,10 @@ const Index = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTicket(null);
+  };
+
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
   };
 
   const userTickets = useMemo(() => {
@@ -208,8 +214,26 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 p-8">
+      {showSidebar && <Sidebar />}
+      <div className="flex-1 p-8 relative"> {/* Added relative for absolute positioning of button */}
+        <div className="absolute top-8 left-8 z-10"> {/* Position the button outside the white box, aligned with padding */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleSidebar}
+                className="rounded-lg bg-white dark:bg-gray-800 shadow-md" // Styling for the button
+              >
+                {showSidebar ? <PanelRightOpen className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {showSidebar ? "Close sidebar" : "Open sidebar"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full flex flex-col">
           <div className="w-full max-w-full mb-8 mx-auto">
             <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white text-left">
