@@ -64,6 +64,9 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
           <TableRow>
             <TableHead className="w-[120px] py-2">Ticket ID</TableHead>
             <TableHead className="py-2">Title</TableHead>
+            <TableHead className="py-2">Company</TableHead> {/* New Column */}
+            <TableHead className="py-2">Type</TableHead> {/* New Column */}
+            <TableHead className="py-2">Dependency</TableHead> {/* New Column */}
             <TableHead className="py-2">Status</TableHead>
             <TableHead className="py-2">Priority</TableHead>
             <TableHead className="py-2">Assignee</TableHead>
@@ -83,6 +86,9 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
               >
                 <TableCell className="font-medium py-2">{ticket.id}</TableCell>
                 <TableCell className="py-2">{ticket.subject}</TableCell>
+                <TableCell className="py-2">{ticket.cf_company || 'N/A'}</TableCell> {/* Display Company */}
+                <TableCell className="py-2">{ticket.type || 'N/A'}</TableCell> {/* Display Type */}
+                <TableCell className="py-2">{ticket.cf_dependency || 'N/A'}</TableCell> {/* Display Dependency */}
                 <TableCell className="py-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClasses(ticket.status)}`}>
                     {ticket.status === 'Pending (Awaiting your Reply)' ? 'in progress' : ticket.status}
@@ -113,7 +119,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center text-gray-500 dark:text-gray-400 py-2">
+              <TableCell colSpan={10} className="h-24 text-center text-gray-500 dark:text-gray-400 py-2">
                 No tickets found.
               </TableCell>
             </TableRow>
