@@ -44,6 +44,9 @@ serve(async (req) => {
     // @ts-ignore
     const freshdeskDomain = Deno.env.get('FRESHDESK_DOMAIN');
 
+    console.log('Freshdesk API Key (first 5 chars):', freshdeskApiKey ? freshdeskApiKey.substring(0, 5) + '...' : 'Not set');
+    console.log('Freshdesk Domain:', freshdeskDomain || 'Not set');
+
     if (!freshdeskApiKey || !freshdeskDomain) {
       return new Response(JSON.stringify({ error: 'Freshdesk API key or domain not set in environment variables.' }), {
         status: 500,
