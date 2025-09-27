@@ -8,7 +8,7 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import Sidebar from "@/components/Sidebar";
-import { Ticket, TicketMessage } from "@/types";
+import { Ticket } from "@/types"; // Removed TicketMessage import as it's no longer directly used here
 import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +22,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+// Define the type for the conversation summary returned by the new endpoint
+type ConversationSummary = {
+  initialMessage: string;
+  lastAgentReply: string;
+};
 
 const Index = () => {
   const { session } = useSupabase();
@@ -49,23 +54,24 @@ const Index = () => {
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
         method: 'GET',
+        // The path is handled by the Edge Function's internal routing
       });
       if (error) throw error;
       return data as Ticket[];
     },
   });
 
-  // Fetch messages for the selected ticket
-  const { data: ticketMessages, isLoading: isLoadingMessages, error: messagesError } = useQuery<TicketMessage[], Error>({
-    queryKey: ["ticketMessages", selectedTicket?.id],
+  // Fetch conversation summary for the selected ticket
+  const { data: conversationSummary, isLoading: isLoadingSummary, error: summaryError, refetch: refetchConversationSummary } = useQuery<ConversationSummary, Error>({
+    queryKey: ["conversationSummary", selectedTicket?.id],
     queryFn: async () => {
-      if (!selectedTicket?.id) return [];
-      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-messages', {
-        method: 'POST', // Use POST for sending body
-        body: { ticket_id: selectedTicket.id },
+      if (!selectedTicket?.id) return { initialMessage: "N/A", lastAgentReply: "N/A" };
+      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
+        method: 'GET', // The new endpoint uses GET
+        // The path is handled by the Edge Function's internal routing
       });
       if (error) throw error;
-      return data as TicketMessage[];
+      return data as ConversationSummary;
     },
     enabled: !!selectedTicket?.id && isModalOpen, // Only fetch when a ticket is selected and modal is open
   });
@@ -84,7 +90,7 @@ const Index = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTicket(null);
-    queryClient.invalidateQueries({ queryKey: ["ticketMessages"] }); // Clear messages when modal closes
+    queryClient.invalidateQueries({ queryKey: ["conversationSummary"] }); // Clear summary when modal closes
   };
 
   const filteredTickets = useMemo(() => {
@@ -290,7 +296,10 @@ const Index = () => {
               isOpen={isModalOpen}
               onClose={handleCloseModal}
               ticket={selectedTicket}
-              messages={ticketMessages || []} // Pass fetched messages, or an empty array if loading/error
+              conversationSummary={conversationSummary} // Pass the fetched summary
+              isLoadingSummary={isLoadingSummary}
+              summaryError={summaryError}
+              onRefreshSummary={refetchConversationSummary} // Pass the refetch function
             />
           )}
         </div>

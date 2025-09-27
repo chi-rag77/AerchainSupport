@@ -10,20 +10,36 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Ticket, TicketMessage } from '@/types';
+import { Ticket } from '@/types'; // Removed TicketMessage import
 import { format } from 'date-fns';
+import { RefreshCw } from 'lucide-react';
+
+// Define the type for the conversation summary
+type ConversationSummary = {
+  initialMessage: string;
+  lastAgentReply: string;
+};
 
 interface TicketDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   ticket: Ticket | null;
-  messages: TicketMessage[];
+  conversationSummary: ConversationSummary | undefined; // Changed to conversationSummary
+  isLoadingSummary: boolean;
+  summaryError: Error | null;
+  onRefreshSummary: () => void; // Added refresh function
 }
 
-const TicketDetailModal = ({ isOpen, onClose, ticket, messages }: TicketDetailModalProps) => {
+const TicketDetailModal = ({ 
+  isOpen, 
+  onClose, 
+  ticket, 
+  conversationSummary, 
+  isLoadingSummary, 
+  summaryError,
+  onRefreshSummary
+}: TicketDetailModalProps) => {
   if (!ticket) return null;
-
-  const sortedMessages = [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   const freshdeskTicketUrl = `http://aerchain.freshdesk.com/a/tickets/${ticket.id}`; // Updated Freshdesk URL
 
@@ -53,28 +69,40 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, messages }: TicketDetailMo
         <Separator />
 
         <div className="flex-grow overflow-y-auto p-4 space-y-4">
-          <h3 className="text-lg font-semibold mb-2">Conversation Timeline</h3>
-          {sortedMessages.length > 0 ? (
-            sortedMessages.map((message) => (
-              <div key={message.id} className={`flex ${message.is_agent ? 'justify-start' : 'justify-end'}`}>
-                <div className={`max-w-[70%] p-3 rounded-lg shadow-sm ${
-                  message.is_agent
-                    ? 'bg-blue-50 dark:bg-blue-950 text-gray-800 dark:text-gray-200'
-                    : 'bg-green-50 dark:bg-green-950 text-gray-800 dark:text-gray-200'
-                }`}>
-                  <p className="text-xs font-semibold mb-1">
-                    {message.sender} - {format(new Date(message.created_at), 'MMM dd, yyyy HH:mm')}
-                  </p>
-                  {message.body_html ? (
-                    <div dangerouslySetInnerHTML={{ __html: message.body_html }} className="prose dark:prose-invert text-sm" />
-                  ) : (
-                    <p className="text-sm italic text-gray-600 dark:text-gray-400">No message content.</p>
-                  )}
-                </div>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-semibold">Conversation Summary</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onRefreshSummary} 
+              disabled={isLoadingSummary}
+            >
+              {isLoadingSummary ? (
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Refresh
+            </Button>
+          </div>
+          
+          {isLoadingSummary ? (
+            <p className="text-center text-gray-500 dark:text-gray-400">Loading conversation summary...</p>
+          ) : summaryError ? (
+            <p className="text-center text-red-500">Error loading summary: {summaryError.message}</p>
+          ) : conversationSummary ? (
+            <div className="space-y-4">
+              <div>
+                <p className="font-semibold text-gray-700 dark:text-gray-300">Initial Message:</p>
+                <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{conversationSummary.initialMessage}</p>
               </div>
-            ))
+              <div>
+                <p className="font-semibold text-gray-700 dark:text-gray-300">Last Agent Reply:</p>
+                <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{conversationSummary.lastAgentReply}</p>
+              </div>
+            </div>
           ) : (
-            <p className="text-center text-gray-500 dark:text-gray-400">No messages for this ticket.</p>
+            <p className="text-center text-gray-500 dark:text-gray-400">No conversation summary available.</p>
           )}
         </div>
 
