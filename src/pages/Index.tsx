@@ -287,7 +287,7 @@ const Index = () => {
 
             {totalPages > 1 && (
               <Pagination className="mt-8">
-                <PaginationContent>
+                <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2"> {/* Added styling here */}
                   <PaginationItem>
                     <PaginationPrevious
                       onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
