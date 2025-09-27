@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Book, BarChart, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart, Shield, MessageSquare, Settings, LifeBuoy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,50 +10,49 @@ import { supabase } from '@/integrations/supabase/client';
 const Sidebar = () => {
   const { session } = useSupabase();
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
+  // No logout button in this sidebar design, so handleLogout is not needed here for now.
 
   return (
-    <div className="flex flex-col h-screen w-64 bg-white dark:bg-gray-800 p-6 shadow-lg rounded-r-xl">
+    <div className="flex flex-col h-screen w-64 bg-white dark:bg-gray-800 p-6 shadow-lg rounded-r-xl border-r border-gray-200 dark:border-gray-700">
       <div className="mb-10 flex items-center space-x-2">
-        {/* Placeholder for logo */}
-        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-          <LayoutDashboard size={18} className="text-gray-600 dark:text-gray-300" />
+        <div className="w-8 h-8 bg-gray-900 dark:bg-gray-100 rounded-md flex items-center justify-center text-white dark:text-gray-900 font-bold text-sm">
+          SA
         </div>
-        <span className="text-xl font-bold text-gray-900 dark:text-white">MATAVERSE</span>
+        <span className="text-xl font-bold text-gray-900 dark:text-white">Super Admin</span>
       </div>
 
       <nav className="flex-grow space-y-2">
-        <Button variant="ghost" className="w-full justify-start text-lg h-12">
+        <Button variant="ghost" className="w-full justify-start text-base h-10 px-4">
           <LayoutDashboard className="mr-3 h-5 w-5" />
-          Overview
+          Dashboard
         </Button>
-        <Button variant="ghost" className="w-full justify-start text-lg h-12">
-          <Calendar className="mr-3 h-5 w-5" />
-          Schedule
+        <Button variant="ghost" className="w-full justify-start text-base h-10 px-4">
+          <Users className="mr-3 h-5 w-5" />
+          Users
         </Button>
-        <Button variant="ghost" className="w-full justify-start text-lg h-12">
-          <Book className="mr-3 h-5 w-5" />
-          Courses
-        </Button>
-        <Button variant="ghost" className="w-full justify-start text-lg h-12">
+        <Button variant="ghost" className="w-full justify-start text-base h-10 px-4">
           <BarChart className="mr-3 h-5 w-5" />
-          Statistic
+          Analytics
         </Button>
-        <Button variant="ghost" className="w-full justify-start text-lg h-12">
+        <Button variant="ghost" className="w-full justify-start text-base h-10 px-4">
+          <Shield className="mr-3 h-5 w-5" />
+          Security
+        </Button>
+        <Button variant="secondary" className="w-full justify-start text-base h-10 px-4">
+          <MessageSquare className="mr-3 h-5 w-5" />
+          Support & Ticketing
+        </Button>
+        <Button variant="ghost" className="w-full justify-start text-base h-10 px-4">
           <Settings className="mr-3 h-5 w-5" />
           Settings
         </Button>
       </nav>
 
-      <div className="mt-auto">
-        {session && (
-          <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-lg h-12 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
-            <LogOut className="mr-3 h-5 w-5" />
-            Log out
-          </Button>
-        )}
+      <div className="mt-auto pt-6 border-t border-gray-200 dark:border-gray-700">
+        <Button variant="ghost" className="w-full justify-start text-base h-10 px-4 text-gray-600 dark:text-gray-300">
+          <LifeBuoy className="mr-3 h-5 w-5" />
+          Help & Support
+        </Button>
       </div>
     </div>
   );

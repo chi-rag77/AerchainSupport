@@ -3,7 +3,7 @@ export type Ticket = {
   customer_id: string;
   subject: string;
   priority: 'Low' | 'Medium' | 'High' | 'Urgent';
-  status: 'Open' | 'Pending' | 'Resolved' | 'Closed';
+  status: 'Open' | 'Pending' | 'Resolved' | 'Closed' | 'Escalated'; // Added 'Escalated'
   type?: string;
   customer?: string;
   requester_email: string;
@@ -14,6 +14,7 @@ export type Ticket = {
   description_text?: string;
   description_html?: string;
   custom_fields?: Record<string, any>;
+  assignee?: string; // Added assignee field
 };
 
 export type TicketMessage = {
