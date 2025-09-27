@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils'; // Import cn for conditional class names
+import { cn } from '@/lib/utils';
+import Logo from '@/components/Logo'; // Import the new Logo component
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -32,8 +33,8 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
       showSidebar ? "w-64 bg-white dark:bg-gray-800" : "w-20 bg-white dark:bg-gray-800 items-center"
     )}>
       <div className={cn("mb-10 flex items-center", showSidebar ? "space-x-2" : "justify-center")}>
-        <div className="w-8 h-8 bg-gray-900 dark:bg-gray-100 rounded-md flex items-center justify-center text-white dark:text-gray-900 font-bold text-sm">
-          SA
+        <div className="w-8 h-8 bg-gray-900 dark:bg-gray-100 rounded-md flex items-center justify-center">
+          <Logo className="h-5 w-5" /> {/* Use the Logo component here */}
         </div>
         {showSidebar && <span className="text-xl font-bold text-gray-900 dark:text-white">Super Admin</span>}
       </div>
