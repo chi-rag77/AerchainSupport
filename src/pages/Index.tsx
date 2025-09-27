@@ -9,8 +9,8 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import Sidebar from "@/components/Sidebar";
 import { Ticket, TicketMessage } from "@/types";
-import { Search, PanelLeftOpen, PanelRightOpen } from "lucide-react"; // Import PanelLeftOpen and PanelRightOpen
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Import Tooltip components
+import { Search } from "lucide-react"; // Removed PanelLeftOpen, PanelRightOpen
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Keep Tooltip for other uses
 
 // Mock Data for demonstration
 const MOCK_TICKETS: Ticket[] = [
@@ -214,26 +214,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
-      {showSidebar && <Sidebar />}
-      <div className="flex-1 p-8 relative"> {/* Added relative for absolute positioning of button */}
-        <div className="absolute top-8 left-8 z-10"> {/* Position the button outside the white box, aligned with padding */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={toggleSidebar}
-                className="rounded-lg bg-white dark:bg-gray-800 shadow-md" // Styling for the button
-              >
-                {showSidebar ? <PanelRightOpen className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {showSidebar ? "Close sidebar" : "Open sidebar"}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-
+      <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
+      <div className="flex-1 p-8"> {/* Removed relative and absolute positioning for button */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full flex flex-col">
           <div className="w-full max-w-full mb-8 mx-auto">
             <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white text-left">
