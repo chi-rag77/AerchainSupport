@@ -8,7 +8,7 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import Sidebar from "@/components/Sidebar";
-import { Ticket } from "@/types"; // Removed TicketMessage import as it's no longer directly used here
+import { Ticket } from "@/types";
 import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

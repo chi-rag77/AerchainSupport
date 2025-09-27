@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Ticket } from '@/types'; // Removed TicketMessage import
+import { Ticket } from '@/types';
 import { format } from 'date-fns';
 import { RefreshCw } from 'lucide-react';
 
@@ -24,10 +24,10 @@ interface TicketDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   ticket: Ticket | null;
-  conversationSummary: ConversationSummary | undefined; // Changed to conversationSummary
+  conversationSummary: ConversationSummary | undefined;
   isLoadingSummary: boolean;
   summaryError: Error | null;
-  onRefreshSummary: () => void; // Added refresh function
+  onRefreshSummary: () => void;
 }
 
 const TicketDetailModal = ({ 
@@ -41,7 +41,7 @@ const TicketDetailModal = ({
 }: TicketDetailModalProps) => {
   if (!ticket) return null;
 
-  const freshdeskTicketUrl = `http://aerchain.freshdesk.com/a/tickets/${ticket.id}`; // Updated Freshdesk URL
+  const freshdeskTicketUrl = `http://aerchain.freshdesk.com/a/tickets/${ticket.id}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
