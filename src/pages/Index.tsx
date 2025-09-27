@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -221,8 +220,6 @@ const Index = () => {
               messages={ticketMessages}
             />
           )}
-
-          <MadeWithDyad />
         </div>
       </div>
     </div>
