@@ -102,7 +102,7 @@ async function fetchTicketConversations(ticketId: number, requesterEmail: string
         senderName = await getAgentName(convo.user_id, apiKey, domain);
         isAgentMessage = true;
       } else { // It's the requester (customer)
-        senderName = requesterEmail; // Use requester email as name for now
+        senderName = requesterEmail || "Customer"; // Use requester email as name, fallback to "Customer"
         isAgentMessage = false;
       }
 
@@ -238,12 +238,13 @@ serve(async (req) => {
       }
 
       case 'getConversationSummary': { // Renamed to fetchTicketConversations in the function, but action name remains for backward compatibility
-        if (!ticketId || !requesterEmail) {
-          return new Response(JSON.stringify({ error: 'Ticket ID and Requester Email are required for conversation summary.' }), {
+        if (!ticketId) { // Only ticketId is strictly required now
+          return new Response(JSON.stringify({ error: 'Ticket ID is required for conversation summary.' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+        // requesterEmail can be an empty string, handled by fetchTicketConversations
         const conversations = await fetchTicketConversations(Number(ticketId), requesterEmail, freshdeskApiKey, freshdeskDomain);
         return new Response(JSON.stringify(conversations), {
           status: 200,

@@ -69,15 +69,15 @@ const TicketsPage = () => {
   const { data: conversationHistory, isLoading: isLoadingHistory, error: historyError, refetch: refetchConversationHistory } = useQuery<ConversationMessage[], Error>({
     queryKey: ["conversationHistory", selectedTicket?.id],
     queryFn: async () => {
-      if (!selectedTicket?.id || !selectedTicket?.requester_email) return [];
+      if (!selectedTicket?.id) return []; // Only check for ticketId
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
         method: 'POST',
-        body: { action: 'getConversationSummary', ticketId: selectedTicket.id, requesterEmail: selectedTicket.requester_email },
+        body: { action: 'getConversationSummary', ticketId: selectedTicket.id, requesterEmail: selectedTicket.requester_email || "" }, // Pass requester_email, can be empty
       });
       if (error) throw error;
       return data as ConversationMessage[];
     },
-    enabled: !!selectedTicket?.id && isModalOpen,
+    enabled: !!selectedTicket?.id && isModalOpen, // Only enable if ticketId is present and modal is open
   });
 
 
