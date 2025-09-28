@@ -132,8 +132,8 @@ const Index = () => {
   return (
     <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
       <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
-      <div className="flex-1 flex flex-col p-4 overflow-hidden">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
+      <div className="flex-1 flex flex-col p-4 overflow-y-auto"> {/* Added overflow-y-auto here */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col"> {/* Removed h-full */}
           {/* Top Bar */}
           <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-4">
@@ -266,19 +266,19 @@ const Index = () => {
 
           {/* Charts & Visuals Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400"> {/* Increased height to h-80 */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Tickets Over Time</h3>
               <TicketsOverTimeChart tickets={freshdeskTickets || []} dateRange={dateRange} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400"> {/* Increased height to h-80 */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Ticket Type by Customer</h3>
               <TicketTypeByCustomerChart tickets={freshdeskTickets || []} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400"> {/* Increased height to h-80 */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Priority Distribution</h3>
               <PriorityDistributionChart tickets={freshdeskTickets || []} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400"> {/* Increased height to h-80 */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Assignee Load</h3>
               <AssigneeLoadChart tickets={freshdeskTickets || []} />
             </div>

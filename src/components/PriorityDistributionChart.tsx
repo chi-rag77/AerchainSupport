@@ -10,6 +10,27 @@ interface PriorityDistributionChartProps {
 
 const COLORS = ['#EF4444', '#F97316', '#F59E0B', '#10B981']; // Red, Orange, Amber, Green for Urgent, High, Medium, Low
 
+// Custom label component for the PieChart
+const CustomPieChartLabel = ({ cx, cy, midAngle, outerRadius, percent, index, name, value }: any) => {
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius + 20; // Position labels slightly outside the pie
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="hsl(var(--foreground))"
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      className="text-xs"
+    >
+      {`${name} (${(percent * 100).toFixed(0)}%)`}
+    </text>
+  );
+};
+
 const PriorityDistributionChart = ({ tickets }: PriorityDistributionChartProps) => {
   const processedData = useMemo(() => {
     if (!tickets || tickets.length === 0) return [];
@@ -41,7 +62,8 @@ const PriorityDistributionChart = ({ tickets }: PriorityDistributionChartProps) 
           fill="#8884d8"
           paddingAngle={5}
           dataKey="value"
-          label
+          label={CustomPieChartLabel} // Use custom label component
+          labelLine={false} // Hide default label lines
         >
           {processedData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
