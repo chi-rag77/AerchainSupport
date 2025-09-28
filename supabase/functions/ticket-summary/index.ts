@@ -1,7 +1,6 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @deno-types="https://esm.sh/v135/date-fns@2.30.0/deno/index.d.ts"
-import * as dateFns from "https://esm.sh/date-fns@2.30.0"; // Import all of date-fns
+import * as dateFns from "https://esm.sh/date-fns@2.30.0/deno"; // Using Deno-compatible import path
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -91,7 +90,15 @@ serve(async (req) => {
         try {
           rawBodyText = await req.text(); // Read raw body as text
           console.log('Received raw request body:', rawBodyText); // Log raw body
-          requestBody = JSON.parse(rawBodyText); // Attempt to parse as JSON
+          
+          // Handle empty body gracefully
+          if (rawBodyText.trim() === '') {
+            requestBody = {}; // Default to empty object if body is empty
+            console.log('Raw body was empty, defaulting requestBody to {}.');
+          } else {
+            requestBody = JSON.parse(rawBodyText); // Attempt to parse as JSON
+          }
+          
           console.log('Parsed requestBody:', JSON.stringify(requestBody)); // Log parsed body
           dateParam = requestBody.date;
           customerParam = requestBody.customer;
