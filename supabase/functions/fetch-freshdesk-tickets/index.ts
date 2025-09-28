@@ -53,74 +53,8 @@ async function getAgentName(agentId: number, apiKey: string, domain: string): Pr
   }
 }
 
-interface FreshdeskConversation {
-  id: number;
-  body: string; // HTML content
-  body_text: string; // Plain text content
-  created_at: string;
-  updated_at: string;
-  ticket_id: number;
-  user_id: number | null; // Agent ID if from agent, null if from requester
-  support_email: string | null;
-  incoming: boolean; // true if from customer, false if from agent
-  private: boolean;
-  // ... other fields
-}
-
-interface FormattedConversationMessage {
-  id: string;
-  sender: string; // Name of sender (Agent or Requester)
-  body_html: string; // The actual message content
-  created_at: string;
-  is_agent: boolean;
-}
-
-async function fetchTicketConversations(ticketId: number, requesterEmail: string, apiKey: string, domain: string): Promise<FormattedConversationMessage[]> {
-  const url = `https://${domain}.freshdesk.com/api/v2/tickets/${ticketId}/conversations`;
-  const options = {
-    method: "GET",
-    headers: {
-      "Authorization": "Basic " + btoa(apiKey + ":X")
-    }
-  };
-
-  try {
-    const res = await fetch(url, options);
-    if (!res.ok) {
-      console.error(`Failed to fetch conversations for ticket ${ticketId}: ${res.status} ${await res.text()}`);
-      return [];
-    }
-    const convos: FreshdeskConversation[] = await res.json();
-
-    const formattedConvos: FormattedConversationMessage[] = [];
-
-    for (const convo of convos) {
-      let senderName: string;
-      let isAgentMessage: boolean;
-
-      if (convo.user_id) { // It's an agent
-        senderName = await getAgentName(convo.user_id, apiKey, domain);
-        isAgentMessage = true;
-      } else { // It's the requester (customer)
-        senderName = requesterEmail || "Customer"; // Use requester email as name, fallback to "Customer"
-        isAgentMessage = false;
-      }
-
-      formattedConvos.push({
-        id: convo.id.toString(),
-        sender: senderName,
-        body_html: convo.body || convo.body_text || "No content", // Prefer HTML, fallback to text
-        created_at: convo.created_at,
-        is_agent: isAgentMessage,
-      });
-    }
-    return formattedConvos.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); // Sort by date
-  } catch (error) {
-    console.error(`Error fetching conversations for ticket ${ticketId}:`, error);
-    return [];
-  }
-}
-
+// Removed FreshdeskConversation and FormattedConversationMessage interfaces
+// Removed fetchTicketConversations function
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -156,7 +90,7 @@ serve(async (req) => {
       });
     }
 
-    const { action, ticketId, requesterEmail } = requestBody; // Added requesterEmail
+    const { action } = requestBody; // Removed ticketId, requesterEmail
 
     switch (action) {
       case 'getTickets': {
@@ -237,20 +171,7 @@ serve(async (req) => {
         });
       }
 
-      case 'getConversationSummary': { // Renamed to fetchTicketConversations in the function, but action name remains for backward compatibility
-        if (!ticketId) { // Only ticketId is strictly required now
-          return new Response(JSON.stringify({ error: 'Ticket ID is required for conversation summary.' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        // requesterEmail can be an empty string, handled by fetchTicketConversations
-        const conversations = await fetchTicketConversations(Number(ticketId), requesterEmail, freshdeskApiKey, freshdeskDomain);
-        return new Response(JSON.stringify(conversations), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      // Removed case 'getConversationSummary'
 
       default:
         return new Response(JSON.stringify({ error: 'Invalid action specified.' }), {

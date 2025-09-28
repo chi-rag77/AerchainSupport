@@ -65,20 +65,7 @@ const TicketsPage = () => {
     },
   });
 
-  // Fetch conversation summary for the selected ticket
-  const { data: conversationHistory, isLoading: isLoadingHistory, error: historyError, refetch: refetchConversationHistory } = useQuery<ConversationMessage[], Error>({
-    queryKey: ["conversationHistory", selectedTicket?.id],
-    queryFn: async () => {
-      if (!selectedTicket?.id) return []; // Only check for ticketId
-      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-        method: 'POST',
-        body: { action: 'getConversationSummary', ticketId: selectedTicket.id, requesterEmail: selectedTicket.requester_email || "" }, // Pass requester_email, can be empty
-      });
-      if (error) throw error;
-      return data as ConversationMessage[];
-    },
-    enabled: !!selectedTicket?.id && isModalOpen, // Only enable if ticketId is present and modal is open
-  });
+  // Removed the useQuery for conversation history as it's now taken from ticket.description_html
 
 
   const handleRefreshTickets = () => {
@@ -94,7 +81,7 @@ const TicketsPage = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTicket(null);
-    queryClient.invalidateQueries({ queryKey: ["conversationHistory"] });
+    // No need to invalidate conversation history query anymore
   };
 
   const filteredTickets = useMemo(() => {
@@ -452,10 +439,7 @@ const TicketsPage = () => {
               isOpen={isModalOpen}
               onClose={handleCloseModal}
               ticket={selectedTicket}
-              conversationHistory={conversationHistory} // Pass conversationHistory
-              isLoadingHistory={isLoadingHistory} // Pass isLoadingHistory
-              historyError={historyError} // Pass historyError
-              onRefreshHistory={refetchConversationHistory} // Pass refetch function
+              // Removed conversation history props
             />
           )}
         </div>
