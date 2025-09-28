@@ -7,11 +7,12 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import Logo from "@/components/Logo";
 import HandWaveIcon from "@/components/HandWaveIcon";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
+import DualMetricCard from "@/components/DualMetricCard"; // Import the new DualMetricCard
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock } from "lucide-react"; // Added Bug and Clock icons
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -132,8 +133,8 @@ const Index = () => {
   return (
     <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
       <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
-      <div className="flex-1 flex flex-col p-4 overflow-y-auto"> {/* Added overflow-y-auto here */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col"> {/* Removed h-full */}
+      <div className="flex-1 flex flex-col p-4 overflow-y-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col">
           {/* Top Bar */}
           <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-4">
@@ -219,66 +220,67 @@ const Index = () => {
           </div>
 
           {/* KPI Cards Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8"> {/* Added mb-8 for spacing */}
-            <DashboardMetricCard
-              title="Total Tickets"
-              value={metrics.totalTickets}
-              icon={TicketIcon}
-              trend={12} // Example trend
-              description="The total number of support tickets received."
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
+            {/* First Dual Metric Card: Tickets Overview */}
+            <DualMetricCard
+              title="Tickets Overview"
+              metric1Title="Total Tickets"
+              metric1Value={metrics.totalTickets}
+              metric1Trend={12}
+              metric1Description="The total number of support tickets received."
+              metric2Title="Open Tickets"
+              metric2Value={metrics.openTickets}
+              metric2Trend={-5}
+              metric2Description="Tickets that are currently open and being processed."
+              className="lg:col-span-1 lg:row-span-2" // Spans 1 column, 2 rows
             />
-            <DashboardMetricCard
-              title="Open Tickets"
-              value={metrics.openTickets}
-              icon={Hourglass}
-              trend={-5} // Example trend
-              description="Tickets that are currently open and being processed."
+
+            {/* Second Dual Metric Card: Period Performance */}
+            <DualMetricCard
+              title="Period Performance"
+              metric1Title="New This Period"
+              metric1Value={metrics.newThisPeriod}
+              metric1Trend={8}
+              metric1Description={`New tickets created ${dateRange === 'alltime' ? 'overall' : `in the selected period (${dateRange.replace('last', 'last ').replace('days', ' days')})`}.`}
+              metric2Title="Resolved This Period"
+              metric2Value={metrics.resolvedThisPeriod}
+              metric2Trend={15}
+              metric2Description={`Tickets resolved or closed ${dateRange === 'alltime' ? 'overall' : `in the selected period (${dateRange.replace('last', 'last ').replace('days', ' days')})`}.`}
+              className="lg:col-span-1 lg:row-span-2" // Spans 1 column, 2 rows
             />
-            <DashboardMetricCard
-              title="New This Period"
-              value={metrics.newThisPeriod}
-              icon={CalendarDays}
-              trend={8} // Example trend
-              description={`New tickets created ${dateRange === 'alltime' ? 'overall' : `in the selected period (${dateRange.replace('last', 'last ').replace('days', ' days')})`}.`}
-            />
-            <DashboardMetricCard
-              title="Resolved This Period"
-              value={metrics.resolvedThisPeriod}
-              icon={CheckCircle}
-              trend={15} // Example trend
-              description={`Tickets resolved or closed ${dateRange === 'alltime' ? 'overall' : `in the selected period (${dateRange.replace('last', 'last ').replace('days', ' days')})`}.`}
-            />
-            <DashboardMetricCard
-              title="High Priority"
-              value={metrics.highPriorityTickets}
-              icon={AlertCircle}
-              trend={-2} // Example trend
-              description="Tickets marked as High or Urgent priority, requiring immediate attention."
-            />
-            <DashboardMetricCard
-              title="SLA Breaches"
-              value={metrics.slaBreaches}
-              icon={ShieldAlert}
-              trend={3} // Example trend
-              description="Number of tickets that have exceeded their Service Level Agreement (SLA)."
-            />
+
+            {/* Single Metric Cards */}
+            <div className="grid grid-cols-1 gap-4 lg:col-span-1"> {/* Nested grid for single cards */}
+              <DashboardMetricCard
+                title="High Priority"
+                value={metrics.highPriorityTickets}
+                trend={-2}
+                description="Tickets marked as High or Urgent priority, requiring immediate attention."
+              />
+              <DashboardMetricCard
+                title="SLA Breaches"
+                value={metrics.slaBreaches}
+                trend={3}
+                description="Number of tickets that have exceeded their Service Level Agreement (SLA)."
+              />
+            </div>
           </div>
 
           {/* Charts & Visuals Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8"> {/* Added mb-8 for spacing */}
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
               <h3 className="text-lg font-semibold mb-2 text-foreground">Tickets Over Time</h3>
               <TicketsOverTimeChart tickets={freshdeskTickets || []} dateRange={dateRange} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
               <h3 className="text-lg font-semibold mb-2 text-foreground">Ticket Type by Customer</h3>
               <TicketTypeByCustomerChart tickets={freshdeskTickets || []} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
               <h3 className="text-lg font-semibold mb-2 text-foreground">Priority Distribution</h3>
               <PriorityDistributionChart tickets={freshdeskTickets || []} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
               <h3 className="text-lg font-semibold mb-2 text-foreground">Assignee Load</h3>
               <AssigneeLoadChart tickets={freshdeskTickets || []} />
             </div>
