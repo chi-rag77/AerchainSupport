@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/types";
 import { isWithinInterval, subDays, format } from 'date-fns';
+import { exportToCsv } from '@/utils/export'; // Import the new export utility
 
 // Import chart components
 import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
@@ -158,6 +159,24 @@ const Index = () => {
     return ["All", ...Array.from(companies).sort()];
   }, [freshdeskTickets]);
 
+  const handleExportFilteredTickets = () => {
+    exportToCsv(filteredDashboardTickets, `tickets_dashboard_filtered_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
+  };
+
+  // For "Current Page (CSV)" and "Aggregated Report (Excel)", we'll export the same filtered data for now.
+  // In a real application, "Current Page" would apply to a paginated table, and "Aggregated Report"
+  // would involve more complex data processing/summarization.
+  const handleExportCurrentPage = () => {
+    exportToCsv(filteredDashboardTickets, `tickets_dashboard_current_page_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
+  };
+
+  const handleExportAggregatedReport = () => {
+    // For a true aggregated report, you'd process metrics and chart data into a summary format.
+    // For now, we'll export the raw filtered data as CSV.
+    exportToCsv(filteredDashboardTickets, `tickets_dashboard_aggregated_report_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
+  };
+
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
@@ -267,9 +286,9 @@ const Index = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Current Page (CSV)</DropdownMenuItem>
-                  <DropdownMenuItem>Filtered Results (CSV)</DropdownMenuItem>
-                  <DropdownMenuItem>Aggregated Report (Excel)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportCurrentPage}>Current Page (CSV)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportFilteredTickets}>Filtered Results (CSV)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportAggregatedReport}>Aggregated Report (Excel)</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
