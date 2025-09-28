@@ -1,6 +1,7 @@
+/// <reference types="npm:date-fns" />
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { format } from "https://esm.sh/date-fns@2.30.0/format?target=deno"; // Import format from date-fns
+import * as dateFns from "https://esm.sh/date-fns@2.30.0"; // Import all of date-fns
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -103,8 +104,8 @@ serve(async (req) => {
     console.log(`Customer parameter after parsing: ${customerParam}`); // New log
 
     if (!dateParam) {
-      console.log(`No date provided. Defaulting to today's date: ${format(new Date(), 'yyyy-MM-dd')}\n`);
-      dateParam = format(new Date(), 'yyyy-MM-dd'); // Default to today if not provided
+      console.log(`No date provided. Defaulting to today's date: ${dateFns.format(new Date(), 'yyyy-MM-dd')}\n`);
+      dateParam = dateFns.format(new Date(), 'yyyy-MM-dd'); // Default to today if not provided
     }
 
     const startDate = new Date(dateParam);
