@@ -87,8 +87,8 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
         data={processedData}
         margin={{
           top: 10,
-          right: 30,
-          left: 0,
+          right: 40, // Increased right margin
+          left: 20,  // Increased left margin
           bottom: 0,
         }}
       >
@@ -111,8 +111,13 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-        <XAxis dataKey="date" tickFormatter={(tick) => format(parseISO(tick), 'MMM dd')} className="text-xs text-gray-600 dark:text-gray-400" />
-        <YAxis className="text-xs text-gray-600 dark:text-gray-400" />
+        <XAxis
+          dataKey="date"
+          tickFormatter={(tick) => format(parseISO(tick), 'MMM dd')}
+          className="text-sm font-semibold text-gray-600 dark:text-gray-400" // Increased font size and made bolder
+          interval="preserveStartEnd" // Added to prevent label overlap
+        />
+        <YAxis className="text-sm font-semibold text-gray-600 dark:text-gray-400" /> {/* Increased font size and made bolder */}
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
         <Legend onClick={(e) => handleLegendClick(e.dataKey)} />
         {!hiddenSeries.has('open') && <Area type="monotone" dataKey="open" stackId="1" stroke="#60A5FA" fill="url(#colorOpen)" name="Open" />}
