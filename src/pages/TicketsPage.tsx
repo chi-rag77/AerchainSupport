@@ -9,7 +9,7 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug } from "lucide-react"; // Added Bug icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -133,7 +133,7 @@ const TicketsPage = () => {
       return {
         totalTickets: 0,
         openTickets: 0,
-        pendingTickets: 0,
+        bugsReceived: 0, // Renamed from pendingTickets
         resolvedClosedTickets: 0,
         highPriorityTickets: 0,
       };
@@ -141,14 +141,14 @@ const TicketsPage = () => {
 
     const totalTickets = freshdeskTickets.length;
     const openTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
-    const pendingTickets = freshdeskTickets.filter(t => t.status.toLowerCase().includes('pending') || t.status.toLowerCase().includes('waiting on customer')).length;
+    const bugsReceived = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length; // Filter by type 'Bug'
     const resolvedClosedTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed').length;
     const highPriorityTickets = freshdeskTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
 
     return {
       totalTickets,
       openTickets,
-      pendingTickets,
+      bugsReceived,
       resolvedClosedTickets,
       highPriorityTickets,
     };
@@ -289,11 +289,11 @@ const TicketsPage = () => {
               description="Currently being processed"
             />
             <DashboardMetricCard
-              title="Pending"
-              value={metrics.pendingTickets}
-              icon={AlertCircle}
+              title="Bugs Received" // Changed title
+              value={metrics.bugsReceived} // Changed value source
+              icon={Bug} // Changed icon
               trend={8} // Example trend
-              description="Awaiting customer reply"
+              description="Tickets categorized as bugs" // Changed description
             />
             <DashboardMetricCard
               title="Resolved/Closed"
