@@ -8,7 +8,8 @@ interface PriorityDistributionChartProps {
   tickets: Ticket[];
 }
 
-const COLORS = ['#EF4444', '#F97316', '#F59E0B', '#10B981']; // Red, Orange, Amber, Green for Urgent, High, Medium, Low
+// Less saturated, unified color palette
+const COLORS = ['#EF4444', '#F97316', '#F59E0B', '#34D399', '#6B7280']; // Red, Orange, Amber, Green, Gray for Unknown
 
 // Custom label component for the PieChart
 const CustomPieChartLabel = ({ cx, cy, midAngle, outerRadius, percent, index, name, value }: any) => {
@@ -26,7 +27,7 @@ const CustomPieChartLabel = ({ cx, cy, midAngle, outerRadius, percent, index, na
       dominantBaseline="central"
       className="text-xs"
     >
-      {`${name} (${(percent * 100).toFixed(0)}%)`}
+      {`${name} (${value}, ${(percent * 100).toFixed(0)}%)`}
     </text>
   );
 };

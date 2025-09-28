@@ -11,6 +11,7 @@ interface TicketTypeByCustomerChartProps {
 // Define the type for the data structure used in the chart
 interface CustomerChartData {
   name: string;
+  totalTickets: number; // Added for sorting
   [key: string]: number | string; // Allows 'name' to be a string, and other dynamic keys (ticket types) to be numbers
 }
 
@@ -25,14 +26,15 @@ const TicketTypeByCustomerChart = ({ tickets }: TicketTypeByCustomerChartProps) 
       const type = ticket.type || 'Unknown Type';
 
       if (!customerTypeMap.has(company)) {
-        customerTypeMap.set(company, { name: company });
+        customerTypeMap.set(company, { name: company, totalTickets: 0 });
       }
       const companyData = customerTypeMap.get(company)!;
-      // Use type assertion here as we know 'type' keys will hold numbers
       companyData[type] = ((companyData[type] as number) || 0) + 1;
+      companyData.totalTickets++; // Increment total tickets for sorting
     });
 
-    return Array.from(customerTypeMap.values());
+    // Sort customers by total ticket volume in descending order
+    return Array.from(customerTypeMap.values()).sort((a, b) => b.totalTickets - a.totalTickets);
   }, [tickets]);
 
   const uniqueTypes = useMemo(() => {
@@ -43,7 +45,8 @@ const TicketTypeByCustomerChart = ({ tickets }: TicketTypeByCustomerChartProps) 
     return Array.from(types).sort();
   }, [tickets]);
 
-  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#a4de6c', '#d0ed57', '#83a6ed', '#8dd1e1']; // More colors for types
+  // Unified color palette
+  const colors = ['#818CF8', '#4ADE80', '#FBBF24', '#F87171', '#A78BFA', '#34D399', '#FACC15', '#FB923C'];
 
   return (
     <ResponsiveContainer width="100%" height={300}>

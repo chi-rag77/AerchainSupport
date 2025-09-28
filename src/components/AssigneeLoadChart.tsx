@@ -39,7 +39,7 @@ const AssigneeLoadChart = ({ tickets }: AssigneeLoadChartProps) => {
         <XAxis type="number" className="text-xs text-gray-600 dark:text-gray-400" />
         <YAxis dataKey="name" type="category" className="text-xs text-gray-600 dark:text-gray-400" />
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
-        <Bar dataKey="count" fill="#8884d8" name="Tickets Assigned" />
+        <Bar dataKey="count" fill="#6366F1" name="Tickets Assigned" /> {/* Unified color: Indigo-500 */}
       </BarChart>
     </ResponsiveContainer>
   );
