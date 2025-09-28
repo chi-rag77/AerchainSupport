@@ -205,8 +205,7 @@ const Index = () => {
           open: 0,
           pendingTech: 0,
           bugs: 0,
-          tasks: 0,
-          queries: 0,
+          otherActive: 0, // Initialize new field
         });
       }
       const customerRow = customerMap.get(company)!;
@@ -214,24 +213,22 @@ const Index = () => {
       const ticketCreatedAt = new Date(ticket.created_at);
       if (isWithinInterval(ticketCreatedAt, { start: startDate, end: now })) {
         customerRow.totalToday++;
-        if (ticket.status.toLowerCase() === 'resolved' || ticket.status.toLowerCase() === 'closed') {
+        const statusLower = ticket.status.toLowerCase();
+        if (statusLower === 'resolved' || statusLower === 'closed') {
           customerRow.resolvedToday++;
-        }
-        if (ticket.status.toLowerCase() === 'open (being processed)') {
+        } else if (statusLower === 'open (being processed)') {
           customerRow.open++;
-        }
-        if (ticket.status.toLowerCase() === 'on tech') {
+        } else if (statusLower === 'on tech') {
           customerRow.pendingTech++;
+        } else {
+          // All other statuses that are not resolved/closed/open/on tech
+          customerRow.otherActive++;
         }
+
         if (ticket.type?.toLowerCase() === 'bug') {
           customerRow.bugs++;
         }
-        if (ticket.type?.toLowerCase() === 'task') {
-          customerRow.tasks++;
-        }
-        if (ticket.type?.toLowerCase() === 'query') {
-          customerRow.queries++;
-        }
+        // Removed tasks and queries from calculation as they are removed from type
       }
     });
 
@@ -245,8 +242,7 @@ const Index = () => {
       acc.open += curr.open;
       acc.pendingTech += curr.pendingTech;
       acc.bugs += curr.bugs;
-      acc.tasks += curr.tasks;
-      acc.queries += curr.queries;
+      acc.otherActive += curr.otherActive; // Sum new field
       return acc;
     }, {
       name: "Grand Total",
@@ -255,8 +251,7 @@ const Index = () => {
       open: 0,
       pendingTech: 0,
       bugs: 0,
-      tasks: 0,
-      queries: 0,
+      otherActive: 0, // Initialize new field
     });
   }, [customerBreakdownData]);
 

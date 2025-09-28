@@ -39,6 +39,5 @@ export interface CustomerBreakdownRow {
   open: number;
   pendingTech: number;
   bugs: number;
-  tasks: number;
-  queries: number;
+  otherActive: number; // New field for other active statuses
 }

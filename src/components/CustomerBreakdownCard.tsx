@@ -13,22 +13,24 @@ interface CustomerBreakdownCardProps {
 }
 
 const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerBreakdownCardProps) => {
-  const { name, totalToday, resolvedToday, open, pendingTech, bugs, tasks, queries } = customerData;
+  const { name, totalToday, resolvedToday, open, pendingTech, bugs, otherActive } = customerData;
 
   const openTicketsHighlight = open > 10 ? 'bg-red-50/50 dark:bg-red-950/30' : '';
   const bugsHighlight = bugs > 0 ? 'bg-red-50/50 dark:bg-red-950/30' : '';
 
-  const getStatusColorClass = (count: number, type: 'open' | 'resolved' | 'pending' | 'bugs') => {
+  const getStatusColorClass = (count: number, type: 'open' | 'resolved' | 'pending' | 'bugs' | 'otherActive') => {
     if (count === 0) return 'text-muted-foreground';
     switch (type) {
       case 'open':
         return 'text-red-600 dark:text-red-400';
       case 'resolved':
         return 'text-green-600 dark:text-green-400';
-      case 'pending':
+      case 'pending': // This is for pendingTech
         return 'text-yellow-600 dark:text-yellow-400';
       case 'bugs':
         return 'text-red-600 dark:text-red-400';
+      case 'otherActive':
+        return 'text-blue-600 dark:text-blue-400';
       default:
         return 'text-foreground';
     }
@@ -68,18 +70,18 @@ const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerB
           <span className="text-muted-foreground flex items-center"><ShieldAlert className="h-4 w-4 mr-1 text-yellow-500" /> Pending Tech:</span>
           <span className={cn("font-semibold", getStatusColorClass(pendingTech, 'pending'))}>{pendingTech}</span>
         </div>
+        <div className="flex justify-between items-center">
+          <span className="text-muted-foreground flex items-center"><MessageSquare className="h-4 w-4 mr-1 text-blue-500" /> Other Active:</span>
+          <span className={cn("font-semibold", getStatusColorClass(otherActive, 'otherActive'))}>{otherActive}</span>
+        </div>
         <div className={cn("flex justify-between items-center rounded-md px-2 py-1 -mx-2", bugsHighlight)}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="text-muted-foreground flex items-center"><Bug className="h-4 w-4 mr-1 text-purple-500" /> Bugs:</span>
+              <span className="text-muted-foreground flex items-center"><Bug className="h-4 w-4 mr-1 text-purple-500" /> Bugs (Type):</span>
             </TooltipTrigger>
-            <TooltipContent>Tickets categorized as bugs. Highlighted if greater than 0.</TooltipContent>
+            <TooltipContent>Tickets categorized as bugs. This is a type count and not part of the status sum.</TooltipContent>
           </Tooltip>
           <span className={cn("font-semibold", getStatusColorClass(bugs, 'bugs'))}>{bugs}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-muted-foreground flex items-center"><MessageSquare className="h-4 w-4 mr-1 text-blue-500" /> Queries:</span>
-          <span className="font-semibold text-muted-foreground">{queries}</span>
         </div>
       </CardContent>
     </Card>
