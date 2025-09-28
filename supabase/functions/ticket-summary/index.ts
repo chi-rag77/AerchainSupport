@@ -76,9 +76,18 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    const url = new URL(req.url);
-    const dateParam = url.searchParams.get('date'); // Expected YYYY-MM-DD
-    const customerParam = url.searchParams.get('customer');
+    let dateParam: string | null = null;
+    let customerParam: string | null = null;
+
+    if (req.method === 'POST') {
+      const requestBody = await req.json();
+      dateParam = requestBody.date;
+      customerParam = requestBody.customer;
+    } else { // Fallback for GET, though frontend will use POST
+      const url = new URL(req.url);
+      dateParam = url.searchParams.get('date');
+      customerParam = url.searchParams.get('customer');
+    }
 
     if (!dateParam) {
       return new Response(JSON.stringify({ error: 'Date parameter (YYYY-MM-DD) is required.' }), {

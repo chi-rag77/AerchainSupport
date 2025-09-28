@@ -70,12 +70,14 @@ const DashboardV2 = () => {
     queryKey: ["ticketSummary", formattedDate, selectedCustomerFilter],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('ticket-summary', {
-        method: 'GET',
+        method: 'POST', // Changed to POST
         headers: {
           'Content-Type': 'application/json',
         },
-        // Pass parameters as query string for GET request
-        body: JSON.stringify({ date: formattedDate, customer: selectedCustomerFilter }),
+        body: JSON.stringify({ // Parameters now in body
+          date: formattedDate,
+          customer: selectedCustomerFilter,
+        }),
       });
       if (error) throw error;
       return data as TicketSummaryData;
