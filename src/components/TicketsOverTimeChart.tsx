@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO, startOfDay, eachDayOfInterval, subDays } from 'date-fns';
 import { Ticket } from '@/types';
 
@@ -10,51 +10,13 @@ interface TicketsOverTimeChartProps {
   dateRange: string; // e.g., "last7days", "last30days", "alltime"
 }
 
-// Custom X-Axis Tick Component for circles and month names
-const CustomXAxisTick = (props: any) => {
-  const { x, y, payload } = props;
-  const date = parseISO(payload.value);
-  const month = format(date, 'MMM');
-
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <circle cx={0} cy={10} r={3} fill="hsl(var(--muted-foreground))" /> {/* Static grey circle */}
-      <text x={0} y={25} textAnchor="middle" fill="hsl(var(--foreground))" className="text-xs">
-        {month}
-      </text>
-    </g>
-  );
-};
-
-// Custom Tooltip Component to match the design's style
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    const date = format(parseISO(label), 'MMM dd, yyyy');
-    return (
-      <div className="rounded-md border bg-card p-2 shadow-sm text-sm">
-        <p className="font-semibold mb-1">{date}</p>
-        {payload.map((entry: any, index: number) => (
-          <div key={`item-${index}`} className="flex items-center justify-between">
-            <span className="flex items-center">
-              <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }}></span>
-              {entry.name}:
-            </span>
-            <span className="font-medium ml-2">{entry.value}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
 const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps) => {
   const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
 
-  const handleLegendClick = (dataKey: any) => {
+  const handleLegendClick = (dataKey: any) => { // dataKey can be string or number, so use 'any' for type safety here
     setHiddenSeries(prev => {
       const newSet = new Set(prev);
-      const keyAsString = String(dataKey);
+      const keyAsString = String(dataKey); // Convert to string for Set operations
       if (newSet.has(keyAsString)) {
         newSet.delete(keyAsString);
       } else {
@@ -90,11 +52,11 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
 
     const intervalDays = eachDayOfInterval({ start: startDate, end: now });
 
-    const dataMap = new Map<string, { date: string; openTickets: number; closedTickets: number; }>();
+    const dataMap = new Map<string, { date: string; open: number; 'in progress': number; resolved: number; closed: number; }>();
 
     intervalDays.forEach(day => {
       const formattedDate = format(day, 'yyyy-MM-dd');
-      dataMap.set(formattedDate, { date: formattedDate, openTickets: 0, closedTickets: 0 });
+      dataMap.set(formattedDate, { date: formattedDate, open: 0, 'in progress': 0, resolved: 0, closed: 0 });
     });
 
     tickets.forEach(ticket => {
@@ -104,10 +66,14 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
       if (dataMap.has(formattedDate)) {
         const entry = dataMap.get(formattedDate)!;
         const status = ticket.status.toLowerCase();
-        if (status.includes('open') || status.includes('pending') || status.includes('on tech') || status.includes('on product') || status.includes('waiting on customer')) {
-          entry.openTickets++;
-        } else if (status.includes('resolved') || status.includes('closed')) {
-          entry.closedTickets++;
+        if (status.includes('open')) {
+          entry.open++;
+        } else if (status.includes('pending') || status.includes('on tech') || status.includes('on product') || status.includes('waiting on customer')) {
+          entry['in progress']++;
+        } else if (status.includes('resolved')) {
+          entry.resolved++;
+        } else if (status.includes('closed')) {
+          entry.closed++;
         }
       }
     });
@@ -117,7 +83,7 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart
+      <AreaChart
         data={processedData}
         margin={{
           top: 10,
@@ -126,34 +92,16 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
           bottom: 0,
         }}
       >
-        <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-        <XAxis
-          dataKey="date"
-          tickLine={false}
-          axisLine={false}
-          interval="preserveStartEnd"
-          minTickGap={20}
-          padding={{ left: 20, right: 20 }}
-          className="text-xs text-gray-600 dark:text-gray-400"
-          tick={<CustomXAxisTick />}
-        />
-        <YAxis
-          axisLine={false}
-          tickLine={false}
-          className="text-xs text-gray-600 dark:text-gray-400"
-        />
-        <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip />} />
-        <Legend
-          align="right"
-          verticalAlign="top"
-          height={36}
-          iconType="circle"
-          wrapperStyle={{ paddingBottom: '10px' }}
-          onClick={(e) => handleLegendClick(e.dataKey)}
-        />
-        {!hiddenSeries.has('closedTickets') && <Line type="monotone" dataKey="closedTickets" stroke="#60A5FA" strokeWidth={2} dot={false} activeDot={{ r: 5, fill: '#60A5FA', stroke: '#60A5FA', strokeWidth: 2 }} name="Closed" />}
-        {!hiddenSeries.has('openTickets') && <Line type="monotone" dataKey="openTickets" stroke="#EF4444" strokeWidth={2} dot={false} activeDot={{ r: 5, fill: '#EF4444', stroke: '#EF4444', strokeWidth: 2 }} name="Open" />}
-      </LineChart>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+        <XAxis dataKey="date" tickFormatter={(tick) => format(parseISO(tick), 'MMM dd')} className="text-xs text-gray-600 dark:text-gray-400" />
+        <YAxis className="text-xs text-gray-600 dark:text-gray-400" />
+        <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
+        <Legend onClick={(e) => handleLegendClick(e.dataKey)} />
+        {!hiddenSeries.has('open') && <Area type="monotone" dataKey="open" stackId="1" stroke="#6366F1" fill="#6366F1" fillOpacity={0.6} name="Open" />} {/* Indigo-500 */}
+        {!hiddenSeries.has('in progress') && <Area type="monotone" dataKey="in progress" stackId="1" stroke="#22C55E" fill="#22C55E" fillOpacity={0.6} name="In Progress" />} {/* Green-500 */}
+        {!hiddenSeries.has('resolved') && <Area type="monotone" dataKey="resolved" stackId="1" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.6} name="Resolved" />} {/* Amber-500 */}
+        {!hiddenSeries.has('closed') && <Area type="monotone" dataKey="closed" stackId="1" stroke="#EF4444" fill="#EF4444" fillOpacity={0.6} name="Closed" />} {/* Red-500 */}
+      </AreaChart>
     </ResponsiveContainer>
   );
 };
