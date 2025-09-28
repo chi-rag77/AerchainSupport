@@ -1,6 +1,6 @@
-/// <reference types="npm:date-fns" />
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @deno-types="https://esm.sh/date-fns@2.30.0"
 import * as dateFns from "https://esm.sh/date-fns@2.30.0"; // Import all of date-fns
 
 const corsHeaders = {
@@ -82,12 +82,22 @@ serve(async (req) => {
     let customerParam: string | null = null;
     let requestBody: any = {}; // Initialize requestBody
 
+    console.log('Incoming request Content-Type:', req.headers.get('content-type')); // Log Content-Type
+
     if (req.method === 'POST') {
       if (req.headers.get('content-type')?.includes('application/json')) {
-        requestBody = await req.json();
-        console.log('Received requestBody:', JSON.stringify(requestBody)); // Log raw body
-        dateParam = requestBody.date;
-        customerParam = requestBody.customer;
+        try {
+          requestBody = await req.json();
+          console.log('Received requestBody:', JSON.stringify(requestBody)); // Log raw body
+          dateParam = requestBody.date;
+          customerParam = requestBody.customer;
+        } catch (jsonError) {
+          console.error('Error parsing JSON body:', jsonError);
+          return new Response(JSON.stringify({ error: `Failed to parse JSON body: ${jsonError.message}` }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       } else {
         return new Response(JSON.stringify({ error: 'Invalid Content-Type. Expected application/json.' }), {
           status: 400,
