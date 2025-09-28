@@ -18,6 +18,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/types";
 import { isWithinInterval, subDays, format } from 'date-fns';
 
+// Import chart components
+import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
+import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
+import PriorityDistributionChart from "@/components/PriorityDistributionChart";
+import AssigneeLoadChart from "@/components/AssigneeLoadChart";
+
 // Define the type for the conversation summary (if needed, though not directly used here)
 type ConversationSummary = {
   initialMessage: string;
@@ -258,19 +264,23 @@ const Index = () => {
             />
           </div>
 
-          {/* Charts & Visuals Row (Placeholders) */}
+          {/* Charts & Visuals Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-              Tickets Over Time Chart (Coming Soon!)
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Tickets Over Time</h3>
+              <TicketsOverTimeChart tickets={freshdeskTickets || []} dateRange={dateRange} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-              Breakdown by Ticket Type per Customer Chart (Coming Soon!)
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Ticket Type by Customer</h3>
+              <TicketTypeByCustomerChart tickets={freshdeskTickets || []} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-              Priority Distribution Chart (Coming Soon!)
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Priority Distribution</h3>
+              <PriorityDistributionChart tickets={freshdeskTickets || []} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-              Assignee Load Chart (Coming Soon!)
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Assignee Load</h3>
+              <AssigneeLoadChart tickets={freshdeskTickets || []} />
             </div>
           </div>
 
