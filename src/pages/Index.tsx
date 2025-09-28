@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock } from "lucide-react"; // Added Bug and Clock icons
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User } from "lucide-react"; // Added User icon for My Tickets
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,10 +34,14 @@ const Index = () => {
   const { session } = useSupabase();
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const userEmail = user?.email; // Get user email for 'My Tickets' filter
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState("last7days"); // Default date range for metrics
+  const [filterMyTickets, setFilterMyTickets] = useState(false);
+  const [filterHighPriority, setFilterHighPriority] = useState(false);
+  const [filterSLABreached, setFilterSLABreached] = useState(false); // Placeholder for now
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -56,8 +60,37 @@ const Index = () => {
     },
   });
 
+  const filteredDashboardTickets = useMemo(() => {
+    if (!freshdeskTickets) return [];
+
+    let currentTickets = freshdeskTickets;
+
+    // Apply quick filters
+    if (filterMyTickets && userEmail) {
+      currentTickets = currentTickets.filter(ticket => ticket.requester_email === userEmail || ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()));
+    }
+    if (filterHighPriority) {
+      currentTickets = currentTickets.filter(ticket => ticket.priority.toLowerCase() === 'high' || ticket.priority.toLowerCase() === 'urgent');
+    }
+    // filterSLABreached is a visual toggle for now, no actual data filtering based on it.
+    // If SLA data becomes available, this is where the filtering logic would go.
+
+    // Apply search term
+    if (searchTerm) {
+      currentTickets = currentTickets.filter(ticket =>
+        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return currentTickets;
+  }, [freshdeskTickets, filterMyTickets, filterHighPriority, searchTerm, fullName, userEmail]);
+
+
   const metrics = useMemo(() => {
-    if (!freshdeskTickets) {
+    if (!filteredDashboardTickets) {
       return {
         totalTickets: 0,
         openTickets: 0,
@@ -89,18 +122,18 @@ const Index = () => {
         break;
     }
 
-    const periodTickets = freshdeskTickets.filter(ticket =>
+    const periodTickets = filteredDashboardTickets.filter(ticket =>
       isWithinInterval(new Date(ticket.created_at), { start: startDate, end: now })
     );
 
-    const totalTickets = freshdeskTickets.length;
-    const openTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
+    const totalTickets = filteredDashboardTickets.length;
+    const openTickets = filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
     const newThisPeriod = periodTickets.length;
-    const resolvedThisPeriod = freshdeskTickets.filter(t =>
+    const resolvedThisPeriod = filteredDashboardTickets.filter(t =>
       (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
       isWithinInterval(new Date(t.updated_at), { start: startDate, end: now })
     ).length;
-    const highPriorityTickets = freshdeskTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
+    const highPriorityTickets = filteredDashboardTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
     const slaBreaches = 5; // Placeholder for now, actual calculation would be complex
 
     return {
@@ -111,7 +144,7 @@ const Index = () => {
       highPriorityTickets,
       slaBreaches,
     };
-  }, [freshdeskTickets, dateRange]);
+  }, [filteredDashboardTickets, dateRange]);
 
   if (isLoading) {
     return (
@@ -167,13 +200,25 @@ const Index = () => {
               </Select>
 
               {/* Quick Filter Chips */}
-              <Button variant="outline" className="flex items-center gap-1">
-                <Filter className="h-4 w-4" /> My Tickets
+              <Button
+                variant={filterMyTickets ? "secondary" : "outline"}
+                onClick={() => setFilterMyTickets(!filterMyTickets)}
+                className="flex items-center gap-1"
+              >
+                <User className="h-4 w-4" /> My Tickets
               </Button>
-              <Button variant="outline" className="flex items-center gap-1">
+              <Button
+                variant={filterHighPriority ? "secondary" : "outline"}
+                onClick={() => setFilterHighPriority(!filterHighPriority)}
+                className="flex items-center gap-1"
+              >
                 <AlertCircle className="h-4 w-4" /> High Priority
               </Button>
-              <Button variant="outline" className="flex items-center gap-1">
+              <Button
+                variant={filterSLABreached ? "secondary" : "outline"}
+                onClick={() => setFilterSLABreached(!filterSLABreached)}
+                className="flex items-center gap-1"
+              >
                 <ShieldAlert className="h-4 w-4" /> SLA Breached
               </Button>
 
@@ -268,19 +313,19 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8"> {/* Added mb-8 for spacing */}
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Tickets Over Time</h3>
-              <TicketsOverTimeChart tickets={freshdeskTickets || []} dateRange={dateRange} />
+              <TicketsOverTimeChart tickets={filteredDashboardTickets || []} dateRange={dateRange} />
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Ticket Type by Customer</h3>
-              <TicketTypeByCustomerChart tickets={freshdeskTickets || []} />
+              <TicketTypeByCustomerChart tickets={filteredDashboardTickets || []} />
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Priority Distribution</h3>
-              <PriorityDistributionChart tickets={freshdeskTickets || []} />
+              <PriorityDistributionChart tickets={filteredDashboardTickets || []} />
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Assignee Load</h3>
-              <AssigneeLoadChart tickets={freshdeskTickets || []} />
+              <AssigneeLoadChart tickets={filteredDashboardTickets || []} />
             </div>
           </div>
 
