@@ -3,19 +3,20 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import Index from "./pages/Index"; // This is now the Dashboard
+import TicketsPage from "./pages/TicketsPage"; // The old Index is now TicketsPage
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup"; // Import the new Signup page
+import Signup from "./pages/Signup";
 import { SupabaseProvider } from "./components/SupabaseProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { ThemeProvider } from "./hooks/use-theme"; // Import ThemeProvider
+import { ThemeProvider } from "./hooks/use-theme";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme"> {/* Wrap with ThemeProvider */}
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -23,8 +24,9 @@ const App = () => (
           <SupabaseProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} /> {/* New Signup Route */}
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} /> {/* New Dashboard as root */}
+              <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} /> {/* Dedicated Tickets page */}
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

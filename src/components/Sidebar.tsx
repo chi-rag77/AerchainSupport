@@ -35,11 +35,11 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/" }, // Points to the new Dashboard
     { icon: Users, label: "Users", path: "/users" }, // Placeholder path
     { icon: BarChart, label: "Analytics", path: "/analytics" }, // Placeholder path
     { icon: Shield, label: "Security", path: "/security" }, // Placeholder path
-    { icon: MessageSquare, label: "Support & Ticketing", path: "/" }, // Current active page
+    { icon: MessageSquare, label: "Support & Ticketing", path: "/tickets" }, // Points to the TicketsPage
     { icon: Settings, label: "Settings", path: "/settings" }, // Placeholder path
   ];
 
@@ -58,7 +58,7 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
           <Tooltip key={index}>
             <TooltipTrigger asChild>
               <Button
-                variant={item.label === "Support & Ticketing" ? "secondary" : "ghost"}
+                variant={item.path === window.location.pathname ? "secondary" : "ghost"} // Active state based on current path
                 className={cn(
                   "w-full justify-start text-base h-10 px-4",
                   !showSidebar && "justify-center px-0"
