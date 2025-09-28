@@ -1,6 +1,6 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { format, subDays, isWithinInterval } from "https://esm.sh/date-fns@2.30.0?dts"; // Import specific date-fns functions with dts hint
+import * as dateFns from "https://esm.sh/date-fns@2.30.0"; // Removed ?dts for better type resolution
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -125,8 +125,8 @@ serve(async (req) => {
     console.log(`Customer parameter after parsing: ${customerParam}`); // New log
 
     if (!dateParam) {
-      console.log(`No date provided. Defaulting to today's date: ${format(new Date(), 'yyyy-MM-dd')}\n`);
-      dateParam = format(new Date(), 'yyyy-MM-dd'); // Default to today if not provided
+      console.log(`No date provided. Defaulting to today's date: ${dateFns.format(new Date(), 'yyyy-MM-dd')}\n`);
+      dateParam = dateFns.format(new Date(), 'yyyy-MM-dd'); // Default to today if not provided
     }
 
     // Original dateParam is for creation date.
@@ -138,7 +138,7 @@ serve(async (req) => {
 
     // For Freshdesk API call, use updated_since to fetch a broader set of tickets
     // For example, fetch tickets updated in the last 30 days relative to the target creation date.
-    const thirtyDaysAgo = subDays(targetCreationDate, 30);
+    const thirtyDaysAgo = dateFns.subDays(targetCreationDate, 30);
     const updatedSinceParam = thirtyDaysAgo.toISOString();
 
     const fdOptions = {
@@ -202,14 +202,14 @@ serve(async (req) => {
       }
 
       page++;
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Delay to respect rate limits
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased delay to 2 seconds
     }
 
     // --- Post-fetch Filtering and Aggregation Logic ---
     // First, filter allTicketsRaw to only include tickets created on the selected dateParam
     let ticketsCreatedOnSelectedDate = allTicketsRaw.filter(ticket => {
       const ticketCreatedAt = new Date(ticket.created_at);
-      return isWithinInterval(ticketCreatedAt, { start: targetCreationDate, end: targetCreationEndDate });
+      return dateFns.isWithinInterval(ticketCreatedAt, { start: targetCreationDate, end: targetCreationEndDate });
     });
 
     // Apply customer filter if specified
@@ -237,7 +237,7 @@ serve(async (req) => {
     // Use allTicketsRaw here to get breakdown for all customers, then filter by creation date for the specific day
     allTicketsRaw.filter(ticket => {
       const ticketCreatedAt = new Date(ticket.created_at);
-      return isWithinInterval(ticketCreatedAt, { start: targetCreationDate, end: targetCreationEndDate });
+      return dateFns.isWithinInterval(ticketCreatedAt, { start: targetCreationDate, end: targetCreationEndDate });
     }).forEach(ticket => {
       const company = ticket.cf_company || 'Unknown Company';
       if (!customerBreakdown[company]) {
