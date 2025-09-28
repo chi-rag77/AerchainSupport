@@ -1,5 +1,6 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { format } from "https://esm.sh/date-fns@2.30.0/format?target=deno"; // Import format from date-fns
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,22 +79,32 @@ serve(async (req) => {
 
     let dateParam: string | null = null;
     let customerParam: string | null = null;
+    let requestBody: any = {}; // Initialize requestBody
 
     if (req.method === 'POST') {
-      const requestBody = await req.json();
-      dateParam = requestBody.date;
-      customerParam = requestBody.customer;
+      if (req.headers.get('content-type')?.includes('application/json')) {
+        requestBody = await req.json();
+        console.log('Received requestBody:', JSON.stringify(requestBody)); // Log raw body
+        dateParam = requestBody.date;
+        customerParam = requestBody.customer;
+      } else {
+        return new Response(JSON.stringify({ error: 'Invalid Content-Type. Expected application/json.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     } else { // Fallback for GET, though frontend will use POST
       const url = new URL(req.url);
       dateParam = url.searchParams.get('date');
       customerParam = url.searchParams.get('customer');
     }
 
+    console.log(`Date parameter after parsing: ${dateParam}`); // New log
+    console.log(`Customer parameter after parsing: ${customerParam}`); // New log
+
     if (!dateParam) {
-      return new Response(JSON.stringify({ error: 'Date parameter (YYYY-MM-DD) is required.' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.log(`No date provided. Defaulting to today's date: ${format(new Date(), 'yyyy-MM-dd')}\n`);
+      dateParam = format(new Date(), 'yyyy-MM-dd'); // Default to today if not provided
     }
 
     const startDate = new Date(dateParam);
