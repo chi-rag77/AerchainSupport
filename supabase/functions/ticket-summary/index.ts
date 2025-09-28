@@ -1,6 +1,6 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import * as dateFns from "https://esm.sh/date-fns@2.30.0/deno"; // Using Deno-compatible import path
+import * as dateFns from "https://esm.sh/date-fns@2.30.0?dts"; // Import all of date-fns with dts hint
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
