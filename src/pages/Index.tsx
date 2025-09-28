@@ -304,12 +304,14 @@ const Index = () => {
           {/* Top Bar */}
           <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center space-x-4">
-                <LayoutDashboard className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Support Dashboard</h1>
-                <p className="text-base font-semibold text-gray-700 dark:text-gray-300 flex items-center ml-4">
-                  Hi {fullName} <HandWaveIcon className="ml-2 h-5 w-5 text-yellow-500" />
+              <div className="flex flex-col items-start"> {/* Changed to flex-col */}
+                <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2"> {/* Moved and styled */}
+                  Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" /> {/* Increased icon size slightly */}
                 </p>
+                <div className="flex items-center space-x-4"> {/* Original content for heading */}
+                  <LayoutDashboard className="h-8 w-8 text-primary" />
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Support Dashboard</h1>
+                </div>
               </div>
               <div className="flex items-center space-x-4">
                 <ThemeToggle />

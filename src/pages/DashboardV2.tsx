@@ -18,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/types";
 import { format, subDays } from 'date-fns';
 import { exportToCsv } from '@/utils/export';
+import LoadingSpinner from "@/components/LoadingSpinner"; // Import LoadingSpinner
+import HandWaveIcon from "@/components/HandWaveIcon"; // Import HandWaveIcon
 
 // Import chart components
 import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
@@ -138,11 +140,7 @@ const DashboardV2 = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <p className="text-gray-700 dark:text-gray-300">Loading dashboard data...</p>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error) {
@@ -165,12 +163,14 @@ const DashboardV2 = () => {
             {/* Top Bar */}
             <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center space-x-4">
-                  <LayoutDashboard className="h-8 w-8 text-primary" />
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Daily Support Dashboard</h1>
-                  <p className="text-base font-semibold text-gray-700 dark:text-gray-300 flex items-center ml-4">
-                    Hi {fullName}
+                <div className="flex flex-col items-start"> {/* Changed to flex-col */}
+                  <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2"> {/* Moved and styled */}
+                    Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" /> {/* Added HandWaveIcon and styled */}
                   </p>
+                  <div className="flex items-center space-x-4"> {/* Original content for heading */}
+                    <LayoutDashboard className="h-8 w-8 text-primary" />
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Daily Support Dashboard</h1>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-4">
                   <ThemeToggle />
