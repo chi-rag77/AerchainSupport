@@ -305,7 +305,8 @@ const TicketsPage = () => {
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                  <SelectValue placeholder="All Status" />
+                  <span className="text-sm font-medium">Status:</span>
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   {uniqueStatuses.map(status => (
@@ -318,7 +319,8 @@ const TicketsPage = () => {
               <Select value={filterPriority} onValueChange={setFilterPriority}>
                 <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                  <SelectValue placeholder="All Priority" />
+                  <span className="text-sm font-medium">Priority:</span>
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   {uniquePriorities.map(priority => (
@@ -331,7 +333,8 @@ const TicketsPage = () => {
               <Select value={filterAssignee} onValueChange={setFilterAssignee}>
                 <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                  <SelectValue placeholder="All Assignees" />
+                  <span className="text-sm font-medium">Assignee:</span>
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   {uniqueAssignees.map(assignee => (
@@ -344,7 +347,8 @@ const TicketsPage = () => {
               <Select value={filterCompany} onValueChange={setFilterCompany}>
                 <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                  <SelectValue placeholder="All Companies" />
+                  <span className="text-sm font-medium">Company:</span>
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   {uniqueCompanies.map(company => (
@@ -357,7 +361,8 @@ const TicketsPage = () => {
               <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                  <SelectValue placeholder="All Types" />
+                  <span className="text-sm font-medium">Type:</span>
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   {uniqueTypes.map(type => (
@@ -370,7 +375,8 @@ const TicketsPage = () => {
               <Select value={filterDependency} onValueChange={setFilterDependency}>
                 <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                  <SelectValue placeholder="All Dependencies" />
+                  <span className="text-sm font-medium">Dependency:</span>
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   {uniqueDependencies.map(dependency => (
@@ -439,7 +445,6 @@ const TicketsPage = () => {
               isOpen={isModalOpen}
               onClose={handleCloseModal}
               ticket={selectedTicket}
-              // Removed conversation history props
             />
           )}
         </div>
