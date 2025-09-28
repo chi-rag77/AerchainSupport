@@ -82,10 +82,10 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
         <YAxis className="text-xs text-gray-600 dark:text-gray-400" />
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
         <Legend />
-        <Area type="monotone" dataKey="open" stackId="1" stroke="#6366F1" fill="#6366F1" fillOpacity={0.4} name="Open" /> {/* Indigo-500 with softer opacity */}
-        <Area type="monotone" dataKey="in progress" stackId="1" stroke="#22C55E" fill="#22C55E" fillOpacity={0.4} name="In Progress" /> {/* Green-500 with softer opacity */}
-        <Area type="monotone" dataKey="resolved" stackId="1" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.4} name="Resolved" /> {/* Amber-500 with softer opacity */}
-        <Area type="monotone" dataKey="closed" stackId="1" stroke="#EF4444" fill="#EF4444" fillOpacity={0.4} name="Closed" /> {/* Red-500 with softer opacity */}
+        <Area type="monotone" dataKey="open" stackId="1" stroke="#6366F1" fill="#6366F1" fillOpacity={0.6} name="Open" /> {/* Indigo-500 */}
+        <Area type="monotone" dataKey="in progress" stackId="1" stroke="#22C55E" fill="#22C55E" fillOpacity={0.6} name="In Progress" /> {/* Green-500 */}
+        <Area type="monotone" dataKey="resolved" stackId="1" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.6} name="Resolved" /> {/* Amber-500 */}
+        <Area type="monotone" dataKey="closed" stackId="1" stroke="#EF4444" fill="#EF4444" fillOpacity={0.6} name="Closed" /> {/* Red-500 */}
       </AreaChart>
     </ResponsiveContainer>
   );

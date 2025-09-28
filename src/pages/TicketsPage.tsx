@@ -275,30 +275,35 @@ const TicketsPage = () => {
             <DashboardMetricCard
               title="Total Tickets"
               value={metrics.totalTickets}
+              icon={TicketIcon}
               trend={12} // Example trend
               description="All tickets in the system"
             />
             <DashboardMetricCard
               title="Open Tickets"
               value={metrics.openTickets}
+              icon={Hourglass}
               trend={-5} // Example trend
               description="Currently being processed"
             />
             <DashboardMetricCard
               title="Bugs Received" // Changed title
               value={metrics.bugsReceived} // Changed value source
+              icon={Bug} // Changed icon
               trend={8} // Example trend
               description="Tickets categorized as bugs" // Changed description
             />
             <DashboardMetricCard
               title="Resolved/Closed"
               value={metrics.resolvedClosedTickets}
+              icon={CheckCircle}
               trend={15} // Example trend
               description="Successfully handled"
             />
             <DashboardMetricCard
               title="High Priority"
               value={metrics.highPriorityTickets}
+              icon={XCircle}
               trend={-2} // Example trend
               description="Requiring immediate attention"
             />
