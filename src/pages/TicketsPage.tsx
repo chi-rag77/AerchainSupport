@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import DashboardMetricCard from "@/components/DashboardMetricCard"; // Import DashboardMetricCard
+import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle } from "lucide-react"; // Added metric icons
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/pagination";
 import FilterNotification from "@/components/FilterNotification";
 import HandWaveIcon from "@/components/HandWaveIcon";
+import Sidebar from "@/components/Sidebar"; // Import Sidebar
 
 // Define the type for the conversation summary returned by the new endpoint
 type ConversationSummary = {
@@ -44,12 +45,18 @@ const TicketsPage = () => {
   const [filterCompany, setFilterCompany] = useState<string>("All");
   const [filterType, setFilterType] = useState<string>("All");
   const [filterDependency, setFilterDependency] = useState<string>("All");
+  const [showSidebar, setShowSidebar] = useState(true); // State for sidebar visibility
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const ticketsPerPage = 25;
 
   const queryClient = useQueryClient();
+
+  // Function to toggle sidebar visibility
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
+  };
 
   // Fetch tickets from Freshdesk via Supabase Edge Function
   const { data: freshdeskTickets, isLoading, error, isFetching } = useQuery<Ticket[], Error>({
@@ -231,232 +238,235 @@ const TicketsPage = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
-        {/* Header Section */}
-        <div className="p-8 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex justify-between items-center mb-2">
-            <hgroup>
-              <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 flex items-center">
-                Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
-              </p>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Support & Ticketing
-              </h1>
-            </hgroup>
-            <Button
-              onClick={handleRefreshTickets}
-              disabled={isFetching}
-              className="h-12 px-6 text-lg font-semibold relative overflow-hidden group"
-            >
-              {isFetching ? (
-                <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 h-5 w-5" />
-              )}
-              Fetch Latest Tickets
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
-            </Button>
-          </div>
-          <p className="text-base text-gray-600 dark:text-gray-400">
-            Manage and track customer support tickets
-          </p>
-        </div>
-
-        {/* Metrics Overview Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-8 pb-4">
-          <DashboardMetricCard
-            title="Total Tickets"
-            value={metrics.totalTickets}
-            icon={TicketIcon}
-            trend={12} // Example trend
-            description="All tickets in the system"
-          />
-          <DashboardMetricCard
-            title="Open Tickets"
-            value={metrics.openTickets}
-            icon={Hourglass}
-            trend={-5} // Example trend
-            description="Currently being processed"
-          />
-          <DashboardMetricCard
-            title="Pending"
-            value={metrics.pendingTickets}
-            icon={AlertCircle}
-            trend={8} // Example trend
-            description="Awaiting customer reply"
-          />
-          <DashboardMetricCard
-            title="Resolved/Closed"
-            value={metrics.resolvedClosedTickets}
-            icon={CheckCircle}
-            trend={15} // Example trend
-            description="Successfully handled"
-          />
-          <DashboardMetricCard
-            title="High Priority"
-            value={metrics.highPriorityTickets}
-            icon={XCircle}
-            trend={-2} // Example trend
-            description="Requiring immediate attention"
-          />
-        </div>
-
-        {/* Search & Filters Bar */}
-        <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
-          <div className="flex flex-wrap gap-4 w-full items-center">
-            <div className="relative flex-grow min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search by Ticket ID, Title, or Assignee..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-full"
-              />
+    <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
+      <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} /> {/* Integrate Sidebar */}
+      <div className="flex-1 flex flex-col p-4 overflow-hidden"> {/* Main content area */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
+          {/* Header Section */}
+          <div className="p-8 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex justify-between items-center mb-2">
+              <hgroup>
+                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                  Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
+                </p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Support & Ticketing
+                </h1>
+              </hgroup>
+              <Button
+                onClick={handleRefreshTickets}
+                disabled={isFetching}
+                className="h-12 px-6 text-lg font-semibold relative overflow-hidden group"
+              >
+                {isFetching ? (
+                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-5 w-5" />
+                )}
+                Fetch Latest Tickets
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
+              </Button>
             </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[160px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueStatuses.map(status => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger className="w-[160px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <SelectValue placeholder="All Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniquePriorities.map(priority => (
-                  <SelectItem key={priority} value={priority}>
-                    {priority}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-              <SelectTrigger className="w-[160px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <SelectValue placeholder="All Assignees" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueAssignees.map(assignee => (
-                  <SelectItem key={assignee} value={assignee}>
-                    {assignee}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterCompany} onValueChange={setFilterCompany}>
-              <SelectTrigger className="w-[160px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <SelectValue placeholder="All Companies" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueCompanies.map(company => (
-                  <SelectItem key={company} value={company}>
-                    {company}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[160px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueTypes.map(type => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterDependency} onValueChange={setFilterDependency}>
-              <SelectTrigger className="w-[160px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <SelectValue placeholder="All Dependencies" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueDependencies.map(dependency => (
-                  <SelectItem key={dependency} value={dependency}>
-                    {dependency}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <p className="text-base text-gray-600 dark:text-gray-400">
+              Manage and track customer support tickets
+            </p>
           </div>
-        </div>
 
-        <div className="flex-grow overflow-y-auto p-8">
-          <FilterNotification
-            filteredCount={filteredTickets.length}
-            totalCount={freshdeskTickets?.length || 0}
-            searchTerm={searchTerm}
-            filterStatus={filterStatus}
-            filterPriority={filterPriority}
-            filterAssignee={filterAssignee}
-            filterCompany={filterCompany}
-            filterType={filterType}
-            filterDependency={filterDependency}
-          />
-          <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
-        </div>
+          {/* Metrics Overview Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-8 pb-4">
+            <DashboardMetricCard
+              title="Total Tickets"
+              value={metrics.totalTickets}
+              icon={TicketIcon}
+              trend={12} // Example trend
+              description="All tickets in the system"
+            />
+            <DashboardMetricCard
+              title="Open Tickets"
+              value={metrics.openTickets}
+              icon={Hourglass}
+              trend={-5} // Example trend
+              description="Currently being processed"
+            />
+            <DashboardMetricCard
+              title="Pending"
+              value={metrics.pendingTickets}
+              icon={AlertCircle}
+              trend={8} // Example trend
+              description="Awaiting customer reply"
+            />
+            <DashboardMetricCard
+              title="Resolved/Closed"
+              value={metrics.resolvedClosedTickets}
+              icon={CheckCircle}
+              trend={15} // Example trend
+              description="Successfully handled"
+            />
+            <DashboardMetricCard
+              title="High Priority"
+              value={metrics.highPriorityTickets}
+              icon={XCircle}
+              trend={-2} // Example trend
+              description="Requiring immediate attention"
+            />
+          </div>
 
-        {totalPages > 1 && (
-          <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-4 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl">
-            <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2">
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
-                  aria-disabled={currentPage === 1}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                </PaginationPrevious>
-              </PaginationItem>
-              {[...Array(totalPages)].map((_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    onClick={() => paginate(i + 1)}
-                    isActive={currentPage === i + 1}
-                    className={currentPage === i + 1 ? "bg-primary text-primary-foreground rounded-full" : "rounded-full"}
+          {/* Search & Filters Bar */}
+          <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
+            <div className="flex flex-wrap gap-4 w-full items-center">
+              <div className="relative flex-grow min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Search by Ticket ID, Title, or Assignee..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-full"
+                />
+              </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueStatuses.map(status => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterPriority} onValueChange={setFilterPriority}>
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <SelectValue placeholder="All Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniquePriorities.map(priority => (
+                    <SelectItem key={priority} value={priority}>
+                      {priority}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <SelectValue placeholder="All Assignees" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueAssignees.map(assignee => (
+                    <SelectItem key={assignee} value={assignee}>
+                      {assignee}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterCompany} onValueChange={setFilterCompany}>
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <SelectValue placeholder="All Companies" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueCompanies.map(company => (
+                    <SelectItem key={company} value={company}>
+                      {company}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueTypes.map(type => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterDependency} onValueChange={setFilterDependency}>
+                <SelectTrigger className="w-[160px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <SelectValue placeholder="All Dependencies" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueDependencies.map(dependency => (
+                    <SelectItem key={dependency} value={dependency}>
+                      {dependency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex-grow overflow-y-auto p-8">
+            <FilterNotification
+              filteredCount={filteredTickets.length}
+              totalCount={freshdeskTickets?.length || 0}
+              searchTerm={searchTerm}
+              filterStatus={filterStatus}
+              filterPriority={filterPriority}
+              filterAssignee={filterAssignee}
+              filterCompany={filterCompany}
+              filterType={filterType}
+              filterDependency={filterDependency}
+            />
+            <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-4 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl">
+              <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2">
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
+                    aria-disabled={currentPage === 1}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                   >
-                    {i + 1}
-                  </PaginationLink>
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  </PaginationPrevious>
                 </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)}
-                  aria-disabled={currentPage === totalPages}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                >
-                  Next <ChevronRight className="h-4 w-4 ml-1" />
-                </PaginationNext>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        )}
-        
-        {selectedTicket && (
-          <TicketDetailModal
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            ticket={selectedTicket}
-            conversationSummary={conversationSummary}
-            isLoadingSummary={isLoadingSummary}
-            summaryError={summaryError}
-            onRefreshSummary={refetchConversationSummary}
-          />
-        )}
+                {[...Array(totalPages)].map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      onClick={() => paginate(i + 1)}
+                      isActive={currentPage === i + 1}
+                      className={currentPage === i + 1 ? "bg-primary text-primary-foreground rounded-full" : "rounded-full"}
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)}
+                    aria-disabled={currentPage === totalPages}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  >
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </PaginationNext>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+          
+          {selectedTicket && (
+            <TicketDetailModal
+              isOpen={isModalOpen}
+              onClose={handleCloseModal}
+              ticket={selectedTicket}
+              conversationSummary={conversationSummary}
+              isLoadingSummary={isLoadingSummary}
+              summaryError={summaryError}
+              onRefreshSummary={refetchConversationSummary}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
