@@ -246,9 +246,7 @@ const TicketsPage = () => {
           <div className="p-6 pb-3 border-b border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <hgroup>
-                <p className="text-base font-semibold text-gray-700 dark:text-gray-300 flex items-center">
-                  Hi {fullName} <HandWaveIcon className="ml-2 h-5 w-5 text-yellow-500" />
-                </p>
+                {/* Removed the greeting line */}
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Support & Ticketing
                 </h1>
