@@ -10,16 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Ticket } from '@/types'; // Removed ConversationMessage import
+import { Ticket } from '@/types';
 import { format } from 'date-fns';
-// Removed RefreshCw import
-// Removed cn import
 
 interface TicketDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   ticket: Ticket | null;
-  // Removed conversationHistory, isLoadingHistory, historyError, onRefreshHistory props
 }
 
 const TicketDetailModal = ({ 
@@ -58,11 +55,10 @@ const TicketDetailModal = ({
 
         <div className="flex-grow overflow-y-auto p-4 space-y-4">
           <h3 className="text-lg font-semibold mb-2">Full Conversation</h3>
-          {ticket.description_html ? (
-            <div 
-              className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none" 
-              dangerouslySetInnerHTML={{ __html: ticket.description_html }} 
-            />
+          {ticket.description_text ? (
+            <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans">
+              {ticket.description_text}
+            </pre>
           ) : (
             <p className="text-center text-gray-500 dark:text-gray-400">No conversation content available in ticket description.</p>
           )}
