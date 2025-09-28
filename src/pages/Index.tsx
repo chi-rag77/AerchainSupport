@@ -42,7 +42,7 @@ const Index = () => {
   const [filterMyTickets, setFilterMyTickets] = useState(false);
   const [filterHighPriority, setFilterHighPriority] = useState(false);
   const [filterSLABreached, setFilterSLABreached] = useState(false); // Placeholder for now
-  const [topNCustomers, setTopNCustomers] = useState<number | undefined>(10); // State for Top N Customers filter
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("All"); // State for selected customer filter
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count'); // State for Assignee Load chart mode
 
   const toggleSidebar = () => {
@@ -147,6 +147,16 @@ const Index = () => {
       slaBreaches,
     };
   }, [filteredDashboardTickets, dateRange]);
+
+  const uniqueCompanies = useMemo(() => {
+    const companies = new Set<string>();
+    freshdeskTickets?.forEach(ticket => {
+      if (ticket.cf_company) {
+        companies.add(ticket.cf_company);
+      }
+    });
+    return ["All", ...Array.from(companies).sort()];
+  }, [freshdeskTickets]);
 
   if (isLoading) {
     return (
@@ -320,19 +330,20 @@ const Index = () => {
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <div className="flex justify-between items-center w-full mb-2">
                 <h3 className="text-lg font-semibold text-foreground">Ticket Type by Customer</h3>
-                <Select value={topNCustomers?.toString() || "all"} onValueChange={(value) => setTopNCustomers(value === "all" ? undefined : Number(value))}>
-                  <SelectTrigger className="w-[120px] h-8">
-                    <SelectValue placeholder="Top N" />
+                <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+                  <SelectTrigger className="w-[180px] h-8">
+                    <SelectValue placeholder="All Customers" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="5">Top 5</SelectItem>
-                    <SelectItem value="10">Top 10</SelectItem>
-                    <SelectItem value="20">Top 20</SelectItem>
-                    <SelectItem value="all">All Customers</SelectItem>
+                    {uniqueCompanies.map(company => (
+                      <SelectItem key={company} value={company}>
+                        {company === "All" ? "All Customers" : company}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              <TicketTypeByCustomerChart tickets={filteredDashboardTickets || []} topN={topNCustomers} />
+              <TicketTypeByCustomerChart tickets={filteredDashboardTickets || []} selectedCustomer={selectedCustomer} />
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Priority Distribution</h3>

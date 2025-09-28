@@ -6,7 +6,7 @@ import { Ticket } from '@/types';
 
 interface TicketTypeByCustomerChartProps {
   tickets: Ticket[];
-  topN?: number; // New prop for filtering top N customers
+  selectedCustomer?: string; // New prop for filtering by specific customer
 }
 
 // Define the type for the data structure used in the chart
@@ -16,13 +16,18 @@ interface CustomerChartData {
   [key: string]: number | string; // Allows 'name' to be a string, and other dynamic keys (ticket types) to be numbers
 }
 
-const TicketTypeByCustomerChart = ({ tickets, topN }: TicketTypeByCustomerChartProps) => {
+const TicketTypeByCustomerChart = ({ tickets, selectedCustomer }: TicketTypeByCustomerChartProps) => {
   const processedData = useMemo(() => {
     if (!tickets || tickets.length === 0) return [];
 
     const customerTypeMap = new Map<string, CustomerChartData>();
 
-    tickets.forEach(ticket => {
+    // Filter tickets by selected customer first
+    const relevantTickets = selectedCustomer && selectedCustomer !== "All"
+      ? tickets.filter(ticket => (ticket.cf_company || 'Unknown Company') === selectedCustomer)
+      : tickets;
+
+    relevantTickets.forEach(ticket => {
       const company = ticket.cf_company || 'Unknown Company';
       const type = ticket.type || 'Unknown Type';
 
@@ -34,13 +39,15 @@ const TicketTypeByCustomerChart = ({ tickets, topN }: TicketTypeByCustomerChartP
       companyData.totalTickets++; // Increment total tickets for sorting
     });
 
-    // Sort customers by total ticket volume in descending order and apply topN filter
-    let sortedData = Array.from(customerTypeMap.values()).sort((a, b) => b.totalTickets - a.totalTickets);
-    if (topN && topN > 0) {
-      sortedData = sortedData.slice(0, topN);
+    // If a specific customer is selected, only show that customer
+    if (selectedCustomer && selectedCustomer !== "All") {
+      const data = customerTypeMap.get(selectedCustomer);
+      return data ? [data] : [];
     }
-    return sortedData;
-  }, [tickets, topN]);
+
+    // Otherwise, show all customers sorted by total ticket volume
+    return Array.from(customerTypeMap.values()).sort((a, b) => b.totalTickets - a.totalTickets);
+  }, [tickets, selectedCustomer]);
 
   const uniqueTypes = useMemo(() => {
     const types = new Set<string>();
