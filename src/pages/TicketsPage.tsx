@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import DashboardMetricCard from "@/components/DashboardMetricCard"; // Import DashboardMetricCard
 import { Ticket } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle } from "lucide-react"; // Added metric icons
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +22,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import FilterNotification from "@/components/FilterNotification";
-import HandWaveIcon from "@/components/HandWaveIcon"; // Import the new HandWaveIcon
+import HandWaveIcon from "@/components/HandWaveIcon";
 
 // Define the type for the conversation summary returned by the new endpoint
 type ConversationSummary = {
@@ -118,6 +119,33 @@ const TicketsPage = () => {
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesCompany && matchesType && matchesDependency;
     });
   }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, filterAssignee, filterCompany, filterType, filterDependency]);
+
+  // Calculate metrics for the cards
+  const metrics = useMemo(() => {
+    if (!freshdeskTickets) {
+      return {
+        totalTickets: 0,
+        openTickets: 0,
+        pendingTickets: 0,
+        resolvedClosedTickets: 0,
+        highPriorityTickets: 0,
+      };
+    }
+
+    const totalTickets = freshdeskTickets.length;
+    const openTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
+    const pendingTickets = freshdeskTickets.filter(t => t.status.toLowerCase().includes('pending') || t.status.toLowerCase().includes('waiting on customer')).length;
+    const resolvedClosedTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed').length;
+    const highPriorityTickets = freshdeskTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
+
+    return {
+      totalTickets,
+      openTickets,
+      pendingTickets,
+      resolvedClosedTickets,
+      highPriorityTickets,
+    };
+  }, [freshdeskTickets]);
 
   // Pagination logic
   const indexOfLastTicket = currentPage * ticketsPerPage;
@@ -233,6 +261,45 @@ const TicketsPage = () => {
           <p className="text-base text-gray-600 dark:text-gray-400">
             Manage and track customer support tickets
           </p>
+        </div>
+
+        {/* Metrics Overview Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-8 pb-4">
+          <DashboardMetricCard
+            title="Total Tickets"
+            value={metrics.totalTickets}
+            icon={TicketIcon}
+            trend={12} // Example trend
+            description="All tickets in the system"
+          />
+          <DashboardMetricCard
+            title="Open Tickets"
+            value={metrics.openTickets}
+            icon={Hourglass}
+            trend={-5} // Example trend
+            description="Currently being processed"
+          />
+          <DashboardMetricCard
+            title="Pending"
+            value={metrics.pendingTickets}
+            icon={AlertCircle}
+            trend={8} // Example trend
+            description="Awaiting customer reply"
+          />
+          <DashboardMetricCard
+            title="Resolved/Closed"
+            value={metrics.resolvedClosedTickets}
+            icon={CheckCircle}
+            trend={15} // Example trend
+            description="Successfully handled"
+          />
+          <DashboardMetricCard
+            title="High Priority"
+            value={metrics.highPriorityTickets}
+            icon={XCircle}
+            trend={-2} // Example trend
+            description="Requiring immediate attention"
+          />
         </div>
 
         {/* Search & Filters Bar */}
