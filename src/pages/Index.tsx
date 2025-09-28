@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, UseQueryOptions } from "@tanstack/react-query"; // Import UseQueryOptions
+import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket, CustomerBreakdownRow } from "@/types";
 import { isWithinInterval, subDays, format, addDays } from 'date-fns';
@@ -552,11 +552,6 @@ const Index = () => {
                   </div>
                   <AssigneeLoadChart tickets={filteredDashboardTickets || []} displayMode={assigneeChartMode} />
                 </div>
-              </div>
-
-              {/* Table (Main listing) Placeholder */}
-              <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400 text-xl p-6">
-                <p>Ticket Table Listing (Coming Soon!)</p>
               </div>
             </>
           )}
