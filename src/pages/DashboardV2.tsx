@@ -11,24 +11,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users } from "lucide-react";
-import { TooltipProvider } from "@/components/ui/tooltip"; // Ensure TooltipProvider is imported
-import { useQuery } from "@tanstack/react-query";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2 } from "lucide-react";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useQuery, UseQueryOptions } from "@tanstack/react-query"; // Import UseQueryOptions
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/types";
 import { format, subDays } from 'date-fns';
 import { exportToCsv } from '@/utils/export';
-import LoadingSpinner from "@/components/LoadingSpinner"; // Import LoadingSpinner
-import HandWaveIcon from "@/components/HandWaveIcon"; // Import HandWaveIcon
+import { toast } from 'sonner';
+import HandWaveIcon from "@/components/HandWaveIcon";
 
 // Import chart components
 import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
-// import CustomerBreakdownTable from "@/components/CustomerBreakdownTable"; // New component - REMOVED
 
-// Define the type for the aggregated summary data from the Edge Function
 interface TicketSummaryData {
   date: string;
   customer: string;
@@ -48,7 +46,7 @@ interface TicketSummaryData {
     tasks: number;
     queries: number;
   }>;
-  rawTickets: Ticket[]; // Raw tickets for charts that need them
+  rawTickets: Ticket[];
 }
 
 const DashboardV2 = () => {
@@ -67,18 +65,17 @@ const DashboardV2 = () => {
 
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
 
-  // Fetch aggregated ticket summary from the new Edge Function
   const { data: summaryData, isLoading, error } = useQuery<TicketSummaryData, Error>({
     queryKey: ["ticketSummary", formattedDate, selectedCustomerFilter],
     queryFn: async () => {
-      console.log("Invoking ticket-summary with:", { date: formattedDate, customer: selectedCustomerFilter }); // Client-side log
+      console.log("Invoking ticket-summary with:", { date: formattedDate, customer: selectedCustomerFilter });
 
       const { data, error } = await supabase.functions.invoke('ticket-summary', {
-        method: 'POST', // Changed to POST
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ // Parameters now in body
+        body: JSON.stringify({
           date: formattedDate,
           customer: selectedCustomerFilter,
         }),
@@ -86,12 +83,18 @@ const DashboardV2 = () => {
       if (error) throw error;
       return data as TicketSummaryData;
     },
-    enabled: !!selectedDate, // Only fetch if a date is selected
-  });
+    enabled: !!selectedDate,
+    onSuccess: () => {
+      toast.success("Daily dashboard data loaded successfully!");
+    },
+    onError: (err) => {
+      toast.error(`Failed to load daily dashboard data: ${err.message}`);
+    },
+  } as UseQueryOptions<TicketSummaryData, Error>); // Explicitly cast to UseQueryOptions
 
   const uniqueCompanies = useMemo(() => {
     if (!summaryData?.customerBreakdown) return ["All"];
-    const companies = summaryData.customerBreakdown.map(c => c.name);
+    const companies = (summaryData.customerBreakdown || []).map(c => c.name); // Use || []
     return ["All", ...companies.sort()];
   }, [summaryData]);
 
@@ -126,11 +129,11 @@ const DashboardV2 = () => {
         Metric: "Pending on Tech",
         Value: summaryData.pendingOnTech,
       },
-      ...Object.entries(summaryData.typeBreakdown).map(([type, count]) => ({
+      ...Object.entries(summaryData.typeBreakdown || {}).map(([type, count]) => ({ // Use || {}
         Metric: `Type: ${type}`,
         Value: count,
       })),
-      ...Object.entries(summaryData.statusBreakdown).map(([status, count]) => ({
+      ...Object.entries(summaryData.statusBreakdown || {}).map(([status, count]) => ({ // Use || {}
         Metric: `Status: ${status}`,
         Value: count,
       })),
@@ -138,19 +141,6 @@ const DashboardV2 = () => {
 
     exportToCsv(exportableData, `daily_ticket_summary_${formattedDate}_${selectedCustomerFilter}_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
   };
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <p className="text-red-500">Error loading dashboard: {error.message}</p>
-        <p className="text-red-500">Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are set as Supabase secrets.</p>
-      </div>
-    );
-  }
 
   const rawTicketsForCharts = summaryData?.rawTickets || [];
 
@@ -163,11 +153,11 @@ const DashboardV2 = () => {
             {/* Top Bar */}
             <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="flex justify-between items-center mb-4">
-                <div className="flex flex-col items-start"> {/* Changed to flex-col */}
-                  <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2"> {/* Moved and styled */}
-                    Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" /> {/* Added HandWaveIcon and styled */}
+                <div className="flex flex-col items-start">
+                  <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2">
+                    Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
                   </p>
-                  <div className="flex items-center space-x-4"> {/* Original content for heading */}
+                  <div className="flex items-center space-x-4">
                     <LayoutDashboard className="h-8 w-8 text-primary" />
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Daily Support Dashboard</h1>
                   </div>
@@ -221,96 +211,105 @@ const DashboardV2 = () => {
               </div>
             </div>
 
-            {/* KPI Cards Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
-              <DashboardMetricCard
-                title="Total Tickets Today"
-                value={summaryData?.totalTicketsToday || 0}
-                icon={TicketIcon}
-                description={`Total tickets created on ${formattedDate}`}
-              />
-              <DashboardMetricCard
-                title="Resolved Today"
-                value={summaryData?.resolvedToday || 0}
-                icon={CheckCircle}
-                description={`Tickets resolved or closed on ${formattedDate}`}
-              />
-              <DashboardMetricCard
-                title="Open Tickets"
-                value={summaryData?.openCount || 0}
-                icon={Hourglass}
-                description="Tickets currently in 'Open' status"
-              />
-              <DashboardMetricCard
-                title="Pending on Tech"
-                value={summaryData?.pendingOnTech || 0}
-                icon={Clock}
-                description="Tickets currently 'On Tech' status"
-              />
-              <DashboardMetricCard
-                title="Bugs Today"
-                value={summaryData?.typeBreakdown?.Bug || 0}
-                icon={Bug}
-                description={`Bugs created on ${formattedDate}`}
-              />
-              <DashboardMetricCard
-                title="Tasks Today"
-                value={summaryData?.typeBreakdown?.Task || 0}
-                icon={ShieldAlert} // Using ShieldAlert for Task as a placeholder
-                description={`Tasks created on ${formattedDate}`}
-              />
-            </div>
-
-            {/* Customer Breakdown Table */}
-            <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
-              <h3 className="text-lg font-semibold mb-4 text-foreground">Customer Breakdown for {formattedDate}</h3>
-              {/* <CustomerBreakdownTable data={summaryData?.customerBreakdown || []} /> */} {/* REMOVED */}
-            </div>
-
-            {/* Charts & Visuals Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 mb-8">
-              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time (Last 30 Days)</h3>
-                <TicketsOverTimeChart tickets={rawTicketsForCharts} dateRange="last30days" />
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center flex-grow p-6 text-gray-500 dark:text-gray-400">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <p className="text-lg font-medium">Loading daily dashboard data...</p>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                <div className="flex justify-between items-center w-full mb-2">
-                  <h3 className="text-lg font-semibold text-foreground w-full text-center">Ticket Type by Customer</h3>
-                  <Select value={selectedCustomerFilter} onValueChange={setSelectedCustomerFilter}>
-                    <SelectTrigger className="w-[180px] h-8">
-                      <SelectValue placeholder="All Customers" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {uniqueCompanies.map(company => (
-                        <SelectItem key={company} value={company}>
-                          {company === "All" ? "All Customers" : company}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            ) : (
+              <>
+                {/* KPI Cards Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
+                  <DashboardMetricCard
+                    title="Total Tickets Today"
+                    value={summaryData?.totalTicketsToday || 0}
+                    icon={TicketIcon}
+                    description={`Total tickets created on ${formattedDate}`}
+                  />
+                  <DashboardMetricCard
+                    title="Resolved Today"
+                    value={summaryData?.resolvedToday || 0}
+                    icon={CheckCircle}
+                    description={`Tickets resolved or closed on ${formattedDate}`}
+                  />
+                  <DashboardMetricCard
+                    title="Open Tickets"
+                    value={summaryData?.openCount || 0}
+                    icon={Hourglass}
+                    description="Tickets currently in 'Open' status"
+                  />
+                  <DashboardMetricCard
+                    title="Pending on Tech"
+                    value={summaryData?.pendingOnTech || 0}
+                    icon={Clock}
+                    description="Tickets currently 'On Tech' status"
+                  />
+                  <DashboardMetricCard
+                    title="Bugs Today"
+                    value={summaryData?.typeBreakdown?.Bug || 0}
+                    icon={Bug}
+                    description={`Bugs created on ${formattedDate}`}
+                  />
+                  <DashboardMetricCard
+                    title="Tasks Today"
+                    value={summaryData?.typeBreakdown?.Task || 0}
+                    icon={ShieldAlert}
+                    description={`Tasks created on ${formattedDate}`}
+                  />
                 </div>
-                <TicketTypeByCustomerChart tickets={rawTicketsForCharts} selectedCustomer={selectedCustomerFilter} />
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Priority Distribution</h3>
-                <PriorityDistributionChart tickets={rawTicketsForCharts} />
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                <div className="flex justify-between items-center w-full mb-2">
-                  <h3 className="text-lg font-semibold text-foreground w-full text-center">Assignee Load</h3>
-                  <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
-                    <SelectTrigger className="w-[120px] h-8">
-                      <SelectValue placeholder="Display Mode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="count">Count</SelectItem>
-                      <SelectItem value="percentage">Percentage</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                {/* Customer Breakdown Table */}
+                <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">Customer Breakdown for {formattedDate}</h3>
+                  {/* <CustomerBreakdownTable data={summaryData?.customerBreakdown || []} /> */}
                 </div>
-                <AssigneeLoadChart tickets={rawTicketsForCharts} displayMode={assigneeChartMode} />
-              </div>
-            </div>
+
+                {/* Charts & Visuals Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 mb-8">
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time (Last 30 Days)</h3>
+                    <TicketsOverTimeChart tickets={rawTicketsForCharts} dateRange="last30days" />
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <div className="flex justify-between items-center w-full mb-2">
+                      <h3 className="text-lg font-semibold text-foreground w-full text-center">Ticket Type by Customer</h3>
+                      <Select value={selectedCustomerFilter} onValueChange={setSelectedCustomerFilter}>
+                        <SelectTrigger className="w-[180px] h-8">
+                          <SelectValue placeholder="All Customers" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {uniqueCompanies.map(company => (
+                            <SelectItem key={company} value={company}>
+                              {company === "All" ? "All Customers" : company}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <TicketTypeByCustomerChart tickets={rawTicketsForCharts} selectedCustomer={selectedCustomerFilter} />
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Priority Distribution</h3>
+                    <PriorityDistributionChart tickets={rawTicketsForCharts} />
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <div className="flex justify-between items-center w-full mb-2">
+                      <h3 className="text-lg font-semibold text-foreground w-full text-center">Assignee Load</h3>
+                      <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
+                        <SelectTrigger className="w-[120px] h-8">
+                          <SelectValue placeholder="Display Mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="count">Count</SelectItem>
+                          <SelectItem value="percentage">Percentage</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <AssigneeLoadChart tickets={rawTicketsForCharts} displayMode={assigneeChartMode} />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

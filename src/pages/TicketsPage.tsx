@@ -8,10 +8,10 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
-import { Ticket, ConversationMessage } from "@/types"; // Import ConversationMessage
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug } from "lucide-react"; // Added Bug icon
+import { Ticket, ConversationMessage } from "@/types";
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query"; // Import UseQueryOptions
 import { supabase } from "@/integrations/supabase/client";
 import {
   Pagination,
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/pagination";
 import FilterNotification from "@/components/FilterNotification";
 import Sidebar from "@/components/Sidebar";
-import LoadingSpinner from "@/components/LoadingSpinner"; // Import the new LoadingSpinner
+import { toast } from 'sonner';
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -39,20 +39,17 @@ const TicketsPage = () => {
   const [filterCompany, setFilterCompany] = useState<string>("All");
   const [filterType, setFilterType] = useState<string>("All");
   const [filterDependency, setFilterDependency] = useState<string>("All");
-  const [showSidebar, setShowSidebar] = useState(true); // State for sidebar visibility
+  const [showSidebar, setShowSidebar] = useState(true);
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const ticketsPerPage = 25;
 
   const queryClient = useQueryClient();
 
-  // Function to toggle sidebar visibility
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
 
-  // Fetch tickets from Freshdesk via Supabase Edge Function
   const { data: freshdeskTickets, isLoading, error, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
@@ -63,7 +60,13 @@ const TicketsPage = () => {
       if (error) throw error;
       return data as Ticket[];
     },
-  });
+    onSuccess: () => {
+      toast.success("Tickets fetched successfully!");
+    },
+    onError: (err) => {
+      toast.error(`Failed to fetch tickets: ${err.message}`);
+    },
+  } as UseQueryOptions<Ticket[], Error>); // Explicitly cast to UseQueryOptions
 
   const handleRefreshTickets = () => {
     queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] });
@@ -83,7 +86,7 @@ const TicketsPage = () => {
   const filteredTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
 
-    let currentTickets = freshdeskTickets;
+    let currentTickets: Ticket[] = freshdeskTickets;
 
     return currentTickets.filter(ticket => {
       const matchesSearch = searchTerm === "" ||
@@ -104,7 +107,6 @@ const TicketsPage = () => {
     });
   }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, filterAssignee, filterCompany, filterType, filterDependency]);
 
-  // Calculate metrics for the cards
   const metrics = useMemo(() => {
     if (!freshdeskTickets) {
       return {
@@ -131,7 +133,6 @@ const TicketsPage = () => {
     };
   }, [freshdeskTickets]);
 
-  // Pagination logic
   const indexOfLastTicket = currentPage * ticketsPerPage;
   const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
   const currentTickets = filteredTickets.slice(indexOfFirstTicket, indexOfLastTicket);
@@ -142,7 +143,7 @@ const TicketsPage = () => {
 
   const uniqueAssignees = useMemo(() => {
     const assignees = new Set<string>();
-    freshdeskTickets?.forEach(ticket => {
+    (freshdeskTickets || []).forEach(ticket => { // Use || []
       if (ticket.assignee && ticket.assignee !== "Unassigned") {
         assignees.add(ticket.assignee);
       }
@@ -152,7 +153,7 @@ const TicketsPage = () => {
 
   const uniqueStatuses = useMemo(() => {
     const statuses = new Set<string>();
-    freshdeskTickets?.forEach(ticket => {
+    (freshdeskTickets || []).forEach(ticket => { // Use || []
       statuses.add(ticket.status);
     });
     return ["All", ...Array.from(statuses).sort()];
@@ -160,7 +161,7 @@ const TicketsPage = () => {
 
   const uniquePriorities = useMemo(() => {
     const priorities = new Set<string>();
-    freshdeskTickets?.forEach(ticket => {
+    (freshdeskTickets || []).forEach(ticket => { // Use || []
       priorities.add(ticket.priority);
     });
     return ["All", ...Array.from(priorities).sort()];
@@ -168,7 +169,7 @@ const TicketsPage = () => {
 
   const uniqueCompanies = useMemo(() => {
     const companies = new Set<string>();
-    freshdeskTickets?.forEach(ticket => {
+    (freshdeskTickets || []).forEach(ticket => { // Use || []
       if (ticket.cf_company) {
         companies.add(ticket.cf_company);
       }
@@ -178,7 +179,7 @@ const TicketsPage = () => {
 
   const uniqueTypes = useMemo(() => {
     const types = new Set<string>();
-    freshdeskTickets?.forEach(ticket => {
+    (freshdeskTickets || []).forEach(ticket => { // Use || []
       if (ticket.type) {
         types.add(ticket.type);
       }
@@ -188,18 +189,13 @@ const TicketsPage = () => {
 
   const uniqueDependencies = useMemo(() => {
     const dependencies = new Set<string>();
-    freshdeskTickets?.forEach(ticket => {
+    (freshdeskTickets || []).forEach(ticket => { // Use || []
       if (ticket.cf_dependency) {
         dependencies.add(ticket.cf_dependency);
       }
     });
     return ["All", ...Array.from(dependencies).sort()];
   }, [freshdeskTickets]);
-
-
-  if (isLoading || isFetching) { // Use isLoading or isFetching for the loading state
-    return <LoadingSpinner />;
-  }
 
   if (error) {
     return (
@@ -212,8 +208,8 @@ const TicketsPage = () => {
 
   return (
     <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
-      <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} /> {/* Integrate Sidebar */}
-      <div className="flex-1 flex flex-col p-4 overflow-hidden"> {/* Main content area */}
+      <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
+      <div className="flex-1 flex flex-col p-4 overflow-hidden">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
           {/* Header Section */}
           <div className="p-6 pb-3 border-b border-gray-200 dark:border-gray-700 shadow-sm">
@@ -248,35 +244,35 @@ const TicketsPage = () => {
               title="Total Tickets"
               value={metrics.totalTickets}
               icon={TicketIcon}
-              trend={12} // Example trend
+              trend={12}
               description="All tickets in the system"
             />
             <DashboardMetricCard
               title="Open Tickets"
               value={metrics.openTickets}
               icon={Hourglass}
-              trend={-5} // Example trend
+              trend={-5}
               description="Currently being processed"
             />
             <DashboardMetricCard
-              title="Bugs Received" // Changed title
-              value={metrics.bugsReceived} // Changed value source
-              icon={Bug} // Changed icon
-              trend={8} // Example trend
-              description="Tickets categorized as bugs" // Changed description
+              title="Bugs Received"
+              value={metrics.bugsReceived}
+              icon={Bug}
+              trend={8}
+              description="Tickets categorized as bugs"
             />
             <DashboardMetricCard
               title="Resolved/Closed"
               value={metrics.resolvedClosedTickets}
               icon={CheckCircle}
-              trend={15} // Example trend
+              trend={15}
               description="Successfully handled"
             />
             <DashboardMetricCard
               title="High Priority"
               value={metrics.highPriorityTickets}
               icon={XCircle}
-              trend={-2} // Example trend
+              trend={-2}
               description="Requiring immediate attention"
             />
           </div>
@@ -383,7 +379,7 @@ const TicketsPage = () => {
           <div className="flex-grow overflow-y-auto p-6">
             <FilterNotification
               filteredCount={filteredTickets.length}
-              totalCount={freshdeskTickets?.length || 0}
+              totalCount={(freshdeskTickets || []).length || 0} // Use || []
               searchTerm={searchTerm}
               filterStatus={filterStatus}
               filterPriority={filterPriority}
@@ -392,7 +388,14 @@ const TicketsPage = () => {
               filterType={filterType}
               filterDependency={filterDependency}
             />
-            <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+                <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+                <p className="text-lg font-medium">Loading tickets...</p>
+              </div>
+            ) : (
+              <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
+            )}
           </div>
 
           {totalPages > 1 && (
