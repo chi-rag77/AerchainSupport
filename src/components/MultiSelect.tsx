@@ -55,33 +55,35 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className={cn("w-full justify-between", className)}
+            className={cn("w-full h-auto min-h-10 justify-between px-3 py-2", className)} // Added h-auto, min-h-10, adjusted padding
             ref={ref}
           >
-            <div className="flex flex-wrap gap-1">
-              {selected.length === 0
-                ? placeholder || "Select items..."
-                : selected.length === options.length
-                ? "All selected"
-                : selected.map((value) => {
-                    const option = options.find((opt) => opt.value === value);
-                    return (
-                      <Badge key={value} variant="secondary" className="flex items-center">
-                        {option?.label || value}
-                        <span
-                          className="ml-1 cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelect(value);
-                          }}
-                        >
-                          &times;
-                        </span>
-                      </Badge>
-                    );
-                  })}
+            <div className="flex flex-wrap gap-1 flex-1 mr-2 overflow-hidden"> {/* Added flex-1, mr-2, overflow-hidden */}
+              {selected.length === 0 ? (
+                <span className="text-muted-foreground">{placeholder || "Select items..."}</span>
+              ) : selected.length === options.length ? (
+                <span className="text-foreground">All selected</span>
+              ) : (
+                selected.map((value) => {
+                  const option = options.find((opt) => opt.value === value);
+                  return (
+                    <Badge key={value} variant="secondary" className="flex items-center">
+                      {option?.label || value}
+                      <span
+                        className="ml-1 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelect(value);
+                        }}
+                      >
+                        &times;
+                      </span>
+                    </Badge>
+                  );
+                })
+              )}
             </div>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
