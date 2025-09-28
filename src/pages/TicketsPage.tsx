@@ -22,8 +22,8 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import FilterNotification from "@/components/FilterNotification";
-import HandWaveIcon from "@/components/HandWaveIcon";
 import Sidebar from "@/components/Sidebar";
+import LoadingSpinner from "@/components/LoadingSpinner"; // Import the new LoadingSpinner
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -65,9 +65,6 @@ const TicketsPage = () => {
     },
   });
 
-  // Removed the useQuery for conversation history as it's now taken from ticket.description_html
-
-
   const handleRefreshTickets = () => {
     queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] });
     setCurrentPage(1);
@@ -81,7 +78,6 @@ const TicketsPage = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTicket(null);
-    // No need to invalidate conversation history query anymore
   };
 
   const filteredTickets = useMemo(() => {
@@ -114,7 +110,7 @@ const TicketsPage = () => {
       return {
         totalTickets: 0,
         openTickets: 0,
-        bugsReceived: 0, // Renamed from pendingTickets
+        bugsReceived: 0,
         resolvedClosedTickets: 0,
         highPriorityTickets: 0,
       };
@@ -122,7 +118,7 @@ const TicketsPage = () => {
 
     const totalTickets = freshdeskTickets.length;
     const openTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
-    const bugsReceived = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length; // Filter by type 'Bug'
+    const bugsReceived = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
     const resolvedClosedTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed').length;
     const highPriorityTickets = freshdeskTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
 
@@ -201,12 +197,8 @@ const TicketsPage = () => {
   }, [freshdeskTickets]);
 
 
-  if (isLoading && !isFetching) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <p className="text-gray-700 dark:text-gray-300">Loading tickets from Freshdesk...</p>
-      </div>
-    );
+  if (isLoading || isFetching) { // Use isLoading or isFetching for the loading state
+    return <LoadingSpinner />;
   }
 
   if (error) {
@@ -227,7 +219,6 @@ const TicketsPage = () => {
           <div className="p-6 pb-3 border-b border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <hgroup>
-                {/* Removed the greeting line */}
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Support & Ticketing
                 </h1>
