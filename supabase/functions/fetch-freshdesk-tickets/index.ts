@@ -131,14 +131,13 @@ serve(async (req) => {
 
     switch (action) {
       case 'getTickets': {
-        // Removed the updated_since filter to fetch all tickets
-        // const today = new Date();
-        // const day = today.getDay();
-        // const diffToMonday = (day === 0 ? 6 : day - 1);
-        // const monday = new Date(today);
-        // monday.setDate(today.getDate() - diffToMonday);
-        // monday.setHours(0, 0, 0, 0);
-        // const updatedSince = monday.toISOString();
+        const today = new Date();
+        const day = today.getDay();
+        const diffToMonday = (day === 0 ? 6 : day - 1);
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - diffToMonday);
+        monday.setHours(0, 0, 0, 0);
+        const updatedSince = monday.toISOString();
 
         const fdOptions = {
           method: "GET",
@@ -153,8 +152,7 @@ serve(async (req) => {
 
         while (hasMore) {
           // Include 'tags' and 'resolved_at' in the Freshdesk API call
-          // Removed updated_since from the URL
-          const url = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester,tags&page=${page}&per_page=100`;
+          const url = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester,tags&updated_since=${encodeURIComponent(updatedSince)}&page=${page}&per_page=100`;
           
           const response = await fetch(url, fdOptions);
           
