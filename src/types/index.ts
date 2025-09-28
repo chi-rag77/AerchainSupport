@@ -41,3 +41,11 @@ export interface CustomerBreakdownRow {
   bugs: number;
   otherActive: number; // New field for other active statuses
 }
+
+export interface ConversationMessage {
+  id: string;
+  sender: string; // Name of sender (Agent or Requester)
+  body_html: string; // The actual message content (can contain HTML)
+  created_at: string;
+  is_agent: boolean;
+}

@@ -8,7 +8,7 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
-import { Ticket } from "@/types";
+import { Ticket, ConversationMessage } from "@/types"; // Import ConversationMessage
 import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug } from "lucide-react"; // Added Bug icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,12 +24,6 @@ import {
 import FilterNotification from "@/components/FilterNotification";
 import HandWaveIcon from "@/components/HandWaveIcon";
 import Sidebar from "@/components/Sidebar";
-
-// Define the type for the conversation summary returned by the new endpoint
-type ConversationSummary = {
-  initialMessage: string;
-  lastAgentReply: string;
-};
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -72,16 +66,16 @@ const TicketsPage = () => {
   });
 
   // Fetch conversation summary for the selected ticket
-  const { data: conversationSummary, isLoading: isLoadingSummary, error: summaryError, refetch: refetchConversationSummary } = useQuery<ConversationSummary, Error>({
-    queryKey: ["conversationSummary", selectedTicket?.id],
+  const { data: conversationHistory, isLoading: isLoadingHistory, error: historyError, refetch: refetchConversationHistory } = useQuery<ConversationMessage[], Error>({
+    queryKey: ["conversationHistory", selectedTicket?.id],
     queryFn: async () => {
-      if (!selectedTicket?.id) return { initialMessage: "N/A", lastAgentReply: "N/A" };
+      if (!selectedTicket?.id || !selectedTicket?.requester_email) return [];
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
         method: 'POST',
-        body: { action: 'getConversationSummary', ticketId: selectedTicket.id },
+        body: { action: 'getConversationSummary', ticketId: selectedTicket.id, requesterEmail: selectedTicket.requester_email },
       });
       if (error) throw error;
-      return data as ConversationSummary;
+      return data as ConversationMessage[];
     },
     enabled: !!selectedTicket?.id && isModalOpen,
   });
@@ -100,7 +94,7 @@ const TicketsPage = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTicket(null);
-    queryClient.invalidateQueries({ queryKey: ["conversationSummary"] });
+    queryClient.invalidateQueries({ queryKey: ["conversationHistory"] });
   };
 
   const filteredTickets = useMemo(() => {
@@ -458,10 +452,10 @@ const TicketsPage = () => {
               isOpen={isModalOpen}
               onClose={handleCloseModal}
               ticket={selectedTicket}
-              conversationSummary={conversationSummary}
-              isLoadingSummary={isLoadingSummary}
-              summaryError={summaryError}
-              onRefreshSummary={refetchConversationSummary}
+              conversationHistory={conversationHistory} // Pass conversationHistory
+              isLoadingHistory={isLoadingHistory} // Pass isLoadingHistory
+              historyError={historyError} // Pass historyError
+              onRefreshHistory={refetchConversationHistory} // Pass refetch function
             />
           )}
         </div>

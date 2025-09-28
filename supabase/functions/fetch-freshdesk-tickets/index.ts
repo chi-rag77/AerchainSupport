@@ -53,11 +53,29 @@ async function getAgentName(agentId: number, apiKey: string, domain: string): Pr
   }
 }
 
-function sanitize(html: string): string {
-  return html.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]*>/g, "").trim();
+interface FreshdeskConversation {
+  id: number;
+  body: string; // HTML content
+  body_text: string; // Plain text content
+  created_at: string;
+  updated_at: string;
+  ticket_id: number;
+  user_id: number | null; // Agent ID if from agent, null if from requester
+  support_email: string | null;
+  incoming: boolean; // true if from customer, false if from agent
+  private: boolean;
+  // ... other fields
 }
 
-async function getConversationSummary(ticketId: number, apiKey: string, domain: string): Promise<{ initialMessage: string; lastAgentReply: string }> {
+interface FormattedConversationMessage {
+  id: string;
+  sender: string; // Name of sender (Agent or Requester)
+  body_html: string; // The actual message content
+  created_at: string;
+  is_agent: boolean;
+}
+
+async function fetchTicketConversations(ticketId: number, requesterEmail: string, apiKey: string, domain: string): Promise<FormattedConversationMessage[]> {
   const url = `https://${domain}.freshdesk.com/api/v2/tickets/${ticketId}/conversations`;
   const options = {
     method: "GET",
@@ -70,28 +88,39 @@ async function getConversationSummary(ticketId: number, apiKey: string, domain: 
     const res = await fetch(url, options);
     if (!res.ok) {
       console.error(`Failed to fetch conversations for ticket ${ticketId}: ${res.status} ${await res.text()}`);
-      return { initialMessage: "—", lastAgentReply: "—" };
+      return [];
     }
-    const convos = await res.json();
+    const convos: FreshdeskConversation[] = await res.json();
 
-    if (!convos || convos.length === 0) return { initialMessage: "—", lastAgentReply: "—" };
+    const formattedConvos: FormattedConversationMessage[] = [];
 
-    const initialMessage = sanitize(convos[0].body_text || convos[0].body || "—");
-    let lastAgentReply = "—";
+    for (const convo of convos) {
+      let senderName: string;
+      let isAgentMessage: boolean;
 
-    for (let i = convos.length - 1; i >= 0; i--) {
-      const convo = convos[i];
-      if (convo.user_id && convo.incoming === false) {
-        lastAgentReply = sanitize(convo.body_text || convo.body || "—");
-        break;
+      if (convo.user_id) { // It's an agent
+        senderName = await getAgentName(convo.user_id, apiKey, domain);
+        isAgentMessage = true;
+      } else { // It's the requester (customer)
+        senderName = requesterEmail; // Use requester email as name for now
+        isAgentMessage = false;
       }
+
+      formattedConvos.push({
+        id: convo.id.toString(),
+        sender: senderName,
+        body_html: convo.body || convo.body_text || "No content", // Prefer HTML, fallback to text
+        created_at: convo.created_at,
+        is_agent: isAgentMessage,
+      });
     }
-    return { initialMessage, lastAgentReply };
+    return formattedConvos.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); // Sort by date
   } catch (error) {
-    console.error(`Error fetching conversation summary for ticket ${ticketId}:`, error);
-    return { initialMessage: "—", lastAgentReply: "—" };
+    console.error(`Error fetching conversations for ticket ${ticketId}:`, error);
+    return [];
   }
 }
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -127,7 +156,7 @@ serve(async (req) => {
       });
     }
 
-    const { action, ticketId } = requestBody;
+    const { action, ticketId, requesterEmail } = requestBody; // Added requesterEmail
 
     switch (action) {
       case 'getTickets': {
@@ -208,15 +237,15 @@ serve(async (req) => {
         });
       }
 
-      case 'getConversationSummary': {
-        if (!ticketId) {
-          return new Response(JSON.stringify({ error: 'Ticket ID is required for conversation summary.' }), {
+      case 'getConversationSummary': { // Renamed to fetchTicketConversations in the function, but action name remains for backward compatibility
+        if (!ticketId || !requesterEmail) {
+          return new Response(JSON.stringify({ error: 'Ticket ID and Requester Email are required for conversation summary.' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        const summary = await getConversationSummary(Number(ticketId), freshdeskApiKey, freshdeskDomain);
-        return new Response(JSON.stringify(summary), {
+        const conversations = await fetchTicketConversations(Number(ticketId), requesterEmail, freshdeskApiKey, freshdeskDomain);
+        return new Response(JSON.stringify(conversations), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
