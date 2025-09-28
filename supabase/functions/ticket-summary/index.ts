@@ -1,6 +1,6 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import * as dateFns from "https://esm.sh/date-fns@2.30.0?dts"; // Import all of date-fns with dts hint
+import { format, subDays, isWithinInterval } from "https://esm.sh/date-fns@2.30.0?dts"; // Import specific date-fns functions with dts hint
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -125,17 +125,21 @@ serve(async (req) => {
     console.log(`Customer parameter after parsing: ${customerParam}`); // New log
 
     if (!dateParam) {
-      console.log(`No date provided. Defaulting to today's date: ${dateFns.format(new Date(), 'yyyy-MM-dd')}\n`);
-      dateParam = dateFns.format(new Date(), 'yyyy-MM-dd'); // Default to today if not provided
+      console.log(`No date provided. Defaulting to today's date: ${format(new Date(), 'yyyy-MM-dd')}\n`);
+      dateParam = format(new Date(), 'yyyy-MM-dd'); // Default to today if not provided
     }
 
-    const startDate = new Date(dateParam);
-    startDate.setUTCHours(0, 0, 0, 0);
-    const endDate = new Date(startDate);
-    endDate.setUTCDate(startDate.getUTCDate() + 1); // End of the day
+    // Original dateParam is for creation date.
+    // We need to fetch tickets updated within a broader range to capture those created on dateParam.
+    const targetCreationDate = new Date(dateParam);
+    targetCreationDate.setUTCHours(0, 0, 0, 0);
+    const targetCreationEndDate = new Date(targetCreationDate);
+    targetCreationEndDate.setUTCDate(targetCreationDate.getUTCDate() + 1); // End of the day for creation
 
-    const createdSince = startDate.toISOString();
-    const createdUntil = endDate.toISOString();
+    // For Freshdesk API call, use updated_since to fetch a broader set of tickets
+    // For example, fetch tickets updated in the last 30 days relative to the target creation date.
+    const thirtyDaysAgo = subDays(targetCreationDate, 30);
+    const updatedSinceParam = thirtyDaysAgo.toISOString();
 
     const fdOptions = {
       method: "GET",
@@ -146,21 +150,20 @@ serve(async (req) => {
 
     let page = 1;
     let hasMore = true;
-    const allTickets = [];
+    const allTicketsRaw = []; // Renamed to avoid confusion with filtered tickets
 
     while (hasMore) {
-      const freshdeskUrl = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester,stats,company,description&created_since=${encodeURIComponent(createdSince)}&created_until=${encodeURIComponent(createdUntil)}&page=${page}&per_page=100`;
+      const freshdeskUrl = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester,stats,company,description&updated_since=${encodeURIComponent(updatedSinceParam)}&page=${page}&per_page=100`;
       
       const response = await fetch(freshdeskUrl, fdOptions);
       
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Freshdesk API Error (Code: ${response.status}): ${errorText}`);
-        // Immediately return an error response from the Edge Function
         return new Response(JSON.stringify({ 
           error: `Freshdesk API Error: ${response.status} - ${errorText}` 
         }), {
-          status: response.status, // Propagate Freshdesk's status code
+          status: response.status,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -178,7 +181,7 @@ serve(async (req) => {
         const statusString = STATUS_MAP[ticket.status] || `Unknown (${ticket.status})`;
         const companyName = ticket.custom_fields?.cf_company || 'Unknown Company';
 
-        allTickets.push({
+        allTicketsRaw.push({ // Push to raw tickets
           id: ticket.id?.toString(),
           subject: ticket.subject || "",
           priority: priorityString,
@@ -202,10 +205,17 @@ serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 1000)); // Delay to respect rate limits
     }
 
-    // --- Aggregation Logic ---
-    let filteredTickets = allTickets;
+    // --- Post-fetch Filtering and Aggregation Logic ---
+    // First, filter allTicketsRaw to only include tickets created on the selected dateParam
+    let ticketsCreatedOnSelectedDate = allTicketsRaw.filter(ticket => {
+      const ticketCreatedAt = new Date(ticket.created_at);
+      return isWithinInterval(ticketCreatedAt, { start: targetCreationDate, end: targetCreationEndDate });
+    });
+
+    // Apply customer filter if specified
+    let filteredTickets = ticketsCreatedOnSelectedDate;
     if (customerParam && customerParam !== "All") {
-      filteredTickets = allTickets.filter(ticket => ticket.cf_company === customerParam);
+      filteredTickets = ticketsCreatedOnSelectedDate.filter(ticket => ticket.cf_company === customerParam);
     }
 
     const totalTicketsToday = filteredTickets.length;
@@ -224,7 +234,11 @@ serve(async (req) => {
     });
 
     const customerBreakdown: { [key: string]: { totalToday: number; resolvedToday: number; open: number; pendingTech: number; bugs: number; tasks: number; queries: number; } } = {};
-    allTickets.forEach(ticket => { // Use allTickets here to get breakdown for all customers
+    // Use allTicketsRaw here to get breakdown for all customers, then filter by creation date for the specific day
+    allTicketsRaw.filter(ticket => {
+      const ticketCreatedAt = new Date(ticket.created_at);
+      return isWithinInterval(ticketCreatedAt, { start: targetCreationDate, end: targetCreationEndDate });
+    }).forEach(ticket => {
       const company = ticket.cf_company || 'Unknown Company';
       if (!customerBreakdown[company]) {
         customerBreakdown[company] = { totalToday: 0, resolvedToday: 0, open: 0, pendingTech: 0, bugs: 0, tasks: 0, queries: 0 };
