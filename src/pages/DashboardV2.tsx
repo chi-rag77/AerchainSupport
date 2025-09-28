@@ -24,7 +24,7 @@ import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
-import CustomerBreakdownTable from "@/components/CustomerBreakdownTable"; // New component
+// import CustomerBreakdownTable from "@/components/CustomerBreakdownTable"; // New component - REMOVED
 
 // Define the type for the aggregated summary data from the Edge Function
 interface TicketSummaryData {
@@ -264,7 +264,7 @@ const DashboardV2 = () => {
             {/* Customer Breakdown Table */}
             <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
               <h3 className="text-lg font-semibold mb-4 text-foreground">Customer Breakdown for {formattedDate}</h3>
-              <CustomerBreakdownTable data={summaryData?.customerBreakdown || []} />
+              {/* <CustomerBreakdownTable data={summaryData?.customerBreakdown || []} /> */} {/* REMOVED */}
             </div>
 
             {/* Charts & Visuals Row */}

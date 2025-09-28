@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent } from "lucide-react"; // Added User icon for My Tickets and Percent icon
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users } from "lucide-react"; // Added User icon for My Tickets and Percent icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Ticket } from "@/types";
+import { Ticket, CustomerBreakdownRow } from "@/types"; // Import CustomerBreakdownRow
 import { isWithinInterval, subDays, format } from 'date-fns';
 import { exportToCsv } from '@/utils/export'; // Import the new export utility
 
@@ -24,25 +24,7 @@ import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
-import CustomerBreakdownTable from "@/components/CustomerBreakdownTable"; // Import the new component
-
-// Define the type for the conversation summary (if needed, though not directly used here)
-type ConversationSummary = {
-  initialMessage: string;
-  lastAgentReply: string;
-};
-
-// Define the type for the CustomerBreakdownRow, matching the component's props
-interface CustomerBreakdownRow {
-  name: string;
-  totalToday: number;
-  resolvedToday: number;
-  open: number;
-  pendingTech: number;
-  bugs: number;
-  tasks: number;
-  queries: number;
-}
+import CustomerBreakdownCard from "@/components/CustomerBreakdownCard"; // Import the new component
 
 const Index = () => {
   const { session } = useSupabase();
@@ -242,6 +224,28 @@ const Index = () => {
     return Array.from(customerMap.values()).sort((a, b) => b.totalToday - a.totalToday);
   }, [filteredDashboardTickets, dateRange]);
 
+  const grandTotalData: CustomerBreakdownRow = useMemo(() => {
+    return customerBreakdownData.reduce((acc, curr) => {
+      acc.totalToday += curr.totalToday;
+      acc.resolvedToday += curr.resolvedToday;
+      acc.open += curr.open;
+      acc.pendingTech += curr.pendingTech;
+      acc.bugs += curr.bugs;
+      acc.tasks += curr.tasks;
+      acc.queries += curr.queries;
+      return acc;
+    }, {
+      name: "Grand Total",
+      totalToday: 0,
+      resolvedToday: 0,
+      open: 0,
+      pendingTech: 0,
+      bugs: 0,
+      tasks: 0,
+      queries: 0,
+    });
+  }, [customerBreakdownData]);
+
 
   const handleExportFilteredTickets = () => {
     exportToCsv(filteredDashboardTickets, `tickets_dashboard_filtered_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
@@ -424,10 +428,22 @@ const Index = () => {
             />
           </div>
 
-          {/* Customer Breakdown Table */}
+          {/* Customer Breakdown Section */}
           <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
             <h3 className="text-lg font-semibold mb-4 text-foreground">Customer Breakdown for {dateRange === 'alltime' ? 'All Time' : `Last ${dateRange.replace('last', '').replace('days', ' Days')}`}</h3>
-            <CustomerBreakdownTable data={customerBreakdownData} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {customerBreakdownData.map((customer) => (
+                <CustomerBreakdownCard key={customer.name} customerData={customer} />
+              ))}
+              {customerBreakdownData.length > 0 && (
+                <CustomerBreakdownCard customerData={grandTotalData} isGrandTotal={true} />
+              )}
+            </div>
+            {customerBreakdownData.length === 0 && (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-3">
+                No customer breakdown data for the selected date and filters.
+              </p>
+            )}
           </div>
 
           {/* Charts & Visuals Row */}

@@ -31,3 +31,14 @@ export type TicketMessage = {
   created_at: string;
   is_agent: boolean;
 };
+
+export interface CustomerBreakdownRow {
+  name: string;
+  totalToday: number;
+  resolvedToday: number;
+  open: number;
+  pendingTech: number;
+  bugs: number;
+  tasks: number;
+  queries: number;
+}
