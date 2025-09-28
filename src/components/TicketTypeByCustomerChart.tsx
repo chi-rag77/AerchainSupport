@@ -6,6 +6,7 @@ import { Ticket } from '@/types';
 
 interface TicketTypeByCustomerChartProps {
   tickets: Ticket[];
+  topN?: number; // New prop for filtering top N customers
 }
 
 // Define the type for the data structure used in the chart
@@ -15,7 +16,7 @@ interface CustomerChartData {
   [key: string]: number | string; // Allows 'name' to be a string, and other dynamic keys (ticket types) to be numbers
 }
 
-const TicketTypeByCustomerChart = ({ tickets }: TicketTypeByCustomerChartProps) => {
+const TicketTypeByCustomerChart = ({ tickets, topN }: TicketTypeByCustomerChartProps) => {
   const processedData = useMemo(() => {
     if (!tickets || tickets.length === 0) return [];
 
@@ -33,9 +34,13 @@ const TicketTypeByCustomerChart = ({ tickets }: TicketTypeByCustomerChartProps) 
       companyData.totalTickets++; // Increment total tickets for sorting
     });
 
-    // Sort customers by total ticket volume in descending order
-    return Array.from(customerTypeMap.values()).sort((a, b) => b.totalTickets - a.totalTickets);
-  }, [tickets]);
+    // Sort customers by total ticket volume in descending order and apply topN filter
+    let sortedData = Array.from(customerTypeMap.values()).sort((a, b) => b.totalTickets - a.totalTickets);
+    if (topN && topN > 0) {
+      sortedData = sortedData.slice(0, topN);
+    }
+    return sortedData;
+  }, [tickets, topN]);
 
   const uniqueTypes = useMemo(() => {
     const types = new Set<string>();
@@ -45,8 +50,8 @@ const TicketTypeByCustomerChart = ({ tickets }: TicketTypeByCustomerChartProps) 
     return Array.from(types).sort();
   }, [tickets]);
 
-  // Unified color palette
-  const colors = ['#818CF8', '#4ADE80', '#FBBF24', '#F87171', '#A78BFA', '#34D399', '#FACC15', '#FB923C'];
+  // Unified color palette - slightly softer and more varied
+  const colors = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#2DD4BF', '#FACC15', '#FB923C', '#A3A3A3', '#C084FC'];
 
   return (
     <ResponsiveContainer width="100%" height={300}>

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User } from "lucide-react"; // Added User icon for My Tickets
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent } from "lucide-react"; // Added User icon for My Tickets and Percent icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +42,8 @@ const Index = () => {
   const [filterMyTickets, setFilterMyTickets] = useState(false);
   const [filterHighPriority, setFilterHighPriority] = useState(false);
   const [filterSLABreached, setFilterSLABreached] = useState(false); // Placeholder for now
+  const [topNCustomers, setTopNCustomers] = useState<number | undefined>(10); // State for Top N Customers filter
+  const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count'); // State for Assignee Load chart mode
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -316,16 +318,40 @@ const Index = () => {
               <TicketsOverTimeChart tickets={filteredDashboardTickets || []} dateRange={dateRange} />
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Ticket Type by Customer</h3>
-              <TicketTypeByCustomerChart tickets={filteredDashboardTickets || []} />
+              <div className="flex justify-between items-center w-full mb-2">
+                <h3 className="text-lg font-semibold text-foreground">Ticket Type by Customer</h3>
+                <Select value={topNCustomers?.toString() || "all"} onValueChange={(value) => setTopNCustomers(value === "all" ? undefined : Number(value))}>
+                  <SelectTrigger className="w-[120px] h-8">
+                    <SelectValue placeholder="Top N" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">Top 5</SelectItem>
+                    <SelectItem value="10">Top 10</SelectItem>
+                    <SelectItem value="20">Top 20</SelectItem>
+                    <SelectItem value="all">All Customers</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <TicketTypeByCustomerChart tickets={filteredDashboardTickets || []} topN={topNCustomers} />
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <h3 className="text-lg font-semibold mb-2 text-foreground">Priority Distribution</h3>
               <PriorityDistributionChart tickets={filteredDashboardTickets || []} />
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Assignee Load</h3>
-              <AssigneeLoadChart tickets={filteredDashboardTickets || []} />
+              <div className="flex justify-between items-center w-full mb-2">
+                <h3 className="text-lg font-semibold text-foreground">Assignee Load</h3>
+                <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
+                  <SelectTrigger className="w-[120px] h-8">
+                    <SelectValue placeholder="Display Mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="count">Count</SelectItem>
+                    <SelectItem value="percentage">Percentage</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <AssigneeLoadChart tickets={filteredDashboardTickets || []} displayMode={assigneeChartMode} />
             </div>
           </div>
 
