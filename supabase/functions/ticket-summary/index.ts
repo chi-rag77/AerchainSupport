@@ -1,6 +1,6 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @deno-types="https://esm.sh/date-fns@2.30.0"
+// @deno-types="https://esm.sh/v135/date-fns@2.30.0/deno/index.d.ts"
 import * as dateFns from "https://esm.sh/date-fns@2.30.0"; // Import all of date-fns
 
 const corsHeaders = {
@@ -82,17 +82,21 @@ serve(async (req) => {
     let customerParam: string | null = null;
     let requestBody: any = {}; // Initialize requestBody
 
-    console.log('Incoming request Content-Type:', req.headers.get('content-type')); // Log Content-Type
+    const contentType = req.headers.get('content-type');
+    console.log('Incoming request Content-Type:', contentType); // Log Content-Type
 
     if (req.method === 'POST') {
-      if (req.headers.get('content-type')?.includes('application/json')) {
+      if (contentType?.includes('application/json')) {
+        let rawBodyText = '';
         try {
-          requestBody = await req.json();
-          console.log('Received requestBody:', JSON.stringify(requestBody)); // Log raw body
+          rawBodyText = await req.text(); // Read raw body as text
+          console.log('Received raw request body:', rawBodyText); // Log raw body
+          requestBody = JSON.parse(rawBodyText); // Attempt to parse as JSON
+          console.log('Parsed requestBody:', JSON.stringify(requestBody)); // Log parsed body
           dateParam = requestBody.date;
           customerParam = requestBody.customer;
         } catch (jsonError) {
-          console.error('Error parsing JSON body:', jsonError);
+          console.error(`Error parsing JSON body: ${jsonError.message}. Raw body: "${rawBodyText}"`);
           return new Response(JSON.stringify({ error: `Failed to parse JSON body: ${jsonError.message}` }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

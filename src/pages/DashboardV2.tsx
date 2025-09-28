@@ -69,6 +69,8 @@ const DashboardV2 = () => {
   const { data: summaryData, isLoading, error } = useQuery<TicketSummaryData, Error>({
     queryKey: ["ticketSummary", formattedDate, selectedCustomerFilter],
     queryFn: async () => {
+      console.log("Invoking ticket-summary with:", { date: formattedDate, customer: selectedCustomerFilter }); // Client-side log
+
       const { data, error } = await supabase.functions.invoke('ticket-summary', {
         method: 'POST', // Changed to POST
         headers: {
