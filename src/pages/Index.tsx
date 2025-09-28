@@ -24,12 +24,25 @@ import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
+import CustomerBreakdownTable from "@/components/CustomerBreakdownTable"; // Import the new component
 
 // Define the type for the conversation summary (if needed, though not directly used here)
 type ConversationSummary = {
   initialMessage: string;
   lastAgentReply: string;
 };
+
+// Define the type for the CustomerBreakdownRow, matching the component's props
+interface CustomerBreakdownRow {
+  name: string;
+  totalToday: number;
+  resolvedToday: number;
+  open: number;
+  pendingTech: number;
+  bugs: number;
+  tasks: number;
+  queries: number;
+}
 
 const Index = () => {
   const { session } = useSupabase();
@@ -158,6 +171,77 @@ const Index = () => {
     });
     return ["All", ...Array.from(companies).sort()];
   }, [freshdeskTickets]);
+
+  const customerBreakdownData = useMemo(() => {
+    if (!filteredDashboardTickets) return [];
+
+    const now = new Date();
+    let startDate: Date;
+
+    switch (dateRange) {
+      case "last7days":
+        startDate = subDays(now, 7);
+        break;
+      case "last14days":
+        startDate = subDays(now, 14);
+        break;
+      case "last30days":
+        startDate = subDays(now, 30);
+        break;
+      case "last90days":
+        startDate = subDays(now, 90);
+        break;
+      default: // All time or custom, for now default to last 30 days if not specified
+        startDate = new Date(0); // Epoch time for "all time"
+        break;
+    }
+
+    const customerMap = new Map<string, CustomerBreakdownRow>();
+
+    filteredDashboardTickets.forEach(ticket => {
+      const company = ticket.cf_company || 'Unknown Company';
+      if (!customerMap.has(company)) {
+        customerMap.set(company, {
+          name: company,
+          totalToday: 0,
+          resolvedToday: 0,
+          open: 0,
+          pendingTech: 0,
+          bugs: 0,
+          tasks: 0,
+          queries: 0,
+        });
+      }
+      const customerRow = customerMap.get(company)!;
+
+      // Only count tickets created within the selected date range for "today" metrics
+      const ticketCreatedAt = new Date(ticket.created_at);
+      if (isWithinInterval(ticketCreatedAt, { start: startDate, end: now })) {
+        customerRow.totalToday++;
+        if (ticket.status.toLowerCase() === 'resolved' || ticket.status.toLowerCase() === 'closed') {
+          customerRow.resolvedToday++;
+        }
+        if (ticket.status.toLowerCase() === 'open (being processed)') {
+          customerRow.open++;
+        }
+        if (ticket.status.toLowerCase() === 'on tech') {
+          customerRow.pendingTech++;
+        }
+        if (ticket.type?.toLowerCase() === 'bug') {
+          customerRow.bugs++;
+        }
+        if (ticket.type?.toLowerCase() === 'task') {
+          customerRow.tasks++;
+        }
+        if (ticket.type?.toLowerCase() === 'query') {
+          customerRow.queries++;
+        }
+      }
+    });
+
+    return Array.from(customerMap.values()).sort((a, b) => b.totalToday - a.totalToday);
+  }, [filteredDashboardTickets, dateRange]);
+
 
   const handleExportFilteredTickets = () => {
     exportToCsv(filteredDashboardTickets, `tickets_dashboard_filtered_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
@@ -340,8 +424,14 @@ const Index = () => {
             />
           </div>
 
+          {/* Customer Breakdown Table */}
+          <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">Customer Breakdown for {dateRange === 'alltime' ? 'All Time' : `Last ${dateRange.replace('last', '').replace('days', ' Days')}`}</h3>
+            <CustomerBreakdownTable data={customerBreakdownData} />
+          </div>
+
           {/* Charts & Visuals Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8"> {/* Added mb-8 for spacing */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 mb-8"> {/* Added mb-8 for spacing */}
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3> {/* Added w-full text-center */}
               <TicketsOverTimeChart tickets={filteredDashboardTickets || []} dateRange={dateRange} />
@@ -373,7 +463,7 @@ const Index = () => {
                 <h3 className="text-lg font-semibold text-foreground w-full text-center">Assignee Load</h3> {/* Added w-full text-center */}
                 <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
                   <SelectTrigger className="w-[120px] h-8">
-                    <SelectValue placeholder="Display Mode" />
+                      <SelectValue placeholder="Display Mode" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="count">Count</SelectItem>
