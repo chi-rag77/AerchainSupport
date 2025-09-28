@@ -11,13 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Import Popover components
+import { Calendar } from "@/components/ui/calendar"; // Import Calendar component
 import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket, CustomerBreakdownRow } from "@/types";
-import { isWithinInterval, subDays, format } from 'date-fns';
+import { isWithinInterval, subDays, format, addDays } from 'date-fns'; // Import addDays for date range calculations
+import { DateRange } from "react-day-picker"; // Import DateRange type
 import { exportToCsv } from '@/utils/export';
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 // Import chart components
 import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
@@ -25,7 +29,7 @@ import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
-import { MultiSelect } from "@/components/MultiSelect"; // Import the new MultiSelect component
+import { MultiSelect } from "@/components/MultiSelect";
 
 const Index = () => {
   const { session } = useSupabase();
@@ -35,12 +39,13 @@ const Index = () => {
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateRange, setDateRange] = useState("last7days");
+  // Changed dateRange to activeDateFilter to handle both string and object
+  const [activeDateFilter, setActiveDateFilter] = useState<string | DateRange>("last7days");
   const [filterMyTickets, setFilterMyTickets] = useState(false);
   const [filterHighPriority, setFilterHighPriority] = useState(false);
   const [filterSLABreached, setFilterSLABreached] = useState(false);
-  const [selectedCustomerForChart, setSelectedCustomerForChart] = useState<string>("All"); // Renamed to avoid conflict
-  const [selectedCustomersForBreakdown, setSelectedCustomersForBreakdown] = useState<string[]>([]); // New state for multi-select
+  const [selectedCustomerForChart, setSelectedCustomerForChart] = useState<string>("All");
+  const [selectedCustomersForBreakdown, setSelectedCustomersForBreakdown] = useState<string[]>([]);
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
 
   const toggleSidebar = () => {
@@ -78,14 +83,74 @@ const Index = () => {
       setSelectedCustomersForBreakdown(uniqueCompanies);
       isInitialLoadRef.current = false; // Mark as not initial load anymore
     }
-  }, [uniqueCompanies]); // Only depend on uniqueCompanies for this effect
+  }, [uniqueCompanies]);
 
+
+  // Helper to determine the effective date range for filtering
+  const { effectiveStartDate, effectiveEndDate, dateRangeDisplay } = useMemo(() => {
+    const now = new Date();
+    let start: Date | undefined;
+    let end: Date | undefined = now;
+    let display: string = "";
+
+    if (typeof activeDateFilter === 'string') {
+      switch (activeDateFilter) {
+        case "today":
+          start = new Date(now.setHours(0, 0, 0, 0));
+          end = new Date(now.setHours(23, 59, 59, 999));
+          display = "Today";
+          break;
+        case "last7days":
+          start = subDays(now, 7);
+          display = "Last 7 Days";
+          break;
+        case "last14days":
+          start = subDays(now, 14);
+          display = "Last 14 Days";
+          break;
+        case "last30days":
+          start = subDays(now, 30);
+          display = "Last 30 Days";
+          break;
+        case "last90days":
+          start = subDays(now, 90);
+          display = "Last 90 Days";
+          break;
+        case "alltime":
+          start = new Date(0); // Epoch
+          display = "All Time";
+          break;
+        default:
+          start = subDays(now, 7); // Default to last 7 days
+          display = "Last 7 Days";
+          break;
+      }
+    } else { // Custom date range object
+      start = activeDateFilter.from;
+      end = activeDateFilter.to || now; // If 'to' is not set, default to now
+      if (start && end) {
+        display = `${format(start, "MMM dd, yyyy")} - ${format(end, "MMM dd, yyyy")}`;
+      } else if (start) {
+        display = `From ${format(start, "MMM dd, yyyy")}`;
+      } else {
+        display = "Custom Range";
+      }
+    }
+
+    return { effectiveStartDate: start, effectiveEndDate: end, dateRangeDisplay: display };
+  }, [activeDateFilter]);
 
   const filteredDashboardTickets = useMemo(() => {
-    if (!freshdeskTickets) return [];
+    if (!freshdeskTickets || !effectiveStartDate || !effectiveEndDate) return [];
 
     let currentTickets = freshdeskTickets;
 
+    // Date filtering based on effectiveStartDate and effectiveEndDate
+    currentTickets = currentTickets.filter(ticket =>
+      isWithinInterval(new Date(ticket.created_at), { start: effectiveStartDate, end: effectiveEndDate })
+    );
+
+    // ... existing filters (filterMyTickets, filterHighPriority, searchTerm)
     if (filterMyTickets && userEmail) {
       currentTickets = currentTickets.filter(ticket => ticket.requester_email === userEmail || ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()));
     }
@@ -103,11 +168,11 @@ const Index = () => {
     }
 
     return currentTickets;
-  }, [freshdeskTickets, filterMyTickets, filterHighPriority, searchTerm, fullName, userEmail]);
+  }, [freshdeskTickets, effectiveStartDate, effectiveEndDate, filterMyTickets, filterHighPriority, searchTerm, fullName, userEmail]);
 
 
   const metrics = useMemo(() => {
-    if (!filteredDashboardTickets) {
+    if (!filteredDashboardTickets || !effectiveStartDate || !effectiveEndDate) {
       return {
         totalTickets: 0,
         openTickets: 0,
@@ -118,40 +183,15 @@ const Index = () => {
       };
     }
 
-    const now = new Date();
-    let startDate: Date;
-
-    switch (dateRange) {
-      case "last7days":
-        startDate = subDays(now, 7);
-        break;
-      case "last14days":
-        startDate = subDays(now, 14);
-        break;
-      case "last30days":
-        startDate = subDays(now, 30);
-        break;
-      case "last90days":
-        startDate = subDays(now, 90);
-        break;
-      default:
-        startDate = new Date(0);
-        break;
-    }
-
-    const periodTickets = filteredDashboardTickets.filter(ticket =>
-      isWithinInterval(new Date(ticket.created_at), { start: startDate, end: now })
-    );
-
     const totalTickets = filteredDashboardTickets.length;
     const openTickets = filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
-    const newThisPeriod = periodTickets.length;
+    const newThisPeriod = filteredDashboardTickets.length; // Already filtered by date range
     const resolvedThisPeriod = filteredDashboardTickets.filter(t =>
       (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
-      isWithinInterval(new Date(t.updated_at), { start: startDate, end: now })
+      isWithinInterval(new Date(t.updated_at), { start: effectiveStartDate, end: effectiveEndDate })
     ).length;
     const highPriorityTickets = filteredDashboardTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
-    const slaBreaches = 5;
+    const slaBreaches = 5; // Placeholder
 
     return {
       totalTickets,
@@ -161,31 +201,10 @@ const Index = () => {
       highPriorityTickets,
       slaBreaches,
     };
-  }, [filteredDashboardTickets, dateRange]);
+  }, [filteredDashboardTickets, effectiveStartDate, effectiveEndDate]);
 
   const customerBreakdownData = useMemo(() => {
-    if (!filteredDashboardTickets) return [];
-
-    const now = new Date();
-    let startDate: Date;
-
-    switch (dateRange) {
-      case "last7days":
-        startDate = subDays(now, 7);
-        break;
-      case "last14days":
-        startDate = subDays(now, 14);
-        break;
-      case "last30days":
-        startDate = subDays(now, 30);
-        break;
-      case "last90days":
-        startDate = subDays(now, 90);
-        break;
-      default:
-        startDate = new Date(0);
-        break;
-    }
+    if (!filteredDashboardTickets || !effectiveStartDate || !effectiveEndDate) return [];
 
     const customerMap = new Map<string, CustomerBreakdownRow>();
 
@@ -205,35 +224,31 @@ const Index = () => {
           open: 0,
           pendingTech: 0,
           bugs: 0,
-          otherActive: 0, // Initialize new field
+          otherActive: 0,
         });
       }
       const customerRow = customerMap.get(company)!;
 
-      const ticketCreatedAt = new Date(ticket.created_at);
-      if (isWithinInterval(ticketCreatedAt, { start: startDate, end: now })) {
-        customerRow.totalToday++;
-        const statusLower = ticket.status.toLowerCase();
-        if (statusLower === 'resolved' || statusLower === 'closed') {
-          customerRow.resolvedToday++;
-        } else if (statusLower === 'open (being processed)') {
-          customerRow.open++;
-        } else if (statusLower === 'on tech') {
-          customerRow.pendingTech++;
-        } else {
-          // All other statuses that are not resolved/closed/open/on tech
-          customerRow.otherActive++;
-        }
+      // Tickets are already filtered by creation date in filteredDashboardTickets
+      customerRow.totalToday++;
+      const statusLower = ticket.status.toLowerCase();
+      if (statusLower === 'resolved' || statusLower === 'closed') {
+        customerRow.resolvedToday++;
+      } else if (statusLower === 'open (being processed)') {
+        customerRow.open++;
+      } else if (statusLower === 'on tech') {
+        customerRow.pendingTech++;
+      } else {
+        customerRow.otherActive++;
+      }
 
-        if (ticket.type?.toLowerCase() === 'bug') {
-          customerRow.bugs++;
-        }
-        // Removed tasks and queries from calculation as they are removed from type
+      if (ticket.type?.toLowerCase() === 'bug') {
+        customerRow.bugs++;
       }
     });
 
     return Array.from(customerMap.values()).sort((a, b) => b.totalToday - a.totalToday);
-  }, [filteredDashboardTickets, dateRange, selectedCustomersForBreakdown]);
+  }, [filteredDashboardTickets, selectedCustomersForBreakdown]);
 
   const grandTotalData: CustomerBreakdownRow = useMemo(() => {
     return customerBreakdownData.reduce((acc, curr) => {
@@ -242,7 +257,7 @@ const Index = () => {
       acc.open += curr.open;
       acc.pendingTech += curr.pendingTech;
       acc.bugs += curr.bugs;
-      acc.otherActive += curr.otherActive; // Sum new field
+      acc.otherActive += curr.otherActive;
       return acc;
     }, {
       name: "Grand Total",
@@ -251,7 +266,7 @@ const Index = () => {
       open: 0,
       pendingTech: 0,
       bugs: 0,
-      otherActive: 0, // Initialize new field
+      otherActive: 0,
     });
   }, [customerBreakdownData]);
 
@@ -270,11 +285,7 @@ const Index = () => {
 
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <p className="text-gray-700 dark:text-gray-300">Loading dashboard data...</p>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error) {
@@ -284,8 +295,6 @@ const Index = () => {
       </div>
     );
   }
-
-  const dateRangeDisplay = dateRange === 'alltime' ? 'All Time' : `Last ${dateRange.replace('last', '').replace('days', ' Days')}`;
 
   return (
     <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
@@ -308,20 +317,72 @@ const Index = () => {
             </div>
 
             <div className="flex flex-wrap gap-3 items-center">
-              {/* Global Date Picker */}
-              <Select value={dateRange} onValueChange={setDateRange}>
+              {/* Date Range Select */}
+              <Select
+                value={typeof activeDateFilter === 'string' ? activeDateFilter : "custom"}
+                onValueChange={(value) => {
+                  if (value === "custom") {
+                    // When "Custom Range" is selected, we don't immediately change activeDateFilter
+                    // The Popover's Calendar will handle setting the DateRange object
+                    // For now, we can set a placeholder or keep the previous custom range if any
+                    setActiveDateFilter({ from: undefined, to: undefined }); // Clear previous custom range
+                  } else {
+                    setActiveDateFilter(value);
+                  }
+                }}
+              >
                 <SelectTrigger className="w-[180px]">
                   <CalendarDays className="h-4 w-4 mr-2 text-gray-500" />
-                  <SelectValue placeholder="Select Date Range" />
+                  <SelectValue placeholder="Select Date Range">
+                    {dateRangeDisplay}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
                   <SelectItem value="last7days">Last 7 Days</SelectItem>
                   <SelectItem value="last14days">Last 14 Days</SelectItem>
                   <SelectItem value="last30days">Last 30 Days</SelectItem>
                   <SelectItem value="last90days">Last 90 Days</SelectItem>
                   <SelectItem value="alltime">All Time</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Custom Date Picker Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className="w-[200px] justify-start text-left font-normal"
+                    // Only show this button if "Custom Range" is selected in the Select, or if a custom range is already active
+                    style={{ display: typeof activeDateFilter !== 'string' || (typeof activeDateFilter === 'string' && activeDateFilter === 'custom') ? 'flex' : 'none' }}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {effectiveStartDate && effectiveEndDate
+                      ? `${format(effectiveStartDate, "PPP")} - ${format(effectiveEndDate, "PPP")}`
+                      : <span>Pick a custom range</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={effectiveStartDate || new Date()}
+                    selected={typeof activeDateFilter !== 'string' ? activeDateFilter : undefined}
+                    onSelect={(range) => {
+                      if (range?.from) {
+                        setActiveDateFilter({
+                          from: range.from,
+                          to: range.to || addDays(range.from, 0), // Default to same day if only 'from' is selected
+                        });
+                      } else {
+                        setActiveDateFilter("last7days"); // Reset to default if range is cleared
+                      }
+                    }}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
 
               {/* Quick Filter Chips */}
               <Button
@@ -408,14 +469,14 @@ const Index = () => {
               value={metrics.newThisPeriod}
               icon={CalendarDays}
               trend={8}
-              description={`New tickets created ${dateRange === 'alltime' ? 'overall' : `in the selected period (${dateRange.replace('last', 'last ').replace('days', ' days')})`}.`}
+              description={`New tickets created in the selected period (${dateRangeDisplay}).`}
             />
             <DashboardMetricCard
               title="Resolved This Period"
               value={metrics.resolvedThisPeriod}
               icon={CheckCircle}
               trend={15}
-              description={`Tickets resolved or closed ${dateRange === 'alltime' ? 'overall' : `in the selected period (${dateRange.replace('last', 'last ').replace('days', ' days')})`}.`}
+              description={`Tickets resolved or closed in the selected period (${dateRangeDisplay}).`}
             />
             <DashboardMetricCard
               title="High Priority"
@@ -464,7 +525,7 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 mb-8">
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
               <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3>
-              <TicketsOverTimeChart tickets={filteredDashboardTickets || []} dateRange={dateRange} />
+              <TicketsOverTimeChart tickets={filteredDashboardTickets || []} startDate={effectiveStartDate} endDate={effectiveEndDate} />
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
               <div className="flex justify-between items-center w-full mb-2">

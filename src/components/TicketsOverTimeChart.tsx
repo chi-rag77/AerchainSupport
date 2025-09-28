@@ -2,21 +2,23 @@
 
 import React, { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { format, parseISO, startOfDay, eachDayOfInterval, subDays } from 'date-fns';
+import { format, parseISO, startOfDay, eachDayOfInterval, subDays, isWithinInterval } from 'date-fns';
 import { Ticket } from '@/types';
 
 interface TicketsOverTimeChartProps {
   tickets: Ticket[];
-  dateRange: string; // e.g., "last7days", "last30days", "alltime"
+  dateRange?: string; // e.g., "last7days", "last30days", "alltime" - now optional
+  startDate?: Date;   // New prop for custom start date (optional)
+  endDate?: Date;     // New prop for custom end date (optional)
 }
 
-const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps) => {
+const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: TicketsOverTimeChartProps) => {
   const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
 
-  const handleLegendClick = (dataKey: any) => { // dataKey can be string or number, so use 'any' for type safety here
+  const handleLegendClick = (dataKey: any) => {
     setHiddenSeries(prev => {
       const newSet = new Set(prev);
-      const keyAsString = String(dataKey); // Convert to string for Set operations
+      const keyAsString = String(dataKey);
       if (newSet.has(keyAsString)) {
         newSet.delete(keyAsString);
       } else {
@@ -29,28 +31,38 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
   const processedData = useMemo(() => {
     if (!tickets || tickets.length === 0) return [];
 
-    const now = new Date();
-    let startDate: Date;
+    let effectiveStartDate: Date;
+    let effectiveEndDate: Date = new Date(); // Default end date to now
 
-    switch (dateRange) {
-      case "last7days":
-        startDate = subDays(now, 7);
-        break;
-      case "last14days":
-        startDate = subDays(now, 14);
-        break;
-      case "last30days":
-        startDate = subDays(now, 30);
-        break;
-      case "last90days":
-        startDate = subDays(now, 90);
-        break;
-      default: // All time or custom, for now default to last 30 days if not specified
-        startDate = subDays(now, 30);
-        break;
+    // Prioritize explicit startDate/endDate props
+    if (startDate && endDate) {
+      effectiveStartDate = startDate;
+      effectiveEndDate = endDate;
+    } else { // Fallback to dateRange string logic
+      const now = new Date();
+      switch (dateRange) {
+        case "last7days":
+          effectiveStartDate = subDays(now, 7);
+          break;
+        case "last14days":
+          effectiveStartDate = subDays(now, 14);
+          break;
+        case "last30days":
+          effectiveStartDate = subDays(now, 30);
+          break;
+        case "last90days":
+          effectiveStartDate = subDays(now, 90);
+          break;
+        case "alltime":
+          effectiveStartDate = new Date(0); // Epoch
+          break;
+        default: // Default to last 30 days if not specified
+          effectiveStartDate = subDays(now, 30);
+          break;
+      }
     }
 
-    const intervalDays = eachDayOfInterval({ start: startDate, end: now });
+    const intervalDays = eachDayOfInterval({ start: effectiveStartDate, end: effectiveEndDate });
 
     const dataMap = new Map<string, { date: string; open: number; 'in progress': number; resolved: number; closed: number; }>();
 
@@ -63,7 +75,7 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
       const createdAt = startOfDay(parseISO(ticket.created_at));
       const formattedDate = format(createdAt, 'yyyy-MM-dd');
 
-      if (dataMap.has(formattedDate)) {
+      if (isWithinInterval(createdAt, { start: effectiveStartDate, end: effectiveEndDate }) && dataMap.has(formattedDate)) {
         const entry = dataMap.get(formattedDate)!;
         const status = ticket.status.toLowerCase();
         if (status.includes('open')) {
@@ -79,7 +91,7 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
     });
 
     return Array.from(dataMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }, [tickets, dateRange]);
+  }, [tickets, dateRange, startDate, endDate]);
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -87,8 +99,8 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
         data={processedData}
         margin={{
           top: 10,
-          right: 40, // Increased right margin
-          left: 20,  // Increased left margin
+          right: 40,
+          left: 20,
           bottom: 0,
         }}
       >
@@ -114,10 +126,10 @@ const TicketsOverTimeChart = ({ tickets, dateRange }: TicketsOverTimeChartProps)
         <XAxis
           dataKey="date"
           tickFormatter={(tick) => format(parseISO(tick), 'MMM dd')}
-          className="text-sm font-semibold text-gray-600 dark:text-gray-400" // Increased font size and made bolder
-          interval="preserveStartEnd" // Added to prevent label overlap
+          className="text-sm font-semibold text-gray-600 dark:text-gray-400"
+          interval="preserveStartEnd"
         />
-        <YAxis className="text-sm font-semibold text-gray-600 dark:text-gray-400" /> {/* Increased font size and made bolder */}
+        <YAxis className="text-sm font-semibold text-gray-600 dark:text-gray-400" />
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
         <Legend onClick={(e) => handleLegendClick(e.dataKey)} />
         {!hiddenSeries.has('open') && <Area type="monotone" dataKey="open" stackId="1" stroke="#60A5FA" fill="url(#colorOpen)" name="Open" />}
