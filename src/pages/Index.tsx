@@ -69,12 +69,16 @@ const Index = () => {
     return Array.from(companies).sort();
   }, [freshdeskTickets]);
 
+  // Use a ref to track if it's the initial load for selectedCustomersForBreakdown
+  const isInitialLoadRef = React.useRef(true);
+
   // Initialize selectedCustomersForBreakdown with all unique companies once data loads
   useEffect(() => {
-    if (uniqueCompanies.length > 0 && selectedCustomersForBreakdown.length === 0) {
+    if (isInitialLoadRef.current && uniqueCompanies.length > 0) {
       setSelectedCustomersForBreakdown(uniqueCompanies);
+      isInitialLoadRef.current = false; // Mark as not initial load anymore
     }
-  }, [uniqueCompanies, selectedCustomersForBreakdown]);
+  }, [uniqueCompanies]); // Only depend on uniqueCompanies for this effect
 
 
   const filteredDashboardTickets = useMemo(() => {
