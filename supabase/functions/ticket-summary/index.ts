@@ -121,12 +121,15 @@ serve(async (req) => {
       const response = await fetch(freshdeskUrl, fdOptions);
       
       if (!response.ok) {
-        console.error(`Freshdesk API Error (Code: ${response.status}): ${await response.text()}`);
-        if (response.status === 429) {
-          console.warn("Rate limit hit. Stopping sync.");
-        }
-        hasMore = false;
-        break;
+        const errorText = await response.text();
+        console.error(`Freshdesk API Error (Code: ${response.status}): ${errorText}`);
+        // Immediately return an error response from the Edge Function
+        return new Response(JSON.stringify({ 
+          error: `Freshdesk API Error: ${response.status} - ${errorText}` 
+        }), {
+          status: response.status, // Propagate Freshdesk's status code
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       const tickets = await response.json();
