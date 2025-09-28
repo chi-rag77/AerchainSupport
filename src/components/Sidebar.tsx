@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, Users, BarChart, Shield, MessageSquare, Settings, LifeBuoy, PanelLeftOpen, PanelRightOpen, LogOut } from 'lucide-react'; // Added LogOut icon
+import { LayoutDashboard, Users, BarChart, Shield, MessageSquare, Settings, LifeBuoy, PanelLeftOpen, PanelRightOpen, LogOut, TrendingUp } from 'lucide-react'; // Added TrendingUp icon for Dashboard V2
 import { Button } from '@/components/ui/button';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,10 +14,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; // Imported DropdownMenu components
+} from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
-import { supabase } from '@/integrations/supabase/client'; // Import supabase client for logout
+import { supabase } from '@/integrations/supabase/client';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -28,19 +28,20 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
   const { session } = useSupabase();
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-  const userRole = user?.user_metadata?.role || 'Admin'; // Default role if not set
+  const userRole = user?.user_metadata?.role || 'Admin';
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/" }, // Points to the new Dashboard
-    { icon: Users, label: "Users", path: "/users" }, // Placeholder path
-    { icon: BarChart, label: "Analytics", path: "/analytics" }, // Placeholder path
-    { icon: Shield, label: "Security", path: "/security" }, // Placeholder path
-    { icon: MessageSquare, label: "Support & Ticketing", path: "/tickets" }, // Points to the TicketsPage
-    { icon: Settings, label: "Settings", path: "/settings" }, // Placeholder path
+    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    { icon: TrendingUp, label: "Daily Dashboard", path: "/dashboard-v2" }, // New link for DashboardV2
+    { icon: Users, label: "Users", path: "/users" },
+    { icon: BarChart, label: "Analytics", path: "/analytics" },
+    { icon: Shield, label: "Security", path: "/security" },
+    { icon: MessageSquare, label: "Support & Ticketing", path: "/tickets" },
+    { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
   return (
@@ -58,7 +59,7 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
           <Tooltip key={index}>
             <TooltipTrigger asChild>
               <Button
-                variant={item.path === window.location.pathname ? "secondary" : "ghost"} // Active state based on current path
+                variant={item.path === window.location.pathname ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start text-base h-10 px-4",
                   !showSidebar && "justify-center px-0"
@@ -90,7 +91,6 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
           {!showSidebar && <TooltipContent side="right">Help & Support</TooltipContent>}
         </Tooltip>
 
-        {/* User Profile / Toggle Button Section */}
         <div className={cn("flex items-center", showSidebar ? "justify-between" : "justify-center flex-col space-y-2")}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

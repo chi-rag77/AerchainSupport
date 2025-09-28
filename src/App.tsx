@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index"; // This is now the Dashboard
 import TicketsPage from "./pages/TicketsPage"; // The old Index is now TicketsPage
+import DashboardV2 from "./pages/DashboardV2"; // New DashboardV2 page
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} /> {/* New Dashboard as root */}
               <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} /> {/* Dedicated Tickets page */}
+              <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2 /></ProtectedRoute>} /> {/* New DashboardV2 route */}
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
