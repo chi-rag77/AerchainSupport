@@ -77,7 +77,7 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer }: TicketTypeByCu
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
         <Legend verticalAlign="top" height={36} /> {/* Adjusted legend position */}
         {uniqueTypes.map((type, index) => (
-          <Bar key={type} dataKey={type} stackId="a" fill={colors[index % colors.length]} name={type} />
+          <Bar key={type} dataKey={type} stackId="a" fill={colors[index % colors.length]} name={type} radius={[4, 4, 0, 0]} />
         ))}
       </BarChart>
     </ResponsiveContainer>

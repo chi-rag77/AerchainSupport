@@ -46,6 +46,12 @@ const AssigneeLoadChart = ({ tickets, displayMode }: AssigneeLoadChartProps) => 
           bottom: 5,
         }}
       >
+        <defs>
+          <linearGradient id="colorAssignee" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="5%" stopColor="#6366F1" stopOpacity={0.8}/>
+            <stop offset="95%" stopColor="#818CF8" stopOpacity={0.6}/>
+          </linearGradient>
+        </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
         <XAxis
           type="number"
@@ -57,7 +63,7 @@ const AssigneeLoadChart = ({ tickets, displayMode }: AssigneeLoadChartProps) => 
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }}
           formatter={(value: number) => displayMode === 'percentage' ? [`${value.toFixed(1)}%`, 'Tickets Assigned'] : [value, 'Tickets Assigned']}
         />
-        <Bar dataKey={displayMode} fill="#6366F1" name="Tickets Assigned" /> {/* Unified color: Indigo-500 */}
+        <Bar dataKey={displayMode} fill="url(#colorAssignee)" name="Tickets Assigned" radius={[0, 4, 4, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

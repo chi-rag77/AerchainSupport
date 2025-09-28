@@ -54,17 +54,23 @@ const PriorityDistributionChart = ({ tickets }: PriorityDistributionChartProps) 
   return (
     <ResponsiveContainer width="100%" height={300}>
       <PieChart>
+        <defs>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(0,0,0,0.1)" />
+          </filter>
+        </defs>
         <Pie
           data={processedData}
           cx="50%"
           cy="50%"
-          innerRadius={60}
-          outerRadius={80}
+          innerRadius={70} // Thicker donut
+          outerRadius={100} // Thicker donut
           fill="#8884d8"
           paddingAngle={5}
           dataKey="value"
           label={CustomPieChartLabel} // Use custom label component
           labelLine={false} // Hide default label lines
+          filter="url(#shadow)" // Apply shadow filter
         >
           {processedData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -72,6 +78,12 @@ const PriorityDistributionChart = ({ tickets }: PriorityDistributionChartProps) 
         </Pie>
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
         <Legend />
+        <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-xl font-bold fill-foreground">
+          {tickets.length}
+        </text>
+        <text x="50%" y="50%" dy="20" textAnchor="middle" dominantBaseline="middle" className="text-sm fill-muted-foreground">
+          Total Tickets
+        </text>
       </PieChart>
     </ResponsiveContainer>
   );
