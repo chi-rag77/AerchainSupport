@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/pagination";
 import FilterNotification from "@/components/FilterNotification";
 import HandWaveIcon from "@/components/HandWaveIcon";
-import Sidebar from "@/components/Sidebar"; // Import Sidebar
+import Sidebar from "@/components/Sidebar";
 
 // Define the type for the conversation summary returned by the new endpoint
 type ConversationSummary = {
@@ -243,37 +243,37 @@ const TicketsPage = () => {
       <div className="flex-1 flex flex-col p-4 overflow-hidden"> {/* Main content area */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
           {/* Header Section */}
-          <div className="p-8 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="p-6 pb-3 border-b border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <hgroup>
-                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 flex items-center">
-                  Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
+                <p className="text-base font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                  Hi {fullName} <HandWaveIcon className="ml-2 h-5 w-5 text-yellow-500" />
                 </p>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Support & Ticketing
                 </h1>
               </hgroup>
               <Button
                 onClick={handleRefreshTickets}
                 disabled={isFetching}
-                className="h-12 px-6 text-lg font-semibold relative overflow-hidden group"
+                className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
               >
                 {isFetching ? (
-                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <RefreshCw className="mr-2 h-5 w-5" />
+                  <RefreshCw className="mr-2 h-4 w-4" />
                 )}
                 Fetch Latest Tickets
                 <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
               </Button>
             </div>
-            <p className="text-base text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Manage and track customer support tickets
             </p>
           </div>
 
           {/* Metrics Overview Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-8 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 p-6 pb-3">
             <DashboardMetricCard
               title="Total Tickets"
               value={metrics.totalTickets}
@@ -312,8 +312,8 @@ const TicketsPage = () => {
           </div>
 
           {/* Search & Filters Bar */}
-          <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
-            <div className="flex flex-wrap gap-4 w-full items-center">
+          <div className="p-6 pt-3 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
+            <div className="flex flex-wrap gap-3 w-full items-center">
               <div className="relative flex-grow min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input
@@ -324,7 +324,7 @@ const TicketsPage = () => {
                 />
               </div>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[160px] group">
+                <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
@@ -337,7 +337,7 @@ const TicketsPage = () => {
                 </SelectContent>
               </Select>
               <Select value={filterPriority} onValueChange={setFilterPriority}>
-                <SelectTrigger className="w-[160px] group">
+                <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                   <SelectValue placeholder="All Priority" />
                 </SelectTrigger>
@@ -350,7 +350,7 @@ const TicketsPage = () => {
                 </SelectContent>
               </Select>
               <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-                <SelectTrigger className="w-[160px] group">
+                <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                   <SelectValue placeholder="All Assignees" />
                 </SelectTrigger>
@@ -363,7 +363,7 @@ const TicketsPage = () => {
                 </SelectContent>
               </Select>
               <Select value={filterCompany} onValueChange={setFilterCompany}>
-                <SelectTrigger className="w-[160px] group">
+                <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                   <SelectValue placeholder="All Companies" />
                 </SelectTrigger>
@@ -376,7 +376,7 @@ const TicketsPage = () => {
                 </SelectContent>
               </Select>
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-[160px] group">
+                <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
@@ -389,7 +389,7 @@ const TicketsPage = () => {
                 </SelectContent>
               </Select>
               <Select value={filterDependency} onValueChange={setFilterDependency}>
-                <SelectTrigger className="w-[160px] group">
+                <SelectTrigger className="w-[150px] group">
                   <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                   <SelectValue placeholder="All Dependencies" />
                 </SelectTrigger>
@@ -404,7 +404,7 @@ const TicketsPage = () => {
             </div>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-8">
+          <div className="flex-grow overflow-y-auto p-6">
             <FilterNotification
               filteredCount={filteredTickets.length}
               totalCount={freshdeskTickets?.length || 0}
@@ -420,7 +420,7 @@ const TicketsPage = () => {
           </div>
 
           {totalPages > 1 && (
-            <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-4 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl">
+            <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-3 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl">
               <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2">
                 <PaginationItem>
                   <PaginationPrevious
