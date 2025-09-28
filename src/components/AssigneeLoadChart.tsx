@@ -59,7 +59,7 @@ const AssigneeLoadChart = ({ tickets, displayMode }: AssigneeLoadChartProps) => 
           tickFormatter={xAxisFormatter}
           domain={[0, displayMode === 'percentage' ? 100 : 'auto']}
         />
-        <YAxis dataKey="name" type="category" className="text-xs text-gray-600 dark:text-gray-400" />
+        <YAxis dataKey="name" type="category" width={120} className="text-xs text-gray-600 dark:text-gray-400" /> {/* Increased width for Y-axis labels */}
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }}
           formatter={(value: number) => displayMode === 'percentage' ? [`${value.toFixed(1)}%`, 'Tickets Assigned'] : [value, 'Tickets Assigned']}
         />

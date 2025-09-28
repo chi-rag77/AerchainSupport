@@ -72,7 +72,7 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer }: TicketTypeByCu
         }}
       >
         <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-        <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} interval={0} className="text-xs text-gray-600 dark:text-gray-400" /> {/* Rotated labels */}
+        <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} interval={0} className="text-xs text-gray-600 dark:text-gray-400" /> {/* Increased height for labels */}
         <YAxis className="text-xs text-gray-600 dark:text-gray-400" />
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
         <Legend verticalAlign="top" height={36} /> {/* Adjusted legend position */}

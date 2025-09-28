@@ -14,7 +14,7 @@ const COLORS = ['#EF4444', '#F97316', '#F59E0B', '#34D399', '#6B7280']; // Red, 
 // Custom label component for the PieChart
 const CustomPieChartLabel = ({ cx, cy, midAngle, outerRadius, percent, index, name, value }: any) => {
   const RADIAN = Math.PI / 180;
-  const radius = outerRadius + 20; // Position labels slightly outside the pie
+  const radius = outerRadius * 1.1; // Position labels slightly further out
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
