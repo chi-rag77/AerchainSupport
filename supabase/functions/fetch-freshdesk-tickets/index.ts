@@ -151,7 +151,8 @@ serve(async (req) => {
         const allTickets = [];
 
         while (hasMore) {
-          const url = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester&updated_since=${encodeURIComponent(updatedSince)}&page=${page}&per_page=100`;
+          // Updated 'include' parameter to match Freshdesk's expected values
+          const url = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester,stats,company,description&updated_since=${encodeURIComponent(updatedSince)}&page=${page}&per_page=100`;
           
           const response = await fetch(url, fdOptions);
           
