@@ -24,11 +24,6 @@ import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
-import BugsIssuesTrendChart from "@/components/BugsIssuesTrendChart"; // New
-import TicketTypeBreakdownChart from "@/components/TicketTypeBreakdownChart"; // New
-import AverageResolutionTimeChart from "@/components/AverageResolutionTimeChart"; // New
-import TopRepeatingIssues from "@/components/TopRepeatingIssues"; // New
-import FeatureBugsRatioChart from "@/components/FeatureBugsRatioChart"; // New
 
 // Define the type for the conversation summary (if needed, though not directly used here)
 type ConversationSummary = {
@@ -346,14 +341,14 @@ const Index = () => {
           </div>
 
           {/* Charts & Visuals Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-              <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8"> {/* Added mb-8 for spacing */}
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
+              <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3> {/* Added w-full text-center */}
               <TicketsOverTimeChart tickets={filteredDashboardTickets || []} dateRange={dateRange} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <div className="flex justify-between items-center w-full mb-2">
-                <h3 className="text-lg font-semibold text-foreground w-full text-center">Ticket Type by Customer</h3>
+                <h3 className="text-lg font-semibold text-foreground w-full text-center">Ticket Type by Customer</h3> {/* Added w-full text-center */}
                 <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
                   <SelectTrigger className="w-[180px] h-8">
                     <SelectValue placeholder="All Customers" />
@@ -369,23 +364,13 @@ const Index = () => {
               </div>
               <TicketTypeByCustomerChart tickets={filteredDashboardTickets || []} selectedCustomer={selectedCustomer} />
             </div>
-            
-            {/* New Charts */}
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-              <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Bugs & Issues Trend</h3>
-              <BugsIssuesTrendChart tickets={filteredDashboardTickets || []} dateRange={dateRange} />
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
+              <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Priority Distribution</h3> {/* Added w-full text-center */}
+              <PriorityDistributionChart tickets={filteredDashboardTickets || []} />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-              <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Type Breakdown</h3>
-              <TicketTypeBreakdownChart tickets={filteredDashboardTickets || []} dateRange={dateRange} />
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-              <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Average Resolution Time</h3>
-              <AverageResolutionTimeChart tickets={filteredDashboardTickets || []} dateRange={dateRange} />
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"> {/* Increased height to h-80 and added hover */}
               <div className="flex justify-between items-center w-full mb-2">
-                <h3 className="text-lg font-semibold text-foreground w-full text-center">Assignee Load</h3>
+                <h3 className="text-lg font-semibold text-foreground w-full text-center">Assignee Load</h3> {/* Added w-full text-center */}
                 <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
                   <SelectTrigger className="w-[120px] h-8">
                     <SelectValue placeholder="Display Mode" />
@@ -397,13 +382,6 @@ const Index = () => {
                 </Select>
               </div>
               <AssigneeLoadChart tickets={filteredDashboardTickets || []} displayMode={assigneeChartMode} />
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-              <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Feature Requests vs Bugs</h3>
-              <FeatureBugsRatioChart tickets={filteredDashboardTickets || []} dateRange={dateRange} />
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-              <TopRepeatingIssues tickets={filteredDashboardTickets || []} limit={5} />
             </div>
           </div>
 

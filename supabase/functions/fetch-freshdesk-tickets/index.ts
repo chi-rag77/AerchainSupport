@@ -151,8 +151,7 @@ serve(async (req) => {
         const allTickets = [];
 
         while (hasMore) {
-          // Include 'tags' and 'resolved_at' in the Freshdesk API call
-          const url = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester,tags&updated_since=${encodeURIComponent(updatedSince)}&page=${page}&per_page=100`;
+          const url = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester&updated_since=${encodeURIComponent(updatedSince)}&page=${page}&per_page=100`;
           
           const response = await fetch(url, fdOptions);
           
@@ -187,8 +186,6 @@ serve(async (req) => {
               requester_email: requesterEmail,
               created_at: ticket.created_at || "",
               updated_at: ticket.updated_at || "",
-              resolved_at: ticket.resolved_at || undefined, // Include resolved_at
-              tags: ticket.tags || [], // Include tags
               description_text: ticket.description_text || "",
               description_html: ticket.description_html || "",
               assignee: await getAgentName(ticket.responder_id, freshdeskApiKey, freshdeskDomain),

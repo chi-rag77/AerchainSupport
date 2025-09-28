@@ -15,8 +15,6 @@ export type Ticket = {
   description_html?: string;
   custom_fields?: Record<string, any>;
   assignee?: string; // Added assignee field
-  resolved_at?: string; // Added for resolution time tracking
-  tags?: string[]; // Added for issue categorization
   // Freshdesk custom fields
   cf_company?: string;
   cf_country?: string;
