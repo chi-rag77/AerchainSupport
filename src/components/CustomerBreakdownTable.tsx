@@ -18,71 +18,102 @@ interface CustomerBreakdownTableProps {
 }
 
 const CustomerBreakdownTable = ({ data }: CustomerBreakdownTableProps) => {
-  const getStatusColorClass = (count: number, type: 'open' | 'resolved' | 'pending' | 'bugs' | 'otherActive') => {
+  const getStatusColorClass = (count: number, type: string) => {
     if (count === 0) return 'text-muted-foreground';
     switch (type) {
       case 'open':
         return 'text-red-600 dark:text-red-400 font-semibold';
       case 'resolved':
         return 'text-green-600 dark:text-green-400 font-semibold';
-      case 'pending':
+      case 'pending': // This is for pendingTech
         return 'text-yellow-600 dark:text-yellow-400 font-semibold';
       case 'bugs':
         return 'text-purple-600 dark:text-purple-400 font-semibold';
       case 'otherActive':
         return 'text-blue-600 dark:text-blue-400 font-semibold';
+      case 'font-bold': // For totalToday, which is just bold
+        return 'text-foreground font-bold';
       default:
         return 'text-foreground font-semibold';
     }
   };
 
+  // Define the metrics that will be displayed as rows
+  const metricDefinitions = [
+    { key: 'totalToday', label: 'Total Tickets', icon: <Users className="h-4 w-4 mr-1" />, colorClass: 'font-bold' },
+    { key: 'resolvedToday', label: 'Resolved', icon: <CheckCircle className="h-4 w-4 mr-1 text-green-500" />, colorClass: 'resolved' },
+    { key: 'open', label: 'Open', icon: <Hourglass className="h-4 w-4 mr-1 text-red-500" />, colorClass: 'open' },
+    { key: 'pendingTech', label: 'Pending Tech', icon: <ShieldAlert className="h-4 w-4 mr-1 text-yellow-500" />, colorClass: 'pending' },
+    { key: 'otherActive', label: 'Other Active', icon: <MessageSquare className="h-4 w-4 mr-1 text-blue-500" />, colorClass: 'otherActive' },
+    { key: 'bugs', label: 'Bugs (Type)', icon: <Bug className="h-4 w-4 mr-1 text-purple-500" />, colorClass: 'bugs' },
+  ];
+
+  // Separate customer data from the grand total
+  const customerDataRows = data.filter(row => row.name !== "Grand Total");
+  const grandTotalRow = data.find(row => row.name === "Grand Total");
+
+  // Get unique customer names for column headers
+  const customerNames = customerDataRows.map(row => row.name);
+
   return (
     <div className="rounded-lg overflow-hidden shadow-md w-full bg-white dark:bg-gray-800 border border-border">
       <Table>
         <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
-          {/* First header row: Customer and an empty cell spanning the metric columns */}
           <TableRow>
-            <TableHead className="py-2 whitespace-nowrap text-foreground">Customer</TableHead>
-            <TableHead colSpan={6} className="py-2"></TableHead> {/* Empty cell spanning 6 metric columns */}
-          </TableRow>
-          {/* Second header row: Individual metric headers */}
-          <TableRow>
-            <TableHead className="py-2"></TableHead> {/* Empty cell to align with Customer column */}
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><Users className="h-4 w-4 mr-1" /> Total</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><CheckCircle className="h-4 w-4 mr-1 text-green-500" /> Resolved</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><Hourglass className="h-4 w-4 mr-1 text-red-500" /> Open</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><ShieldAlert className="h-4 w-4 mr-1 text-yellow-500" /> Pending Tech</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><MessageSquare className="h-4 w-4 mr-1 text-blue-500" /> Other Active</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><Bug className="h-4 w-4 mr-1 text-purple-500" /> Bugs (Type)</TableHead>
+            {/* Empty cell for the top-left corner */}
+            <TableHead className="py-2"></TableHead> 
+            {/* Customer names as column headers */}
+            {customerNames.map(customerName => (
+              <TableHead key={customerName} className="py-2 text-center whitespace-nowrap text-foreground">
+                {customerName}
+              </TableHead>
+            ))}
+            {/* Grand Total column header */}
+            {grandTotalRow && (
+              <TableHead className="py-2 text-center whitespace-nowrap text-primary dark:text-primary-foreground font-bold">
+                Grand Total
+              </TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.length > 0 ? (
-            data.map((row, index) => (
-              <TableRow 
-                key={row.name} 
-                className={cn(
-                  "transition-all duration-200 ease-in-out hover:bg-gray-50 dark:hover:bg-gray-700",
-                  index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750',
-                  row.name === "Grand Total" ? "font-bold bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600" : ""
-                )}
-              >
-                <TableCell className={cn("font-medium py-3", row.name === "Grand Total" ? "text-primary dark:text-primary-foreground" : "")}>{row.name}</TableCell>
-                <TableCell className="py-3 text-center font-bold">{row.totalToday}</TableCell>
-                <TableCell className={cn("py-3 text-center", getStatusColorClass(row.resolvedToday, 'resolved'))}>{row.resolvedToday}</TableCell>
-                <TableCell className={cn("py-3 text-center", getStatusColorClass(row.open, 'open'))}>{row.open}</TableCell>
-                <TableCell className={cn("py-3 text-center", getStatusColorClass(row.pendingTech, 'pending'))}>{row.pendingTech}</TableCell>
-                <TableCell className={cn("py-3 text-center", getStatusColorClass(row.otherActive, 'otherActive'))}>{row.otherActive}</TableCell>
-                <TableCell className={cn("py-3 text-center", getStatusColorClass(row.bugs, 'bugs'))}>{row.bugs}</TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3">
-                No customer breakdown data found.
+          {metricDefinitions.map((metricDef, metricIndex) => (
+            <TableRow 
+              key={metricDef.key} 
+              className={cn(
+                "transition-all duration-200 ease-in-out hover:bg-gray-50 dark:hover:bg-gray-700",
+                metricIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'
+              )}
+            >
+              {/* Metric label as the first cell in each row */}
+              <TableCell className="py-3 font-medium flex items-center whitespace-nowrap">
+                {metricDef.icon} {metricDef.label}
               </TableCell>
+              {/* Data cells for each customer */}
+              {customerDataRows.map(customerRow => (
+                <TableCell 
+                  key={`${metricDef.key}-${customerRow.name}`} 
+                  className={cn(
+                    "py-3 text-center", 
+                    getStatusColorClass(customerRow[metricDef.key as keyof CustomerBreakdownRow] as number, metricDef.colorClass)
+                  )}
+                >
+                  {customerRow[metricDef.key as keyof CustomerBreakdownRow] as number}
+                </TableCell>
+              ))}
+              {/* Data cell for Grand Total */}
+              {grandTotalRow && (
+                <TableCell 
+                  className={cn(
+                    "py-3 text-center font-bold text-primary dark:text-primary-foreground", 
+                    getStatusColorClass(grandTotalRow[metricDef.key as keyof CustomerBreakdownRow] as number, metricDef.colorClass)
+                  )}
+                >
+                  {grandTotalRow[metricDef.key as keyof CustomerBreakdownRow] as number}
+                </TableCell>
+              )}
             </TableRow>
-          )}
+          ))}
         </TableBody>
       </Table>
     </div>
