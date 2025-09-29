@@ -41,13 +41,13 @@ const CustomerBreakdownTable = ({ data }: CustomerBreakdownTableProps) => {
       <Table>
         <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
           <TableRow>
-            <TableHead className="py-3 whitespace-nowrap">Customer</TableHead>
-            <TableHead className="py-3 text-center whitespace-nowrap flex items-center justify-center"><Users className="h-4 w-4 mr-1" /> Total</TableHead>
-            <TableHead className="py-3 text-center whitespace-nowrap flex items-center justify-center"><CheckCircle className="h-4 w-4 mr-1 text-green-500" /> Resolved</TableHead>
-            <TableHead className="py-3 text-center whitespace-nowrap flex items-center justify-center"><Hourglass className="h-4 w-4 mr-1 text-red-500" /> Open</TableHead>
-            <TableHead className="py-3 text-center whitespace-nowrap flex items-center justify-center"><ShieldAlert className="h-4 w-4 mr-1 text-yellow-500" /> Pending Tech</TableHead>
-            <TableHead className="py-3 text-center whitespace-nowrap flex items-center justify-center"><MessageSquare className="h-4 w-4 mr-1 text-blue-500" /> Other Active</TableHead>
-            <TableHead className="py-3 text-center whitespace-nowrap flex items-center justify-center"><Bug className="h-4 w-4 mr-1 text-purple-500" /> Bugs (Type)</TableHead>
+            <TableHead className="py-2 whitespace-nowrap">Customer</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><Users className="h-4 w-4 mr-1" /> Total</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><CheckCircle className="h-4 w-4 mr-1 text-green-500" /> Resolved</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><Hourglass className="h-4 w-4 mr-1 text-red-500" /> Open</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><ShieldAlert className="h-4 w-4 mr-1 text-yellow-500" /> Pending Tech</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><MessageSquare className="h-4 w-4 mr-1 text-blue-500" /> Other Active</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><Bug className="h-4 w-4 mr-1 text-purple-500" /> Bugs (Type)</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -58,11 +58,11 @@ const CustomerBreakdownTable = ({ data }: CustomerBreakdownTableProps) => {
                 className={cn(
                   "transition-all duration-200 ease-in-out hover:bg-gray-50 dark:hover:bg-gray-700",
                   index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750',
-                  row.name === "Grand Total" ? "font-bold bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30" : ""
+                  row.name === "Grand Total" ? "font-bold bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600" : ""
                 )}
               >
                 <TableCell className={cn("font-medium py-3", row.name === "Grand Total" ? "text-primary dark:text-primary-foreground" : "")}>{row.name}</TableCell>
-                <TableCell className="py-3 text-center font-bold text-lg">{row.totalToday}</TableCell>
+                <TableCell className="py-3 text-center font-bold">{row.totalToday}</TableCell>
                 <TableCell className={cn("py-3 text-center", getStatusColorClass(row.resolvedToday, 'resolved'))}>{row.resolvedToday}</TableCell>
                 <TableCell className={cn("py-3 text-center", getStatusColorClass(row.open, 'open'))}>{row.open}</TableCell>
                 <TableCell className={cn("py-3 text-center", getStatusColorClass(row.pendingTech, 'pending'))}>{row.pendingTech}</TableCell>
