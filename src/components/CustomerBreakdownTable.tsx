@@ -40,14 +40,20 @@ const CustomerBreakdownTable = ({ data }: CustomerBreakdownTableProps) => {
     <div className="rounded-lg overflow-hidden shadow-md w-full bg-white dark:bg-gray-800 border border-border">
       <Table>
         <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
+          {/* First header row: Customer and an empty cell spanning the metric columns */}
           <TableRow>
-            <TableHead className="py-2 whitespace-nowrap">Customer</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><Users className="h-4 w-4 mr-1" /> Total</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><CheckCircle className="h-4 w-4 mr-1 text-green-500" /> Resolved</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><Hourglass className="h-4 w-4 mr-1 text-red-500" /> Open</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><ShieldAlert className="h-4 w-4 mr-1 text-yellow-500" /> Pending Tech</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><MessageSquare className="h-4 w-4 mr-1 text-blue-500" /> Other Active</TableHead>
-            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center"><Bug className="h-4 w-4 mr-1 text-purple-500" /> Bugs (Type)</TableHead>
+            <TableHead className="py-2 whitespace-nowrap text-foreground">Customer</TableHead>
+            <TableHead colSpan={6} className="py-2"></TableHead> {/* Empty cell spanning 6 metric columns */}
+          </TableRow>
+          {/* Second header row: Individual metric headers */}
+          <TableRow>
+            <TableHead className="py-2"></TableHead> {/* Empty cell to align with Customer column */}
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><Users className="h-4 w-4 mr-1" /> Total</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><CheckCircle className="h-4 w-4 mr-1 text-green-500" /> Resolved</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><Hourglass className="h-4 w-4 mr-1 text-red-500" /> Open</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><ShieldAlert className="h-4 w-4 mr-1 text-yellow-500" /> Pending Tech</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><MessageSquare className="h-4 w-4 mr-1 text-blue-500" /> Other Active</TableHead>
+            <TableHead className="py-2 text-center whitespace-nowrap flex items-center justify-center text-foreground"><Bug className="h-4 w-4 mr-1 text-purple-500" /> Bugs (Type)</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
