@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2 } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid } from "lucide-react"; // Added Table2 and LayoutGrid icons
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,7 @@ import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
+import CustomerBreakdownTable from "@/components/CustomerBreakdownTable"; // Import new table component
 import { MultiSelect } from "@/components/MultiSelect";
 
 const Index = () => {
@@ -46,6 +47,7 @@ const Index = () => {
   const [selectedCustomerForChart, setSelectedCustomerForChart] = useState<string>("All");
   const [selectedCustomersForBreakdown, setSelectedCustomersForBreakdown] = useState<string[]>([]);
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
+  const [customerBreakdownView, setCustomerBreakdownView] = useState<'cards' | 'table'>('cards'); // New state for view type
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -485,26 +487,43 @@ const Index = () => {
               <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-foreground">Customer Breakdown for {dateRangeDisplay}</h3>
-                  <MultiSelect
-                    options={uniqueCompanies.map(company => ({ value: company, label: company }))}
-                    selected={selectedCustomersForBreakdown}
-                    onSelectedChange={setSelectedCustomersForBreakdown}
-                    placeholder="Select Customers"
-                    className="w-[250px]"
-                  />
+                  <div className="flex items-center gap-3">
+                    <MultiSelect
+                      options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+                      selected={selectedCustomersForBreakdown}
+                      onSelectedChange={setSelectedCustomersForBreakdown}
+                      placeholder="Select Customers"
+                      className="w-[250px]"
+                    />
+                    <Select value={customerBreakdownView} onValueChange={(value: 'cards' | 'table') => setCustomerBreakdownView(value)}>
+                      <SelectTrigger className="w-[120px]">
+                        {customerBreakdownView === 'cards' ? <LayoutGrid className="h-4 w-4 mr-2" /> : <Table2 className="h-4 w-4 mr-2" />}
+                        <SelectValue placeholder="View As" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cards">Cards</SelectItem>
+                        <SelectItem value="table">Table</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {customerBreakdownData.map((customer) => (
-                    <CustomerBreakdownCard key={customer.name} customerData={customer} />
-                  ))}
-                  {customerBreakdownData.length > 0 && (
-                    <CustomerBreakdownCard customerData={grandTotalData} isGrandTotal={true} />
-                  )}
-                </div>
-                {customerBreakdownData.length === 0 && (
+                {customerBreakdownData.length === 0 ? (
                   <p className="text-center text-gray-500 dark:text-gray-400 py-3">
                     No customer breakdown data for the selected date and filters.
                   </p>
+                ) : (
+                  customerBreakdownView === 'cards' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {customerBreakdownData.map((customer) => (
+                        <CustomerBreakdownCard key={customer.name} customerData={customer} />
+                      ))}
+                      {customerBreakdownData.length > 0 && (
+                        <CustomerBreakdownCard customerData={grandTotalData} isGrandTotal={true} />
+                      )}
+                    </div>
+                  ) : (
+                    <CustomerBreakdownTable data={[...customerBreakdownData, grandTotalData]} />
+                  )
                 )}
               </div>
 
