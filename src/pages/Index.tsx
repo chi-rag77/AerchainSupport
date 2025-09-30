@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb } from "lucide-react"; // Added Lightbulb icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, UseQueryOptions, QueryKey } from "@tanstack/react-query"; // Import QueryKey
+import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket, CustomerBreakdownRow, Insight } from "@/types";
 import { isWithinInterval, subDays, format, addDays, differenceInDays } from 'date-fns';
@@ -107,17 +107,20 @@ const Index = () => {
     Insight[], // TQueryFnData
     Error,     // TError
     Insight[], // TData
-    QueryKey   // TQueryKey - Use QueryKey here
+    readonly ["dashboardInsights", string | undefined] // TQueryKey - Use the exact tuple type here
   >({
-    queryKey: ["dashboardInsights", authToken] as QueryKey, // Cast queryKey to QueryKey
-    queryFn: () => fetchDashboardInsights(authToken),
+    queryKey: ["dashboardInsights", authToken],
+    queryFn: async ({ queryKey }) => {
+      const [, token] = queryKey;
+      return fetchDashboardInsights(token);
+    },
     enabled: !!authToken,
-    onSuccess: (data: Insight[]) => { // Explicitly type data here
+    onSuccess: (data: Insight[]) => {
       if (data.length > 0 && data[0].id !== 'insight-fetch-error') {
         toast.info(`Found ${data.length} new insights!`);
       }
     },
-    onError: (err: Error) => { // Explicitly type err here
+    onError: (err: Error) => {
       toast.error(`Error fetching insights: ${err.message}`);
     },
   });
