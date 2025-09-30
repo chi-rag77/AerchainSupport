@@ -31,7 +31,7 @@ const DashboardMetricCard = ({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Card className={cn("relative overflow-hidden group cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full", className)} onClick={onClick}>
+        <Card className={cn("relative overflow-hidden group cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-[1.02] h-full", className)} onClick={onClick}>
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
