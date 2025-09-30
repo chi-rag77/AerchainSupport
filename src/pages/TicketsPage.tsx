@@ -20,6 +20,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
+  PaginationEllipsis, // Import PaginationEllipsis
 } from "@/components/ui/pagination";
 import FilterNotification from "@/components/FilterNotification";
 import Sidebar from "@/components/Sidebar";
@@ -166,6 +167,45 @@ const TicketsPage = () => {
   const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  // Function to generate page numbers for pagination display
+  const getPageNumbers = (currentPage: number, totalPages: number, maxPageNumbersToShow: number = 5) => {
+    const pageNumbers: (number | 'ellipsis')[] = [];
+    const half = Math.floor(maxPageNumbersToShow / 2);
+
+    let startPage = Math.max(1, currentPage - half);
+    let endPage = Math.min(totalPages, currentPage + half);
+
+    if (endPage - startPage + 1 < maxPageNumbersToShow) {
+      if (startPage === 1) {
+        endPage = Math.min(totalPages, startPage + maxPageNumbersToShow - 1);
+      } else if (endPage === totalPages) {
+        startPage = Math.max(1, totalPages - maxPageNumbersToShow + 1);
+      }
+    }
+
+    if (startPage > 1) {
+      pageNumbers.push(1);
+      if (startPage > 2) {
+        pageNumbers.push('ellipsis');
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pageNumbers.push('ellipsis');
+      }
+      pageNumbers.push(totalPages);
+    }
+
+    return pageNumbers;
+  };
+
+  const displayedPageNumbers = getPageNumbers(currentPage, totalPages);
 
 
   const uniqueAssignees = useMemo(() => {
@@ -447,16 +487,22 @@ const TicketsPage = () => {
                     <ChevronLeft className="h-4 w-4 mr-1" /> Previous
                   </PaginationPrevious>
                 </PaginationItem>
-                {[...Array(totalPages)].map((_, i) => (
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      onClick={() => paginate(i + 1)}
-                      isActive={currentPage === i + 1}
-                      className={currentPage === i + 1 ? "bg-primary text-primary-foreground rounded-full" : "rounded-full"}
-                    >
-                      {i + 1}
-                    </PaginationLink>
-                  </PaginationItem>
+                {displayedPageNumbers.map((pageNumber, index) => (
+                  pageNumber === 'ellipsis' ? (
+                    <PaginationItem key={`ellipsis-${index}`}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        onClick={() => paginate(pageNumber as number)}
+                        isActive={currentPage === pageNumber}
+                        className={currentPage === pageNumber ? "bg-primary text-primary-foreground rounded-full" : "rounded-full"}
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
                 ))}
                 <PaginationItem>
                   <PaginationNext
