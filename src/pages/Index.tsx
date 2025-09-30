@@ -31,7 +31,6 @@ import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
 import CustomerBreakdownTable from "@/components/CustomerBreakdownTable";
 import { MultiSelect } from "@/components/MultiSelect";
-import DashboardSummaryCard from "@/components/DashboardSummaryCard"; // Import the new summary card
 
 const Index = () => {
   const { session } = useSupabase();
@@ -493,15 +492,7 @@ const Index = () => {
                   trend={8} // Placeholder trend
                   description="Number of tickets categorized as 'Bug' in the selected period."
                 />
-                {/* New Summary Card */}
-                <DashboardSummaryCard
-                  totalTickets={metrics.totalTickets}
-                  totalOpenTicketsOverall={metrics.totalOpenTicketsOverall}
-                  openTickets={metrics.openTickets}
-                  resolvedThisPeriod={metrics.resolvedThisPeriod}
-                  bugsReceived={metrics.bugsReceived}
-                  dateRangeDisplay={dateRangeDisplay}
-                />
+                {/* Removed: New This Period, High Priority, SLA Breaches */}
               </div>
 
               {/* Customer Breakdown Section */}
