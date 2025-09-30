@@ -232,34 +232,69 @@ const Index = () => {
   }, [filteredDashboardTickets, freshdeskTickets, effectiveStartDate, effectiveEndDate]); // Added freshdeskTickets to dependencies
 
   const customerBreakdownData = useMemo(() => {
-    if (!filteredDashboardTickets || !effectiveStartDate || !effectiveEndDate) return [];
+    if (!freshdeskTickets || !effectiveStartDate || !effectiveEndDate) return [];
 
     const customerMap = new Map<string, CustomerBreakdownRow>();
 
-    filteredDashboardTickets.forEach(ticket => {
+    // First, initialize map with all unique companies and their overall open tickets
+    const allCompanies = new Set<string>();
+    freshdeskTickets.forEach(ticket => {
       const company = ticket.cf_company || 'Unknown Company';
-      
-      if (selectedCustomersForBreakdown.length > 0 && !selectedCustomersForBreakdown.includes(company)) {
-        return;
-      }
-
+      allCompanies.add(company);
       if (!customerMap.has(company)) {
         customerMap.set(company, {
           name: company,
-          totalInPeriod: 0, // Renamed
-          resolvedInPeriod: 0, // Renamed
+          totalInPeriod: 0,
+          resolvedInPeriod: 0,
           open: 0,
           pendingTech: 0,
           bugs: 0,
           otherActive: 0,
+          totalOpenTicketsOverall: 0,
+        });
+      }
+      const customerRow = customerMap.get(company)!;
+      const statusLower = ticket.status.toLowerCase();
+      if (statusLower === 'open (being processed)' ||
+          statusLower === 'pending (awaiting your reply)' ||
+          statusLower === 'waiting on customer' ||
+          statusLower === 'on tech' ||
+          statusLower === 'on product' ||
+          statusLower === 'escalated') {
+        customerRow.totalOpenTicketsOverall++;
+      }
+    });
+
+    // Then, populate date-filtered metrics using filteredDashboardTickets
+    filteredDashboardTickets.forEach(ticket => {
+      const company = ticket.cf_company || 'Unknown Company';
+      
+      // Only process if the company is selected in the MultiSelect filter
+      if (selectedCustomersForBreakdown.length > 0 && !selectedCustomersForBreakdown.includes(company)) {
+        return;
+      }
+
+      // Ensure the customer entry exists (it should from the first pass)
+      if (!customerMap.has(company)) {
+        // This case should ideally not happen if allCompanies is correctly populated
+        // but as a fallback, create it.
+        customerMap.set(company, {
+          name: company,
+          totalInPeriod: 0,
+          resolvedInPeriod: 0,
+          open: 0,
+          pendingTech: 0,
+          bugs: 0,
+          otherActive: 0,
+          totalOpenTicketsOverall: 0, // Will be updated if this ticket is open
         });
       }
       const customerRow = customerMap.get(company)!;
 
-      customerRow.totalInPeriod++; // Renamed
+      customerRow.totalInPeriod++;
       const statusLower = ticket.status.toLowerCase();
       if (statusLower === 'resolved' || statusLower === 'closed') {
-        customerRow.resolvedInPeriod++; // Renamed
+        customerRow.resolvedInPeriod++;
       } else if (statusLower === 'open (being processed)') {
         customerRow.open++;
       } else {
@@ -269,32 +304,36 @@ const Index = () => {
       if (ticket.type?.toLowerCase() === 'bug') {
         customerRow.bugs++;
       }
-      // For pendingTech, we need to check the status directly
       if (statusLower === 'on tech') {
         customerRow.pendingTech++;
       }
     });
 
-    return Array.from(customerMap.values()).sort((a, b) => b.totalInPeriod - a.totalInPeriod); // Renamed
-  }, [filteredDashboardTickets, selectedCustomersForBreakdown]);
+    // Filter out companies not selected in MultiSelect, and convert map to array
+    return Array.from(customerMap.values())
+      .filter(row => selectedCustomersForBreakdown.length === 0 || selectedCustomersForBreakdown.includes(row.name))
+      .sort((a, b) => b.totalInPeriod - a.totalInPeriod);
+  }, [freshdeskTickets, filteredDashboardTickets, selectedCustomersForBreakdown, effectiveStartDate, effectiveEndDate]);
 
   const grandTotalData: CustomerBreakdownRow = useMemo(() => {
     return customerBreakdownData.reduce((acc, curr) => {
-      acc.totalInPeriod += curr.totalInPeriod; // Renamed
-      acc.resolvedInPeriod += curr.resolvedInPeriod; // Renamed
+      acc.totalInPeriod += curr.totalInPeriod;
+      acc.resolvedInPeriod += curr.resolvedInPeriod;
       acc.open += curr.open;
       acc.pendingTech += curr.pendingTech;
       acc.bugs += curr.bugs;
       acc.otherActive += curr.otherActive;
+      acc.totalOpenTicketsOverall += curr.totalOpenTicketsOverall; // Aggregate new metric
       return acc;
     }, {
       name: "Grand Total",
-      totalInPeriod: 0, // Renamed
-      resolvedInPeriod: 0, // Renamed
+      totalInPeriod: 0,
+      resolvedInPeriod: 0,
       open: 0,
       pendingTech: 0,
       bugs: 0,
       otherActive: 0,
+      totalOpenTicketsOverall: 0, // Initialize new metric
     });
   }, [customerBreakdownData]);
 

@@ -40,6 +40,7 @@ export interface CustomerBreakdownRow {
   pendingTech: number;
   bugs: number;
   otherActive: number; // New field for other active statuses
+  totalOpenTicketsOverall: number; // New field for overall open tickets
 }
 
 export interface ConversationMessage {
