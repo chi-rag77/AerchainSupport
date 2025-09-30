@@ -55,5 +55,5 @@ export type Insight = {
   type: 'stalledOnTech' | 'highPriority' | 'info'; // Defines the type of insight
   message: string;
   severity: 'info' | 'warning' | 'critical'; // Severity for styling
-  icon?: React.ElementType; // Optional Lucide icon for the insight
+  icon?: string; // Changed to string to match Edge Function output
 };

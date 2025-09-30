@@ -34,67 +34,36 @@ import { MultiSelect } from "@/components/MultiSelect";
 import MyOpenTicketsModal from "@/components/MyOpenTicketsModal";
 import InsightsSheet from "@/components/InsightsSheet"; // Import the new InsightsSheet
 
-const generateDashboardInsights = (tickets: Ticket[], effectiveEndDate: Date, userFullName: string): Insight[] => {
-  const insights: Insight[] = [];
-  const now = new Date();
+// This function will now primarily fetch insights from the Edge Function
+const fetchDashboardInsights = async (token: string | undefined): Promise<Insight[]> => {
+  if (!token) return [];
 
-  // Insight 1: Stalled Tickets (On Tech, not updated in > 2 days)
-  const stalledOnTechTickets = tickets.filter(ticket =>
-    ticket.status.toLowerCase() === 'on tech' &&
-    differenceInDays(now, new Date(ticket.updated_at)) > 2
-  );
-
-  const stalledByCompany: { [company: string]: number } = {};
-  stalledOnTechTickets.forEach(ticket => {
-    const company = ticket.cf_company || 'Unknown Company';
-    stalledByCompany[company] = (stalledByCompany[company] || 0) + 1;
-  });
-
-  Object.entries(stalledByCompany).forEach(([company, count]) => {
-    insights.push({
-      id: `stalled-${company}`,
-      type: 'stalledOnTech',
-      message: `${company} has ${count} tickets pending tech for more than 2 days.`,
-      severity: count > 5 ? 'critical' : 'warning',
-      icon: Clock,
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-stalled-tickets-insights', {
+      method: 'POST', // Or GET, depending on how you want to pass parameters
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      // No body needed for this simple stalled tickets insight, but could be added for date filters etc.
     });
-  });
 
-  // Insight 2: High Priority Backlog
-  const highPriorityTickets = tickets.filter(ticket =>
-    ticket.priority.toLowerCase() === 'high' || ticket.priority.toLowerCase() === 'urgent'
-  );
-
-  const highPriorityByCompany: { [company: string]: number } = {};
-  highPriorityTickets.forEach(ticket => {
-    const company = ticket.cf_company || 'Unknown Company';
-    highPriorityByCompany[company] = (highPriorityByCompany[company] || 0) + 1;
-  });
-
-  Object.entries(highPriorityByCompany).forEach(([company, count]) => {
-    if (count > 0) {
-      insights.push({
-        id: `high-priority-${company}`,
-        type: 'highPriority',
-        message: `${company} has ${count} high/urgent priority tickets.`,
-        severity: count > 3 ? 'critical' : 'warning',
-        icon: AlertCircle,
-      });
+    if (error) {
+      console.error("Error fetching insights from Edge Function:", error);
+      throw error;
     }
-  });
-
-  // Insight 3: General info if no specific issues
-  if (insights.length === 0) {
-    insights.push({
-      id: 'no-issues',
+    return data as Insight[];
+  } catch (err: any) {
+    console.error("Failed to fetch insights:", err.message);
+    // Fallback to a default info insight if there's an error
+    return [{
+      id: 'insight-fetch-error',
       type: 'info',
-      message: `All clear! No critical insights for ${userFullName} in the selected period.`,
-      severity: 'info',
-      icon: Info,
-    });
+      message: `Failed to load insights: ${err.message}. Please try again.`,
+      severity: 'warning',
+      icon: 'Info', // This is now a string, matching the updated Insight type
+    }];
   }
-
-  return insights;
 };
 
 const Index = () => {
@@ -102,6 +71,7 @@ const Index = () => {
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const userEmail = user?.email;
+  const authToken = session?.access_token;
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [searchTerm, setSearchTerm] = useState(""); // Keep searchTerm state for potential future use or other filters
@@ -135,6 +105,26 @@ const Index = () => {
       toast.error(`Failed to load dashboard data from Supabase: ${err.message}`);
     },
   } as UseQueryOptions<Ticket[], Error>);
+
+  // Fetch insights from the new Edge Function
+  const { data: dashboardInsights, isLoading: isLoadingInsights, error: insightsError } = useQuery<
+    Insight[], // TQueryFnData
+    Error,     // TError
+    Insight[], // TData
+    readonly ["dashboardInsights", string | undefined] // TQueryKey - explicitly make it readonly
+  >({
+    queryKey: ["dashboardInsights", authToken],
+    queryFn: () => fetchDashboardInsights(authToken),
+    enabled: !!authToken, // Only run if authToken is available
+    onSuccess: (data) => {
+      if (data.length > 0 && data[0].id !== 'insight-fetch-error') {
+        toast.info(`Found ${data.length} new insights!`);
+      }
+    },
+    onError: (err) => {
+      toast.error(`Error fetching insights: ${err.message}`);
+    },
+  });
 
   const uniqueCompanies = useMemo(() => {
     const companies = new Set<string>();
@@ -356,10 +346,6 @@ const Index = () => {
       otherActive: 0,
     });
   }, [customerBreakdownData]);
-
-  const dashboardInsights = useMemo(() => {
-    return generateDashboardInsights(filteredDashboardTickets, effectiveEndDate, fullName);
-  }, [filteredDashboardTickets, effectiveEndDate, fullName]);
 
   const handleExportFilteredTickets = () => {
     exportToCsv(filteredDashboardTickets, `tickets_dashboard_filtered_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
@@ -677,7 +663,7 @@ const Index = () => {
       <InsightsSheet
         isOpen={isInsightsSheetOpen}
         onClose={() => setIsInsightsSheetOpen(false)}
-        insights={dashboardInsights}
+        insights={dashboardInsights || []} // Pass the fetched insights
       />
     </div>
   );

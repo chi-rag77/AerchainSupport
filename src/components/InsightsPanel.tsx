@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Clock, Info } from 'lucide-react'; // Removed TrendingUp as it's not used in current insights
+import { AlertCircle, Clock, Info } from 'lucide-react';
 import { Insight } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -11,10 +11,13 @@ interface InsightsPanelProps {
 }
 
 // Map insight types to Lucide icons for visual representation
-const iconMap = {
+const iconMap: { [key: string]: React.ElementType } = {
   stalledOnTech: Clock,
   highPriority: AlertCircle,
   info: Info,
+  Clock: Clock, // Explicitly map string "Clock" to Clock icon
+  AlertCircle: AlertCircle, // Explicitly map string "AlertCircle" to AlertCircle icon
+  Info: Info, // Explicitly map string "Info" to Info icon
 };
 
 const InsightsPanel = ({ insights }: InsightsPanelProps) => {
@@ -33,7 +36,7 @@ const InsightsPanel = ({ insights }: InsightsPanelProps) => {
       <h3 className="text-lg font-semibold text-foreground mb-2">Insights</h3>
       {insights.map(insight => {
         // Determine the icon to use, falling back to Info if not specified or mapped
-        const IconComponent = insight.icon || iconMap[insight.type] || iconMap.info;
+        const IconComponent = (insight.icon && iconMap[insight.icon]) ? iconMap[insight.icon] : iconMap[insight.type] || iconMap.info;
         
         // Apply styling based on severity
         const severityClass = {
