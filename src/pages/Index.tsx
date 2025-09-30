@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb } from "lucide-react"; // Added Lightbulb icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +32,7 @@ import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
 import CustomerBreakdownTable from "@/components/CustomerBreakdownTable";
 import { MultiSelect } from "@/components/MultiSelect";
 import MyOpenTicketsModal from "@/components/MyOpenTicketsModal";
-import InsightsPanel from "@/components/InsightsPanel"; // Import the new InsightsPanel
+import InsightsSheet from "@/components/InsightsSheet"; // Import the new InsightsSheet
 
 const generateDashboardInsights = (tickets: Ticket[], effectiveEndDate: Date, userFullName: string): Insight[] => {
   const insights: Insight[] = [];
@@ -104,7 +104,7 @@ const Index = () => {
   const userEmail = user?.email;
 
   const [showSidebar, setShowSidebar] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(""); // Keep searchTerm state for potential future use or other filters
   const [activeDateFilter, setActiveDateFilter] = useState<string | DateRange>("last7days");
   const [filterMyTickets, setFilterMyTickets] = useState(false);
   const [filterHighPriority, setFilterHighPriority] = useState(false);
@@ -114,6 +114,7 @@ const Index = () => {
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
   const [customerBreakdownView, setCustomerBreakdownView] = useState<'cards' | 'table'>('cards');
   const [isMyOpenTicketsModalOpen, setIsMyOpenTicketsModalOpen] = useState(false);
+  const [isInsightsSheetOpen, setIsInsightsSheetOpen] = useState(false); // State for Insights Sheet
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -481,16 +482,14 @@ const Index = () => {
                 <ShieldAlert className="h-4 w-4" /> SLA Breached
               </Button>
 
-              {/* Search Box */}
-              <div className="relative flex-grow min-w-[250px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Search Ticket ID, Title, Assignee..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-full"
-                />
-              </div>
+              {/* Insights Button */}
+              <Button
+                variant="default"
+                onClick={() => setIsInsightsSheetOpen(true)}
+                className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Lightbulb className="h-4 w-4" /> Insights
+              </Button>
 
               {/* New: View Open Tickets Button */}
               <Button
@@ -579,8 +578,10 @@ const Index = () => {
 
               {/* Insights Panel and Customer Breakdown Section */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
+                {/* The InsightsPanel is now moved into InsightsSheet */}
                 <div className="lg:col-span-1">
-                  <InsightsPanel insights={dashboardInsights} />
+                  {/* This space can be used for other widgets or left empty */}
+                  <p className="text-muted-foreground text-sm">Click 'Insights' button for proactive notifications.</p>
                 </div>
                 <div className="lg:col-span-2">
                   <div className="flex justify-between items-center mb-4">
@@ -679,6 +680,11 @@ const Index = () => {
         isOpen={isMyOpenTicketsModalOpen}
         onClose={() => setIsMyOpenTicketsModalOpen(false)}
         tickets={allOpenTickets}
+      />
+      <InsightsSheet
+        isOpen={isInsightsSheetOpen}
+        onClose={() => setIsInsightsSheetOpen(false)}
+        insights={dashboardInsights}
       />
     </div>
   );
