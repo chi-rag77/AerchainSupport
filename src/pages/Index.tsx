@@ -31,6 +31,7 @@ import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
 import CustomerBreakdownTable from "@/components/CustomerBreakdownTable";
 import { MultiSelect } from "@/components/MultiSelect";
+import MyOpenTicketsModal from "@/components/MyOpenTicketsModal"; // Import the new modal
 
 const Index = () => {
   const { session } = useSupabase();
@@ -48,6 +49,7 @@ const Index = () => {
   const [selectedCustomersForBreakdown, setSelectedCustomersForBreakdown] = useState<string[]>([]);
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
   const [customerBreakdownView, setCustomerBreakdownView] = useState<'cards' | 'table'>('cards');
+  const [isMyOpenTicketsModalOpen, setIsMyOpenTicketsModalOpen] = useState(false); // New state for modal
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -182,6 +184,19 @@ const Index = () => {
 
     return currentTickets;
   }, [freshdeskTickets, effectiveStartDate, effectiveEndDate, filterMyTickets, filterHighPriority, searchTerm, fullName, userEmail]);
+
+  const myOpenTickets = useMemo(() => {
+    if (!freshdeskTickets || !userEmail) return [];
+    return freshdeskTickets.filter(ticket =>
+      (ticket.status.toLowerCase() === 'open (being processed)' ||
+       ticket.status.toLowerCase() === 'pending (awaiting your reply)' ||
+       ticket.status.toLowerCase() === 'waiting on customer' ||
+       ticket.status.toLowerCase() === 'on tech' ||
+       ticket.status.toLowerCase() === 'on product' ||
+       ticket.status.toLowerCase() === 'escalated') &&
+      (ticket.requester_email === userEmail || (ticket.assignee && ticket.assignee.toLowerCase().includes(fullName.toLowerCase())))
+    );
+  }, [freshdeskTickets, userEmail, fullName]);
 
   const metrics = useMemo(() => {
     if (!freshdeskTickets) {
@@ -418,6 +433,15 @@ const Index = () => {
                 />
               </div>
 
+              {/* New: View My Open Tickets Button */}
+              <Button
+                variant="default"
+                onClick={() => setIsMyOpenTicketsModalOpen(true)}
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <TicketIcon className="h-4 w-4" /> View My Open Tickets
+              </Button>
+
               {/* Saved Views Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -589,6 +613,11 @@ const Index = () => {
           )}
         </div>
       </div>
+      <MyOpenTicketsModal
+        isOpen={isMyOpenTicketsModalOpen}
+        onClose={() => setIsMyOpenTicketsModalOpen(false)}
+        tickets={myOpenTickets}
+      />
     </div>
   );
 };
