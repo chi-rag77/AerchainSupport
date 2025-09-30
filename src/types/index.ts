@@ -52,7 +52,7 @@ export interface ConversationMessage {
 
 export type Insight = {
   id: string;
-  type: 'stalledOnTech' | 'highPriority' | 'info'; // Defines the type of insight
+  type: 'stalledOnTech' | 'highPriority' | 'info' | 'highVolumeCustomer'; // Added 'highVolumeCustomer'
   message: string;
   severity: 'info' | 'warning' | 'critical'; // Severity for styling
   icon?: string; // Changed to string to match Edge Function output

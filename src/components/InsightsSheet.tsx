@@ -8,7 +8,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import InsightsPanel from './InsightsPanel';
+import InsightsFilter from './InsightsFilter'; // Import the new InsightsFilter component
 import { Insight } from '@/types';
 
 interface InsightsSheetProps {
@@ -28,7 +28,7 @@ const InsightsSheet = ({ isOpen, onClose, insights }: InsightsSheetProps) => {
           </SheetDescription>
         </SheetHeader>
         <div className="flex-grow overflow-y-auto py-4">
-          <InsightsPanel insights={insights} />
+          <InsightsFilter insights={insights} /> {/* Use InsightsFilter here */}
         </div>
       </SheetContent>
     </Sheet>

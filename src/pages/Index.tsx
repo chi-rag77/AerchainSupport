@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb } from "lucide-react"; // Added Lightbulb icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, UseQueryOptions } from "@tanstack/react-query";
+import { useQuery, UseQueryOptions, QueryKey } from "@tanstack/react-query"; // Import QueryKey
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket, CustomerBreakdownRow, Insight } from "@/types";
 import { isWithinInterval, subDays, format, addDays, differenceInDays } from 'date-fns';
@@ -39,13 +39,12 @@ const fetchDashboardInsights = async (token: string | undefined): Promise<Insigh
   if (!token) return [];
 
   try {
-    const { data, error } = await supabase.functions.invoke('generate-stalled-tickets-insights', {
-      method: 'POST', // Or GET, depending on how you want to pass parameters
+    const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { // Updated function name
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      // No body needed for this simple stalled tickets insight, but could be added for date filters etc.
     });
 
     if (error) {
@@ -55,13 +54,12 @@ const fetchDashboardInsights = async (token: string | undefined): Promise<Insigh
     return data as Insight[];
   } catch (err: any) {
     console.error("Failed to fetch insights:", err.message);
-    // Fallback to a default info insight if there's an error
     return [{
       id: 'insight-fetch-error',
       type: 'info',
       message: `Failed to load insights: ${err.message}. Please try again.`,
       severity: 'warning',
-      icon: 'Info', // This is now a string, matching the updated Insight type
+      icon: 'Info',
     }];
   }
 };
@@ -74,7 +72,7 @@ const Index = () => {
   const authToken = session?.access_token;
 
   const [showSidebar, setShowSidebar] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(""); // Keep searchTerm state for potential future use or other filters
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeDateFilter, setActiveDateFilter] = useState<string | DateRange>("last7days");
   const [filterMyTickets, setFilterMyTickets] = useState(false);
   const [filterHighPriority, setFilterHighPriority] = useState(false);
@@ -84,13 +82,12 @@ const Index = () => {
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
   const [customerBreakdownView, setCustomerBreakdownView] = useState<'cards' | 'table'>('cards');
   const [isMyOpenTicketsModalOpen, setIsMyOpenTicketsModalOpen] = useState(false);
-  const [isInsightsSheetOpen, setIsInsightsSheetOpen] = useState(false); // State for Insights Sheet
+  const [isInsightsSheetOpen, setIsInsightsSheetOpen] = useState(false);
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
 
-  // Fetch tickets from Supabase database
   const { data: freshdeskTickets, isLoading, error } = useQuery<Ticket[], Error>({
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
@@ -106,22 +103,21 @@ const Index = () => {
     },
   } as UseQueryOptions<Ticket[], Error>);
 
-  // Fetch insights from the new Edge Function
   const { data: dashboardInsights, isLoading: isLoadingInsights, error: insightsError } = useQuery<
     Insight[], // TQueryFnData
     Error,     // TError
     Insight[], // TData
-    readonly ["dashboardInsights", string | undefined] // TQueryKey - explicitly make it readonly
+    QueryKey   // TQueryKey - Use QueryKey here
   >({
-    queryKey: ["dashboardInsights", authToken],
+    queryKey: ["dashboardInsights", authToken] as QueryKey, // Cast queryKey to QueryKey
     queryFn: () => fetchDashboardInsights(authToken),
-    enabled: !!authToken, // Only run if authToken is available
-    onSuccess: (data) => {
+    enabled: !!authToken,
+    onSuccess: (data: Insight[]) => { // Explicitly type data here
       if (data.length > 0 && data[0].id !== 'insight-fetch-error') {
         toast.info(`Found ${data.length} new insights!`);
       }
     },
-    onError: (err) => {
+    onError: (err: Error) => { // Explicitly type err here
       toast.error(`Error fetching insights: ${err.message}`);
     },
   });
@@ -663,7 +659,7 @@ const Index = () => {
       <InsightsSheet
         isOpen={isInsightsSheetOpen}
         onClose={() => setIsInsightsSheetOpen(false)}
-        insights={dashboardInsights || []} // Pass the fetched insights
+        insights={dashboardInsights || []}
       />
     </div>
   );

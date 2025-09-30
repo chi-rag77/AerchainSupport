@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Clock, Info } from 'lucide-react';
+import { AlertCircle, Clock, Info, Users } from 'lucide-react'; // Added Users icon
 import { Insight } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -15,9 +15,11 @@ const iconMap: { [key: string]: React.ElementType } = {
   stalledOnTech: Clock,
   highPriority: AlertCircle,
   info: Info,
-  Clock: Clock, // Explicitly map string "Clock" to Clock icon
-  AlertCircle: AlertCircle, // Explicitly map string "AlertCircle" to AlertCircle icon
-  Info: Info, // Explicitly map string "Info" to Info icon
+  highVolumeCustomer: Users, // Added mapping for highVolumeCustomer
+  Clock: Clock,
+  AlertCircle: AlertCircle,
+  Info: Info,
+  Users: Users, // Explicitly map string "Users" to Users icon
 };
 
 const InsightsPanel = ({ insights }: InsightsPanelProps) => {
@@ -35,10 +37,8 @@ const InsightsPanel = ({ insights }: InsightsPanelProps) => {
     <div className="space-y-3">
       <h3 className="text-lg font-semibold text-foreground mb-2">Insights</h3>
       {insights.map(insight => {
-        // Determine the icon to use, falling back to Info if not specified or mapped
         const IconComponent = (insight.icon && iconMap[insight.icon]) ? iconMap[insight.icon] : iconMap[insight.type] || iconMap.info;
         
-        // Apply styling based on severity
         const severityClass = {
           'info': 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-200',
           'warning': 'border-yellow-400 bg-yellow-50/50 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-200',
