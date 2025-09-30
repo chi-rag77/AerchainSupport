@@ -11,7 +11,7 @@ import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket, ConversationMessage } from "@/types";
 import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query"; // Import UseQueryOptions
+import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Pagination,
@@ -50,27 +50,41 @@ const TicketsPage = () => {
     setShowSidebar(!showSidebar);
   };
 
+  // Fetch tickets from Supabase database
   const { data: freshdeskTickets, isLoading, error, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-        method: 'POST',
-        body: { action: 'getTickets' },
-      });
+      const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('updated_at', { ascending: false });
       if (error) throw error;
-      return data as Ticket[];
+      // Map freshdesk_id to id for consistency with existing Ticket type
+      return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
     },
     onSuccess: () => {
-      toast.success("Tickets fetched successfully!");
+      toast.success("Tickets loaded from Supabase successfully!");
     },
     onError: (err) => {
-      toast.error(`Failed to fetch tickets: ${err.message}`);
+      toast.error(`Failed to load tickets from Supabase: ${err.message}`);
     },
-  } as UseQueryOptions<Ticket[], Error>); // Explicitly cast to UseQueryOptions
+  } as UseQueryOptions<Ticket[], Error>);
 
-  const handleRefreshTickets = () => {
-    queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] });
-    setCurrentPage(1);
+  const handleSyncTickets = async () => {
+    toast.loading("Syncing latest tickets from Freshdesk...", { id: "sync-tickets" });
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
+        method: 'POST',
+        body: { action: 'syncTickets' }, // Use the new action name
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Tickets synced successfully!", { id: "sync-tickets" });
+      queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] }); // Invalidate to refetch from DB
+      setCurrentPage(1);
+    } catch (err: any) {
+      toast.error(`Failed to sync tickets: ${err.message}`, { id: "sync-tickets" });
+    }
   };
 
   const handleRowClick = (ticket: Ticket) => {
@@ -143,7 +157,7 @@ const TicketsPage = () => {
 
   const uniqueAssignees = useMemo(() => {
     const assignees = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => { // Use || []
+    (freshdeskTickets || []).forEach(ticket => {
       if (ticket.assignee && ticket.assignee !== "Unassigned") {
         assignees.add(ticket.assignee);
       }
@@ -153,7 +167,7 @@ const TicketsPage = () => {
 
   const uniqueStatuses = useMemo(() => {
     const statuses = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => { // Use || []
+    (freshdeskTickets || []).forEach(ticket => {
       statuses.add(ticket.status);
     });
     return ["All", ...Array.from(statuses).sort()];
@@ -161,7 +175,7 @@ const TicketsPage = () => {
 
   const uniquePriorities = useMemo(() => {
     const priorities = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => { // Use || []
+    (freshdeskTickets || []).forEach(ticket => {
       priorities.add(ticket.priority);
     });
     return ["All", ...Array.from(priorities).sort()];
@@ -169,7 +183,7 @@ const TicketsPage = () => {
 
   const uniqueCompanies = useMemo(() => {
     const companies = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => { // Use || []
+    (freshdeskTickets || []).forEach(ticket => {
       if (ticket.cf_company) {
         companies.add(ticket.cf_company);
       }
@@ -179,7 +193,7 @@ const TicketsPage = () => {
 
   const uniqueTypes = useMemo(() => {
     const types = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => { // Use || []
+    (freshdeskTickets || []).forEach(ticket => {
       if (ticket.type) {
         types.add(ticket.type);
       }
@@ -189,7 +203,7 @@ const TicketsPage = () => {
 
   const uniqueDependencies = useMemo(() => {
     const dependencies = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => { // Use || []
+    (freshdeskTickets || []).forEach(ticket => {
       if (ticket.cf_dependency) {
         dependencies.add(ticket.cf_dependency);
       }
@@ -220,7 +234,7 @@ const TicketsPage = () => {
                 </h1>
               </hgroup>
               <Button
-                onClick={handleRefreshTickets}
+                onClick={handleSyncTickets} // Changed to handleSyncTickets
                 disabled={isFetching}
                 className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
               >
@@ -229,7 +243,7 @@ const TicketsPage = () => {
                 ) : (
                   <RefreshCw className="mr-2 h-4 w-4" />
                 )}
-                Fetch Latest Tickets
+                Sync Latest Tickets
                 <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
               </Button>
             </div>
@@ -379,7 +393,7 @@ const TicketsPage = () => {
           <div className="flex-grow overflow-y-auto p-6">
             <FilterNotification
               filteredCount={filteredTickets.length}
-              totalCount={(freshdeskTickets || []).length || 0} // Use || []
+              totalCount={(freshdeskTickets || []).length || 0}
               searchTerm={searchTerm}
               filterStatus={filterStatus}
               filterPriority={filterPriority}

@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid } from "lucide-react"; // Added Table2 and LayoutGrid icons
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +29,7 @@ import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
-import CustomerBreakdownTable from "@/components/CustomerBreakdownTable"; // Import new table component
+import CustomerBreakdownTable from "@/components/CustomerBreakdownTable";
 import { MultiSelect } from "@/components/MultiSelect";
 
 const Index = () => {
@@ -47,33 +47,32 @@ const Index = () => {
   const [selectedCustomerForChart, setSelectedCustomerForChart] = useState<string>("All");
   const [selectedCustomersForBreakdown, setSelectedCustomersForBreakdown] = useState<string[]>([]);
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
-  const [customerBreakdownView, setCustomerBreakdownView] = useState<'cards' | 'table'>('cards'); // New state for view type
+  const [customerBreakdownView, setCustomerBreakdownView] = useState<'cards' | 'table'>('cards');
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
 
+  // Fetch tickets from Supabase database
   const { data: freshdeskTickets, isLoading, error } = useQuery<Ticket[], Error>({
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-        method: 'POST',
-        body: { action: 'getTickets' },
-      });
+      const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('updated_at', { ascending: false });
       if (error) throw error;
-      return data as Ticket[];
+      // Map freshdesk_id to id for consistency with existing Ticket type
+      return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
     },
     onSuccess: () => {
-      toast.success("Dashboard data loaded successfully!");
+      toast.success("Dashboard data loaded from Supabase successfully!");
     },
     onError: (err) => {
-      toast.error(`Failed to load dashboard data: ${err.message}`);
+      toast.error(`Failed to load dashboard data from Supabase: ${err.message}`);
     },
-  } as UseQueryOptions<Ticket[], Error>); // Explicitly cast to UseQueryOptions
+  } as UseQueryOptions<Ticket[], Error>);
 
   const uniqueCompanies = useMemo(() => {
     const companies = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => { // Use || [] to ensure it's an array
+    (freshdeskTickets || []).forEach(ticket => {
       if (ticket.cf_company) {
         companies.add(ticket.cf_company);
       }
@@ -143,7 +142,7 @@ const Index = () => {
     return { effectiveStartDate: start, effectiveEndDate: end, dateRangeDisplay: display };
   }, [activeDateFilter]);
 
-  const filteredDashboardTickets: Ticket[] = useMemo(() => { // Explicitly type here
+  const filteredDashboardTickets: Ticket[] = useMemo(() => {
     if (!freshdeskTickets || !effectiveStartDate || !effectiveEndDate) return [];
 
     let currentTickets: Ticket[] = freshdeskTickets;

@@ -13,10 +13,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2 } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useQuery, UseQueryOptions } from "@tanstack/react-query"; // Import UseQueryOptions
+import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/types";
-import { format, subDays } from 'date-fns';
+import { format, subDays, isWithinInterval } from 'date-fns';
 import { exportToCsv } from '@/utils/export';
 import { toast } from 'sonner';
 import HandWaveIcon from "@/components/HandWaveIcon";
@@ -65,41 +65,97 @@ const DashboardV2 = () => {
 
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
 
-  const { data: summaryData, isLoading, error } = useQuery<TicketSummaryData, Error>({
-    queryKey: ["ticketSummary", formattedDate, selectedCustomerFilter],
+  // Fetch all tickets from Supabase for filtering and aggregation
+  const { data: allSupabaseTickets, isLoading: isLoadingAllTickets, error: errorAllTickets } = useQuery<Ticket[], Error>({
+    queryKey: ["allSupabaseTickets"],
     queryFn: async () => {
-      console.log("Invoking ticket-summary with:", { date: formattedDate, customer: selectedCustomerFilter });
-
-      const { data, error } = await supabase.functions.invoke('ticket-summary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          date: formattedDate,
-          customer: selectedCustomerFilter,
-        }),
-      });
+      const { data, error } = await supabase.from('freshdesk_tickets').select('*');
       if (error) throw error;
-      return data as TicketSummaryData;
+      return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
     },
-    enabled: !!selectedDate,
     onSuccess: () => {
-      toast.success("Daily dashboard data loaded successfully!");
+      toast.success("All tickets loaded from Supabase for daily dashboard processing!");
     },
     onError: (err) => {
-      toast.error(`Failed to load daily dashboard data: ${err.message}`);
+      toast.error(`Failed to load all tickets from Supabase for daily dashboard: ${err.message}`);
     },
-  } as UseQueryOptions<TicketSummaryData, Error>); // Explicitly cast to UseQueryOptions
+  } as UseQueryOptions<Ticket[], Error>);
+
+  const processedSummaryData: TicketSummaryData | undefined = useMemo(() => {
+    if (!allSupabaseTickets || !selectedDate) return undefined;
+
+    const targetCreationDate = new Date(selectedDate);
+    targetCreationDate.setUTCHours(0, 0, 0, 0);
+    const targetCreationEndDate = new Date(targetCreationDate);
+    targetCreationEndDate.setUTCDate(targetCreationDate.getUTCDate() + 1);
+
+    let ticketsCreatedOnSelectedDate = allSupabaseTickets.filter(ticket => {
+      const ticketCreatedAt = new Date(ticket.created_at);
+      return isWithinInterval(ticketCreatedAt, { start: targetCreationDate, end: targetCreationEndDate });
+    });
+
+    let filteredTickets = ticketsCreatedOnSelectedDate;
+    if (selectedCustomerFilter && selectedCustomerFilter !== "All") {
+      filteredTickets = ticketsCreatedOnSelectedDate.filter(ticket => ticket.cf_company === selectedCustomerFilter);
+    }
+
+    const totalTicketsToday = filteredTickets.length;
+    const resolvedToday = filteredTickets.filter(t => t.status === 'Resolved' || t.status === 'Closed').length;
+    const openCount = filteredTickets.filter(t => t.status === 'Open (Being Processed)').length;
+    const pendingOnTech = filteredTickets.filter(t => t.status === 'On Tech').length;
+
+    const typeBreakdown: { [key: string]: number } = {};
+    filteredTickets.forEach(t => {
+      typeBreakdown[t.type || 'Unknown Type'] = (typeBreakdown[t.type || 'Unknown Type'] || 0) + 1;
+    });
+
+    const statusBreakdown: { [key: string]: number } = {};
+    filteredTickets.forEach(t => {
+      statusBreakdown[t.status] = (statusBreakdown[t.status] || 0) + 1;
+    });
+
+    const customerBreakdownMap: { [key: string]: { totalToday: number; resolvedToday: number; open: number; pendingTech: number; bugs: number; tasks: number; queries: number; otherActive: number; } } = {};
+    ticketsCreatedOnSelectedDate.forEach(ticket => { // Use ticketsCreatedOnSelectedDate for customer breakdown
+      const company = ticket.cf_company || 'Unknown Company';
+      if (!customerBreakdownMap[company]) {
+        customerBreakdownMap[company] = { totalToday: 0, resolvedToday: 0, open: 0, pendingTech: 0, bugs: 0, tasks: 0, queries: 0, otherActive: 0 };
+      }
+      customerBreakdownMap[company].totalToday++;
+      if (ticket.status === 'Resolved' || ticket.status === 'Closed') customerBreakdownMap[company].resolvedToday++;
+      if (ticket.status === 'Open (Being Processed)') customerBreakdownMap[company].open++;
+      if (ticket.status === 'On Tech') customerBreakdownMap[company].pendingTech++;
+      if (ticket.type === 'Bug') customerBreakdownMap[company].bugs++;
+      if (ticket.type === 'Task') customerBreakdownMap[company].tasks++;
+      if (ticket.type === 'Query') customerBreakdownMap[company].queries++;
+      // Calculate otherActive for DashboardV2
+      const statusLower = ticket.status.toLowerCase();
+      if (!['resolved', 'closed', 'open (being processed)', 'on tech'].includes(statusLower)) {
+        customerBreakdownMap[company].otherActive++;
+      }
+    });
+
+    return {
+      date: formattedDate,
+      customer: selectedCustomerFilter || "All",
+      totalTicketsToday,
+      resolvedToday,
+      openCount,
+      pendingOnTech,
+      typeBreakdown,
+      statusBreakdown,
+      customerBreakdown: Object.entries(customerBreakdownMap).map(([company, data]) => ({ name: company, ...data })),
+      rawTickets: filteredTickets,
+    };
+  }, [allSupabaseTickets, selectedDate, selectedCustomerFilter, formattedDate]);
 
   const uniqueCompanies = useMemo(() => {
-    if (!summaryData?.customerBreakdown) return ["All"];
-    const companies = (summaryData.customerBreakdown || []).map(c => c.name); // Use || []
-    return ["All", ...companies.sort()];
-  }, [summaryData]);
+    if (!allSupabaseTickets) return ["All"];
+    const companies = (allSupabaseTickets || []).map(c => c.cf_company || 'Unknown Company');
+    return ["All", ...Array.from(new Set(companies)).sort()];
+  }, [allSupabaseTickets]);
 
   const handleExportSummary = () => {
-    if (!summaryData) {
+    if (!processedSummaryData) {
       console.warn("No summary data to export.");
       return;
     }
@@ -107,33 +163,33 @@ const DashboardV2 = () => {
     const exportableData = [
       {
         Metric: "Date",
-        Value: summaryData.date,
+        Value: processedSummaryData.date,
       },
       {
         Metric: "Customer Filter",
-        Value: summaryData.customer,
+        Value: processedSummaryData.customer,
       },
       {
         Metric: "Total Tickets Today",
-        Value: summaryData.totalTicketsToday,
+        Value: processedSummaryData.totalTicketsToday,
       },
       {
         Metric: "Resolved Today",
-        Value: summaryData.resolvedToday,
+        Value: processedSummaryData.resolvedToday,
       },
       {
         Metric: "Open Count",
-        Value: summaryData.openCount,
+        Value: processedSummaryData.openCount,
       },
       {
         Metric: "Pending on Tech",
-        Value: summaryData.pendingOnTech,
+        Value: processedSummaryData.pendingOnTech,
       },
-      ...Object.entries(summaryData.typeBreakdown || {}).map(([type, count]) => ({ // Use || {}
+      ...Object.entries(processedSummaryData.typeBreakdown || {}).map(([type, count]) => ({
         Metric: `Type: ${type}`,
         Value: count,
       })),
-      ...Object.entries(summaryData.statusBreakdown || {}).map(([status, count]) => ({ // Use || {}
+      ...Object.entries(processedSummaryData.statusBreakdown || {}).map(([status, count]) => ({
         Metric: `Status: ${status}`,
         Value: count,
       })),
@@ -142,7 +198,7 @@ const DashboardV2 = () => {
     exportToCsv(exportableData, `daily_ticket_summary_${formattedDate}_${selectedCustomerFilter}_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
   };
 
-  const rawTicketsForCharts = summaryData?.rawTickets || [];
+  const rawTicketsForCharts = processedSummaryData?.rawTickets || [];
 
   return (
     <TooltipProvider>
@@ -211,7 +267,7 @@ const DashboardV2 = () => {
               </div>
             </div>
 
-            {isLoading ? (
+            {isLoadingAllTickets ? (
               <div className="flex flex-col items-center justify-center flex-grow p-6 text-gray-500 dark:text-gray-400">
                 <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
                 <p className="text-lg font-medium">Loading daily dashboard data...</p>
@@ -222,37 +278,37 @@ const DashboardV2 = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
                   <DashboardMetricCard
                     title="Total Tickets Today"
-                    value={summaryData?.totalTicketsToday || 0}
+                    value={processedSummaryData?.totalTicketsToday || 0}
                     icon={TicketIcon}
                     description={`Total tickets created on ${formattedDate}`}
                   />
                   <DashboardMetricCard
                     title="Resolved Today"
-                    value={summaryData?.resolvedToday || 0}
+                    value={processedSummaryData?.resolvedToday || 0}
                     icon={CheckCircle}
                     description={`Tickets resolved or closed on ${formattedDate}`}
                   />
                   <DashboardMetricCard
                     title="Open Tickets"
-                    value={summaryData?.openCount || 0}
+                    value={processedSummaryData?.openCount || 0}
                     icon={Hourglass}
                     description="Tickets currently in 'Open' status"
                   />
                   <DashboardMetricCard
                     title="Pending on Tech"
-                    value={summaryData?.pendingOnTech || 0}
+                    value={processedSummaryData?.pendingOnTech || 0}
                     icon={Clock}
                     description="Tickets currently 'On Tech' status"
                   />
                   <DashboardMetricCard
                     title="Bugs Today"
-                    value={summaryData?.typeBreakdown?.Bug || 0}
+                    value={processedSummaryData?.typeBreakdown?.Bug || 0}
                     icon={Bug}
                     description={`Bugs created on ${formattedDate}`}
                   />
                   <DashboardMetricCard
                     title="Tasks Today"
-                    value={summaryData?.typeBreakdown?.Task || 0}
+                    value={processedSummaryData?.typeBreakdown?.Task || 0}
                     icon={ShieldAlert}
                     description={`Tasks created on ${formattedDate}`}
                   />
@@ -261,7 +317,7 @@ const DashboardV2 = () => {
                 {/* Customer Breakdown Table */}
                 <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
                   <h3 className="text-lg font-semibold mb-4 text-foreground">Customer Breakdown for {formattedDate}</h3>
-                  {/* <CustomerBreakdownTable data={summaryData?.customerBreakdown || []} /> */}
+                  {/* <CustomerBreakdownTable data={processedSummaryData?.customerBreakdown || []} /> */}
                 </div>
 
                 {/* Charts & Visuals Row */}

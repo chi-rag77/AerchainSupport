@@ -1,58 +1,12 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import * as dateFns from "https://esm.sh/date-fns@2.30.0"; // Removed ?dts for better type resolution
+import * as dateFns from "https://esm.sh/date-fns@2.30.0?dts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0?dts'; // Import Supabase client
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const PRIORITY_MAP: { [key: number]: string } = {
-  1: "Low",
-  2: "Medium",
-  3: "High",
-  4: "Urgent"
-};
-
-const STATUS_MAP: { [key: number]: string } = {
-  2: "Open (Being Processed)",
-  3: "Pending (Awaiting your Reply)",
-  4: "Resolved",
-  5: "Closed",
-  8: "Waiting on Customer",
-  7: "On Tech",
-  9: "On Product",
-};
-
-const agentCache = new Map();
-
-async function getAgentName(agentId: number, apiKey: string, domain: string): Promise<string> {
-  if (!agentId) return "Unassigned";
-  if (agentCache.has(agentId)) return agentCache.get(agentId);
-
-  const url = `https://${domain}.freshdesk.com/api/v2/agents/${agentId}`;
-  const options = {
-    method: "GET",
-    headers: {
-      "Authorization": "Basic " + btoa(apiKey + ":X")
-    }
-  };
-
-  try {
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      console.error(`Failed to fetch agent ${agentId}: ${response.status} ${await response.text()}`);
-      return "Unassigned";
-    }
-    const agent = await response.json();
-    const name = agent.contact?.name || agent.contact?.email || "Unassigned";
-    agentCache.set(agentId, name);
-    return name;
-  } catch (error) {
-    console.error(`Error fetching agent ${agentId}:`, error);
-    return "Unassigned";
-  }
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -61,12 +15,12 @@ serve(async (req) => {
 
   try {
     // @ts-ignore
-    const freshdeskApiKey = Deno.env.get('FRESHDESK_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-ignore
-    const freshdeskDomain = Deno.env.get('FRESHDESK_DOMAIN');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
-    if (!freshdeskApiKey || !freshdeskDomain) {
-      return new Response(JSON.stringify({ error: 'Freshdesk API key or domain not set in environment variables.' }), {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return new Response(JSON.stringify({ error: 'Supabase URL or Anon Key not set in environment variables.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -77,29 +31,29 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
+    // Initialize Supabase client within the Edge Function
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader }, // Pass the user's JWT to Supabase client
+      },
+    });
+
     let dateParam: string | null = null;
     let customerParam: string | null = null;
-    let requestBody: any = {}; // Initialize requestBody
+    let requestBody: any = {};
 
     const contentType = req.headers.get('content-type');
-    console.log('Incoming request Content-Type:', contentType); // Log Content-Type
 
     if (req.method === 'POST') {
       if (contentType?.includes('application/json')) {
         let rawBodyText = '';
         try {
-          rawBodyText = await req.text(); // Read raw body as text
-          console.log('Received raw request body:', rawBodyText); // Log raw body
-          
-          // Handle empty body gracefully
+          rawBodyText = await req.text();
           if (rawBodyText.trim() === '') {
-            requestBody = {}; // Default to empty object if body is empty
-            console.log('Raw body was empty, defaulting requestBody to {}.');
+            requestBody = {};
           } else {
-            requestBody = JSON.parse(rawBodyText); // Attempt to parse as JSON
+            requestBody = JSON.parse(rawBodyText);
           }
-          
-          console.log('Parsed requestBody:', JSON.stringify(requestBody)); // Log parsed body
           dateParam = requestBody.date;
           customerParam = requestBody.customer;
         } catch (jsonError) {
@@ -115,104 +69,40 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-    } else { // Fallback for GET, though frontend will use POST
+    } else {
       const url = new URL(req.url);
       dateParam = url.searchParams.get('date');
       customerParam = url.searchParams.get('customer');
     }
 
-    console.log(`Date parameter after parsing: ${dateParam}`); // New log
-    console.log(`Customer parameter after parsing: ${customerParam}`); // New log
-
     if (!dateParam) {
-      console.log(`No date provided. Defaulting to today's date: ${dateFns.format(new Date(), 'yyyy-MM-dd')}\n`);
-      dateParam = dateFns.format(new Date(), 'yyyy-MM-dd'); // Default to today if not provided
+      dateParam = dateFns.format(new Date(), 'yyyy-MM-dd');
     }
 
-    // Original dateParam is for creation date.
-    // We need to fetch tickets updated within a broader range to capture those created on dateParam.
     const targetCreationDate = new Date(dateParam);
     targetCreationDate.setUTCHours(0, 0, 0, 0);
     const targetCreationEndDate = new Date(targetCreationDate);
-    targetCreationEndDate.setUTCDate(targetCreationDate.getUTCDate() + 1); // End of the day for creation
+    targetCreationEndDate.setUTCDate(targetCreationDate.getUTCDate() + 1);
 
-    // For Freshdesk API call, use updated_since to fetch a broader set of tickets
-    // For example, fetch tickets updated in the last 30 days relative to the target creation date.
-    const thirtyDaysAgo = dateFns.subDays(targetCreationDate, 30);
-    const updatedSinceParam = thirtyDaysAgo.toISOString();
+    // Fetch tickets from Supabase freshdesk_tickets table
+    const { data: allTicketsRaw, error: fetchError } = await supabase
+      .from('freshdesk_tickets')
+      .select('*');
 
-    const fdOptions = {
-      method: "GET",
-      headers: {
-        "Authorization": "Basic " + btoa(freshdeskApiKey + ":X"),
-      },
-    };
-
-    let page = 1;
-    let hasMore = true;
-    const allTicketsRaw = []; // Renamed to avoid confusion with filtered tickets
-
-    while (hasMore) {
-      const freshdeskUrl = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester,stats,company,description&updated_since=${encodeURIComponent(updatedSinceParam)}&page=${page}&per_page=100`;
-      
-      const response = await fetch(freshdeskUrl, fdOptions);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Freshdesk API Error (Code: ${response.status}): ${errorText}`);
-        return new Response(JSON.stringify({ 
-          error: `Freshdesk API Error: ${response.status} - ${errorText}` 
-        }), {
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const tickets = await response.json();
-
-      if (!tickets || tickets.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      for (const ticket of tickets) {
-        const requesterEmail = ticket.requester?.email || "";
-        const priorityString = PRIORITY_MAP[ticket.priority] || `Unknown (${ticket.priority})`;
-        const statusString = STATUS_MAP[ticket.status] || `Unknown (${ticket.status})`;
-        const companyName = ticket.custom_fields?.cf_company || 'Unknown Company';
-
-        allTicketsRaw.push({ // Push to raw tickets
-          id: ticket.id?.toString(),
-          subject: ticket.subject || "",
-          priority: priorityString,
-          status: statusString,
-          type: ticket.type || "Unknown Type",
-          requester_email: requesterEmail,
-          created_at: ticket.created_at || "",
-          updated_at: ticket.updated_at || "",
-          description_text: ticket.description_text || "",
-          description_html: ticket.description_html || "",
-          assignee: await getAgentName(ticket.responder_id, freshdeskApiKey, freshdeskDomain),
-          cf_company: companyName,
-          cf_country: ticket.custom_fields?.cf_country || "",
-          cf_module: ticket.custom_fields?.cf_module || "",
-          cf_dependency: ticket.custom_fields?.cf_dependency || "",
-          cf_recurrence: ticket.custom_fields?.cf_recurrence || "",
-        });
-      }
-
-      page++;
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased delay to 2 seconds
+    if (fetchError) {
+      console.error('Supabase Fetch Error:', fetchError);
+      return new Response(JSON.stringify({ error: `Failed to fetch tickets from Supabase: ${fetchError.message}` }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // --- Post-fetch Filtering and Aggregation Logic ---
-    // First, filter allTicketsRaw to only include tickets created on the selected dateParam
-    let ticketsCreatedOnSelectedDate = allTicketsRaw.filter(ticket => {
+    let ticketsCreatedOnSelectedDate = (allTicketsRaw || []).filter(ticket => {
       const ticketCreatedAt = new Date(ticket.created_at);
       return dateFns.isWithinInterval(ticketCreatedAt, { start: targetCreationDate, end: targetCreationEndDate });
     });
 
-    // Apply customer filter if specified
     let filteredTickets = ticketsCreatedOnSelectedDate;
     if (customerParam && customerParam !== "All") {
       filteredTickets = ticketsCreatedOnSelectedDate.filter(ticket => ticket.cf_company === customerParam);
@@ -225,7 +115,7 @@ serve(async (req) => {
 
     const typeBreakdown: { [key: string]: number } = {};
     filteredTickets.forEach(t => {
-      typeBreakdown[t.type] = (typeBreakdown[t.type] || 0) + 1;
+      typeBreakdown[t.type || 'Unknown Type'] = (typeBreakdown[t.type || 'Unknown Type'] || 0) + 1;
     });
 
     const statusBreakdown: { [key: string]: number } = {};
@@ -233,15 +123,11 @@ serve(async (req) => {
       statusBreakdown[t.status] = (statusBreakdown[t.status] || 0) + 1;
     });
 
-    const customerBreakdown: { [key: string]: { totalToday: number; resolvedToday: number; open: number; pendingTech: number; bugs: number; tasks: number; queries: number; } } = {};
-    // Use allTicketsRaw here to get breakdown for all customers, then filter by creation date for the specific day
-    allTicketsRaw.filter(ticket => {
-      const ticketCreatedAt = new Date(ticket.created_at);
-      return dateFns.isWithinInterval(ticketCreatedAt, { start: targetCreationDate, end: targetCreationEndDate });
-    }).forEach(ticket => {
+    const customerBreakdown: { [key: string]: { totalToday: number; resolvedToday: number; open: number; pendingTech: number; bugs: number; tasks: number; queries: number; otherActive: number; } } = {};
+    ticketsCreatedOnSelectedDate.forEach(ticket => {
       const company = ticket.cf_company || 'Unknown Company';
       if (!customerBreakdown[company]) {
-        customerBreakdown[company] = { totalToday: 0, resolvedToday: 0, open: 0, pendingTech: 0, bugs: 0, tasks: 0, queries: 0 };
+        customerBreakdown[company] = { totalToday: 0, resolvedToday: 0, open: 0, pendingTech: 0, bugs: 0, tasks: 0, queries: 0, otherActive: 0 };
       }
       customerBreakdown[company].totalToday++;
       if (ticket.status === 'Resolved' || ticket.status === 'Closed') customerBreakdown[company].resolvedToday++;
@@ -250,8 +136,12 @@ serve(async (req) => {
       if (ticket.type === 'Bug') customerBreakdown[company].bugs++;
       if (ticket.type === 'Task') customerBreakdown[company].tasks++;
       if (ticket.type === 'Query') customerBreakdown[company].queries++;
+      // Calculate otherActive for DashboardV2
+      const statusLower = ticket.status.toLowerCase();
+      if (!['resolved', 'closed', 'open (being processed)', 'on tech'].includes(statusLower)) {
+        customerBreakdown[company].otherActive++;
+      }
     });
-
 
     const responseData = {
       date: dateParam,
@@ -263,7 +153,7 @@ serve(async (req) => {
       typeBreakdown,
       statusBreakdown,
       customerBreakdown: Object.entries(customerBreakdown).map(([company, data]) => ({ name: company, ...data })),
-      rawTickets: filteredTickets, // Include raw tickets for charts
+      rawTickets: filteredTickets,
     };
 
     return new Response(JSON.stringify(responseData), {
