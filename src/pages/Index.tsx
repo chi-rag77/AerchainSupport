@@ -185,18 +185,17 @@ const Index = () => {
     return currentTickets;
   }, [freshdeskTickets, effectiveStartDate, effectiveEndDate, filterMyTickets, filterHighPriority, searchTerm, fullName, userEmail]);
 
-  const myOpenTickets = useMemo(() => {
-    if (!freshdeskTickets || !userEmail) return [];
+  const allOpenTickets = useMemo(() => {
+    if (!freshdeskTickets) return [];
     return freshdeskTickets.filter(ticket =>
       (ticket.status.toLowerCase() === 'open (being processed)' ||
        ticket.status.toLowerCase() === 'pending (awaiting your reply)' ||
        ticket.status.toLowerCase() === 'waiting on customer' ||
        ticket.status.toLowerCase() === 'on tech' ||
        ticket.status.toLowerCase() === 'on product' ||
-       ticket.status.toLowerCase() === 'escalated') &&
-      (ticket.requester_email === userEmail || (ticket.assignee && ticket.assignee.toLowerCase().includes(fullName.toLowerCase())))
+       ticket.status.toLowerCase() === 'escalated')
     );
-  }, [freshdeskTickets, userEmail, fullName]);
+  }, [freshdeskTickets]);
 
   const metrics = useMemo(() => {
     if (!freshdeskTickets) {
@@ -433,13 +432,13 @@ const Index = () => {
                 />
               </div>
 
-              {/* New: View My Open Tickets Button */}
+              {/* New: View Open Tickets Button */}
               <Button
                 variant="default"
                 onClick={() => setIsMyOpenTicketsModalOpen(true)}
                 className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <TicketIcon className="h-4 w-4" /> View My Open Tickets
+                <TicketIcon className="h-4 w-4" /> View Open Tickets
               </Button>
 
               {/* Saved Views Dropdown */}
@@ -616,7 +615,7 @@ const Index = () => {
       <MyOpenTicketsModal
         isOpen={isMyOpenTicketsModalOpen}
         onClose={() => setIsMyOpenTicketsModalOpen(false)}
-        tickets={myOpenTickets}
+        tickets={allOpenTickets}
       />
     </div>
   );
