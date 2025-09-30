@@ -91,46 +91,58 @@ const Index = () => {
   }, [uniqueCompanies]);
 
   const { effectiveStartDate, effectiveEndDate, dateRangeDisplay } = useMemo(() => {
-    const now = new Date();
     let start: Date | undefined;
-    let end: Date | undefined = now;
+    let end: Date | undefined;
     let display: string = "";
+
+    const now = new Date(); // Get current date/time once for reference
 
     if (typeof activeDateFilter === 'string') {
       switch (activeDateFilter) {
         case "today":
-          start = new Date(now.setHours(0, 0, 0, 0));
-          end = new Date(now.setHours(23, 59, 59, 999));
+          start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0); // Start of today
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
           display = "Today";
           break;
         case "last7days":
           start = subDays(now, 7);
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
           display = "Last 7 Days";
           break;
         case "last14days":
           start = subDays(now, 14);
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
           display = "Last 14 Days";
           break;
         case "last30days":
           start = subDays(now, 30);
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
           display = "Last 30 Days";
           break;
         case "last90days":
           start = subDays(now, 90);
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
           display = "Last 90 Days";
           break;
         case "alltime":
-          start = new Date(0);
+          start = new Date(0); // Epoch
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
           display = "All Time";
           break;
-        default:
+        default: // Default to last 7 days if not specified
           start = subDays(now, 7);
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
           display = "Last 7 Days";
           break;
       }
-    } else {
-      start = activeDateFilter.from;
-      end = activeDateFilter.to || now;
+    } else { // Custom range logic
+      start = activeDateFilter.from ? new Date(activeDateFilter.from) : undefined;
+      end = activeDateFilter.to ? new Date(activeDateFilter.to) : undefined;
+
+      if (start) start.setHours(0, 0, 0, 0); // Start of the selected 'from' day
+      if (end) end.setHours(23, 59, 59, 999); // End of the selected 'to' day
+      else end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // If 'to' is not selected, default to end of today
+
       if (start && end) {
         display = `${format(start, "MMM dd, yyyy")} - ${format(end, "MMM dd, yyyy")}`;
       } else if (start) {
