@@ -69,7 +69,7 @@ const DashboardV2 = () => {
   const { data: allSupabaseTickets, isLoading: isLoadingAllTickets, error: errorAllTickets } = useQuery<Ticket[], Error>({
     queryKey: ["allSupabaseTickets"],
     queryFn: async () => {
-      const { data, error } = await supabase.from('freshdesk_tickets').select('*');
+      const { data, error } = await supabase.from('freshdesk_tickets').select('*').limit(10000); // Added .limit(10000)
       if (error) throw error;
       return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
     },
