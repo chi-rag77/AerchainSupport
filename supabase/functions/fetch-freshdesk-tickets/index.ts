@@ -1,58 +1,11 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0?dts'; // Import Supabase client
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const PRIORITY_MAP: { [key: number]: string } = {
-  1: "Low",
-  2: "Medium",
-  3: "High",
-  4: "Urgent"
-};
-
-const STATUS_MAP: { [key: number]: string } = {
-  2: "Open (Being Processed)",
-  3: "Pending (Awaiting your Reply)",
-  4: "Resolved",
-  5: "Closed",
-  8: "Waiting on Customer",
-  7: "On Tech",
-  9: "On Product",
-};
-
-const agentCache = new Map();
-
-async function getAgentName(agentId: number, apiKey: string, domain: string): Promise<string> {
-  if (!agentId) return "Unassigned";
-  if (agentCache.has(agentId)) return agentCache.get(agentId);
-
-  const url = `https://${domain}.freshdesk.com/api/v2/agents/${agentId}`;
-  const options = {
-    method: "GET",
-    headers: {
-      "Authorization": "Basic " + btoa(apiKey + ":X")
-    }
-  };
-
-  try {
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      console.error(`Failed to fetch agent ${agentId}: ${response.status} ${await response.text()}`);
-      return "Unassigned";
-    }
-    const agent = await response.json();
-    const name = agent.contact?.name || agent.contact?.email || "Unassigned";
-    agentCache.set(agentId, name);
-    return name;
-  } catch (error) {
-    console.error(`Error fetching agent ${agentId}:`, error);
-    return "Unassigned";
-  }
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -61,139 +14,120 @@ serve(async (req) => {
 
   try {
     // @ts-ignore
-    const freshdeskApiKey = Deno.env.get('FRESHDESK_API_KEY');
-    // @ts-ignore
-    const freshdeskDomain = Deno.env.get('FRESHDESK_DOMAIN');
-    // @ts-ignore
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-ignore
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY'); // Use anon key for client-invoked functions
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'); // Use service role key for server-side operations
 
-    if (!freshdeskApiKey || !freshdeskDomain || !supabaseUrl || !supabaseAnonKey) {
-      return new Response(JSON.stringify({ error: 'Environment variables for Freshdesk or Supabase not set.' }), {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return new Response(JSON.stringify({ error: 'Supabase URL or Service Role Key not set in environment variables.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
-    }
+    // Initialize Supabase client with service role key for full access
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Initialize Supabase client within the Edge Function
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader }, // Pass the user's JWT to Supabase client
-      },
-    });
-
-    let requestBody;
-    if (req.headers.get('content-type')?.includes('application/json')) {
-      requestBody = await req.json();
-    } else {
-      return new Response(JSON.stringify({ error: 'Invalid Content-Type. Expected application/json.' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
+    const requestBody = await req.json();
     const { action } = requestBody;
 
-    switch (action) {
-      case 'syncTickets': { // Renamed action to 'syncTickets'
-        const today = new Date();
-        // Fetch tickets updated in the last 24 hours for daily sync
-        const twentyFourHoursAgo = new Date(today.getTime() - (24 * 60 * 60 * 1000));
-        const updatedSince = twentyFourHoursAgo.toISOString();
+    if (action === 'syncTickets') {
+      // @ts-ignore
+      const freshdeskDomain = Deno.env.get('FRESHDESK_DOMAIN');
+      // @ts-ignore
+      const freshdeskApiKey = Deno.env.get('FRESHDESK_API_KEY');
 
-        const fdOptions = {
-          method: "GET",
-          headers: {
-            "Authorization": "Basic " + btoa(freshdeskApiKey + ":X"),
-          },
-        };
-
-        let page = 1;
-        let hasMore = true;
-        const ticketsToUpsert = [];
-
-        while (hasMore) {
-          const url = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester,stats,company,description&updated_since=${encodeURIComponent(updatedSince)}&page=${page}&per_page=100`;
-          
-          const response = await fetch(url, fdOptions);
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Freshdesk API Error (Code: ${response.status}): ${errorText}`);
-            if (response.status === 429) {
-              console.warn("Rate limit hit. Stopping sync.");
-            }
-            hasMore = false;
-            break;
-          }
-
-          const tickets = await response.json();
-
-          if (!tickets || tickets.length === 0) {
-            hasMore = false;
-            break;
-          }
-
-          for (const ticket of tickets) {
-            const requesterEmail = ticket.requester?.email || "";
-            const priorityString = PRIORITY_MAP[ticket.priority] || `Unknown (${ticket.priority})`;
-            const statusString = STATUS_MAP[ticket.status] || `Unknown (${ticket.status})`;
-
-            ticketsToUpsert.push({
-              freshdesk_id: ticket.id?.toString(), // Use freshdesk_id for upsert key
-              subject: ticket.subject || "",
-              priority: priorityString,
-              status: statusString,
-              type: ticket.type || "",
-              requester_email: requesterEmail,
-              created_at: ticket.created_at || "",
-              updated_at: ticket.updated_at || "",
-              description_text: ticket.description_text || "",
-              description_html: ticket.description_html || "",
-              assignee: await getAgentName(ticket.responder_id, freshdeskApiKey, freshdeskDomain),
-              cf_company: ticket.custom_fields?.cf_company || "",
-              cf_country: ticket.custom_fields?.cf_country || "",
-              cf_module: ticket.custom_fields?.cf_module || "",
-              cf_dependency: ticket.custom_fields?.cf_dependency || "",
-              cf_recurrence: ticket.custom_fields?.cf_recurrence || "",
-              custom_fields: ticket.custom_fields || {},
-            });
-          }
-
-          page++;
-          await new Promise(resolve => setTimeout(resolve, 1000)); 
-        }
-
-        // Upsert tickets into Supabase
-        const { data: upsertedData, error: upsertError } = await supabase
-          .from('freshdesk_tickets')
-          .upsert(ticketsToUpsert, { onConflict: 'freshdesk_id' }); // Use freshdesk_id for conflict resolution
-
-        if (upsertError) {
-          console.error('Supabase Upsert Error:', upsertError);
-          return new Response(JSON.stringify({ error: `Failed to upsert tickets to Supabase: ${upsertError.message}` }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        return new Response(JSON.stringify({ message: `Successfully synced ${ticketsToUpsert.length} tickets.`, upsertedData }), {
-          status: 200,
+      if (!freshdeskDomain || !freshdeskApiKey) {
+        return new Response(JSON.stringify({ error: 'Freshdesk API key or domain not set.' }), {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      default:
-        return new Response(JSON.stringify({ error: 'Invalid action specified.' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      const authString = btoa(`${freshdeskApiKey}:X`);
+      const headers = {
+        'Authorization': `Basic ${authString}`,
+        'Content-Type': 'application/json',
+      };
+
+      let allFreshdeskTickets: any[] = [];
+      let page = 1;
+      const perPage = 100; // Max per_page for Freshdesk API
+
+      console.log("Starting Freshdesk ticket sync...");
+
+      while (true) {
+        const freshdeskApiUrl = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?page=${page}&per_page=${perPage}`;
+        console.log(`Fetching Freshdesk tickets from: ${freshdeskApiUrl}`);
+        const freshdeskResponse = await fetch(freshdeskApiUrl, { headers });
+
+        if (!freshdeskResponse.ok) {
+          const errorText = await freshdeskResponse.text();
+          console.error(`Freshdesk API error (page ${page}): ${freshdeskResponse.status} - ${errorText}`);
+          throw new Error(`Freshdesk API error: ${freshdeskResponse.status} - ${errorText}`);
+        }
+
+        const ticketsPage = await freshdeskResponse.json();
+        console.log(`Fetched ${ticketsPage.length} tickets from Freshdesk page ${page}`);
+
+        if (!ticketsPage || ticketsPage.length === 0) {
+          console.log("No more tickets from Freshdesk. Breaking pagination loop.");
+          break; // No more tickets
+        }
+
+        allFreshdeskTickets = allFreshdeskTickets.concat(ticketsPage);
+        page++;
+
+        // Add a small delay to avoid hitting rate limits (Freshdesk has 600 req/min for most plans)
+        await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay = 5 requests/sec, well within limits
+      }
+
+      console.log(`Total tickets fetched from Freshdesk: ${allFreshdeskTickets.length}`);
+
+      // Transform Freshdesk ticket data to match Supabase table schema
+      const transformedTickets = allFreshdeskTickets.map((ticket: any) => ({
+        freshdesk_id: String(ticket.id), // Ensure ID is string
+        subject: ticket.subject,
+        priority: ticket.priority_name,
+        status: ticket.status_name,
+        type: ticket.type,
+        requester_email: ticket.requester_email,
+        created_at: ticket.created_at,
+        updated_at: ticket.updated_at,
+        due_by: ticket.due_by,
+        fr_due_by: ticket.fr_due_by,
+        description_text: ticket.description_text,
+        description_html: ticket.description_html,
+        assignee: ticket.responder_id ? String(ticket.responder_id) : 'Unassigned', // Store responder_id as string
+        cf_company: ticket.custom_fields?.cf_company,
+        cf_country: ticket.custom_fields?.cf_country,
+        cf_module: ticket.custom_fields?.cf_module,
+        cf_dependency: ticket.custom_fields?.cf_dependency,
+        cf_recurrence: ticket.custom_fields?.cf_recurrence,
+        custom_fields: ticket.custom_fields, // Store all custom fields as JSONB
+      }));
+
+      // Upsert into Supabase
+      const { data: upsertData, error: upsertError } = await supabase
+        .from('freshdesk_tickets')
+        .upsert(transformedTickets, { onConflict: 'freshdesk_id' });
+
+      if (upsertError) {
+        console.error('Supabase Upsert Error:', upsertError);
+        throw new Error(`Failed to upsert tickets to Supabase: ${upsertError.message}`);
+      }
+
+      console.log(`Successfully upserted ${transformedTickets.length} tickets to Supabase.`);
+
+      return new Response(JSON.stringify({ message: `Successfully synced ${transformedTickets.length} tickets from Freshdesk.` }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } else {
+      return new Response(JSON.stringify({ error: 'Invalid action.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
   } catch (error) {
