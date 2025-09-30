@@ -172,7 +172,7 @@ const Index = () => {
   }, [freshdeskTickets, effectiveStartDate, effectiveEndDate, filterMyTickets, filterHighPriority, searchTerm, fullName, userEmail]);
 
   const metrics = useMemo(() => {
-    if (!filteredDashboardTickets || !effectiveStartDate || !effectiveEndDate) {
+    if (!freshdeskTickets) { // Use raw freshdeskTickets for total count
       return {
         totalTickets: 0,
         openTickets: 0,
@@ -183,7 +183,9 @@ const Index = () => {
       };
     }
 
-    const totalTickets = filteredDashboardTickets.length;
+    const totalTickets = freshdeskTickets.length; // This now reflects the total fetched tickets
+
+    // Other metrics still use filteredDashboardTickets as they are period-specific
     const openTickets = filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
     const newThisPeriod = filteredDashboardTickets.length;
     const resolvedThisPeriod = filteredDashboardTickets.filter(t =>
@@ -201,7 +203,7 @@ const Index = () => {
       highPriorityTickets,
       slaBreaches,
     };
-  }, [filteredDashboardTickets, effectiveStartDate, effectiveEndDate]);
+  }, [freshdeskTickets, filteredDashboardTickets, effectiveStartDate, effectiveEndDate]); // Added freshdeskTickets to dependency array
 
   const customerBreakdownData = useMemo(() => {
     if (!filteredDashboardTickets || !effectiveStartDate || !effectiveEndDate) return [];
@@ -234,14 +236,16 @@ const Index = () => {
         customerRow.resolvedToday++;
       } else if (statusLower === 'open (being processed)') {
         customerRow.open++;
-      } else if (statusLower === 'on tech') {
-        customerRow.pendingTech++;
       } else {
         customerRow.otherActive++;
       }
 
       if (ticket.type?.toLowerCase() === 'bug') {
         customerRow.bugs++;
+      }
+      // For pendingTech, we need to check the status directly
+      if (statusLower === 'on tech') {
+        customerRow.pendingTech++;
       }
     });
 

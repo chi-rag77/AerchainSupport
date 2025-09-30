@@ -145,7 +145,7 @@ const TicketsPage = () => {
       };
     }
 
-    const totalTickets = freshdeskTickets.length;
+    const totalTickets = freshdeskTickets.length; // This now reflects the total fetched tickets
     const openTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
     const bugsReceived = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
     const resolvedClosedTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed').length;
@@ -158,7 +158,7 @@ const TicketsPage = () => {
       resolvedClosedTickets,
       highPriorityTickets,
     };
-  }, [freshdeskTickets]);
+  }, [freshdeskTickets]); // Added freshdeskTickets to dependency array
 
   const indexOfLastTicket = currentPage * ticketsPerPage;
   const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
