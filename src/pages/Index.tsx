@@ -172,7 +172,7 @@ const Index = () => {
   }, [freshdeskTickets, effectiveStartDate, effectiveEndDate, filterMyTickets, filterHighPriority, searchTerm, fullName, userEmail]);
 
   const metrics = useMemo(() => {
-    if (!freshdeskTickets) { // Use raw freshdeskTickets for total count
+    if (!freshdeskTickets) {
       return {
         totalTickets: 0,
         openTickets: 0,
@@ -183,17 +183,16 @@ const Index = () => {
       };
     }
 
-    const totalTickets = freshdeskTickets.length; // This now reflects the total fetched tickets
-
-    // Other metrics still use filteredDashboardTickets as they are period-specific
+    // All metrics now use filteredDashboardTickets to reflect the selected date range
+    const totalTickets = filteredDashboardTickets.length; 
     const openTickets = filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
-    const newThisPeriod = filteredDashboardTickets.length;
+    const newThisPeriod = filteredDashboardTickets.length; // Already filtered by creation date
     const resolvedThisPeriod = filteredDashboardTickets.filter(t =>
       (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
       isWithinInterval(new Date(t.updated_at), { start: effectiveStartDate, end: effectiveEndDate })
     ).length;
     const highPriorityTickets = filteredDashboardTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
-    const slaBreaches = 5;
+    const slaBreaches = 5; // Placeholder, actual calculation would be more complex
 
     return {
       totalTickets,
@@ -203,7 +202,7 @@ const Index = () => {
       highPriorityTickets,
       slaBreaches,
     };
-  }, [freshdeskTickets, filteredDashboardTickets, effectiveStartDate, effectiveEndDate]); // Added freshdeskTickets to dependency array
+  }, [filteredDashboardTickets, effectiveStartDate, effectiveEndDate]);
 
   const customerBreakdownData = useMemo(() => {
     if (!filteredDashboardTickets || !effectiveStartDate || !effectiveEndDate) return [];
@@ -220,8 +219,8 @@ const Index = () => {
       if (!customerMap.has(company)) {
         customerMap.set(company, {
           name: company,
-          totalToday: 0,
-          resolvedToday: 0,
+          totalInPeriod: 0, // Renamed
+          resolvedInPeriod: 0, // Renamed
           open: 0,
           pendingTech: 0,
           bugs: 0,
@@ -230,10 +229,10 @@ const Index = () => {
       }
       const customerRow = customerMap.get(company)!;
 
-      customerRow.totalToday++;
+      customerRow.totalInPeriod++; // Renamed
       const statusLower = ticket.status.toLowerCase();
       if (statusLower === 'resolved' || statusLower === 'closed') {
-        customerRow.resolvedToday++;
+        customerRow.resolvedInPeriod++; // Renamed
       } else if (statusLower === 'open (being processed)') {
         customerRow.open++;
       } else {
@@ -249,13 +248,13 @@ const Index = () => {
       }
     });
 
-    return Array.from(customerMap.values()).sort((a, b) => b.totalToday - a.totalToday);
+    return Array.from(customerMap.values()).sort((a, b) => b.totalInPeriod - a.totalInPeriod); // Renamed
   }, [filteredDashboardTickets, selectedCustomersForBreakdown]);
 
   const grandTotalData: CustomerBreakdownRow = useMemo(() => {
     return customerBreakdownData.reduce((acc, curr) => {
-      acc.totalToday += curr.totalToday;
-      acc.resolvedToday += curr.resolvedToday;
+      acc.totalInPeriod += curr.totalInPeriod; // Renamed
+      acc.resolvedInPeriod += curr.resolvedInPeriod; // Renamed
       acc.open += curr.open;
       acc.pendingTech += curr.pendingTech;
       acc.bugs += curr.bugs;
@@ -263,8 +262,8 @@ const Index = () => {
       return acc;
     }, {
       name: "Grand Total",
-      totalToday: 0,
-      resolvedToday: 0,
+      totalInPeriod: 0, // Renamed
+      resolvedInPeriod: 0, // Renamed
       open: 0,
       pendingTech: 0,
       bugs: 0,
@@ -277,6 +276,8 @@ const Index = () => {
   };
 
   const handleExportCurrentPage = () => {
+    // This function is not directly used on the dashboard, but kept for consistency if needed elsewhere.
+    // For dashboard, filteredDashboardTickets already represents the "current page" of filtered data.
     exportToCsv(filteredDashboardTickets, `tickets_dashboard_current_page_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
   };
 
@@ -448,7 +449,7 @@ const Index = () => {
                   value={metrics.totalTickets}
                   icon={TicketIcon}
                   trend={12}
-                  description="The total number of support tickets received."
+                  description="The total number of support tickets created in the selected period."
                 />
                 <DashboardMetricCard
                   title="Open Tickets"
@@ -535,7 +536,8 @@ const Index = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 mb-8">
                 <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
                   <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3>
-                  <TicketsOverTimeChart tickets={filteredDashboardTickets || []} startDate={effectiveStartDate} endDate={effectiveEndDate} />
+                  {/* Pass all tickets to the chart, let it filter by date range internally */}
+                  <TicketsOverTimeChart tickets={freshdeskTickets || []} startDate={effectiveStartDate} endDate={effectiveEndDate} />
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
                   <div className="flex justify-between items-center w-full mb-2">

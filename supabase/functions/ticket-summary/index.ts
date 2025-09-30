@@ -1,7 +1,7 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import * as dateFns from "https://esm.sh/date-fns@2.30.0?target=esnext";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0?target=esnext'; // Import Supabase client
+import * as dateFns from "npm:date-fns@2.30.0";
+import { createClient } from 'npm:@supabase/supabase-js@2.45.0'; // Import Supabase client
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -124,14 +124,14 @@ serve(async (req) => {
       statusBreakdown[t.status] = (statusBreakdown[t.status] || 0) + 1;
     });
 
-    const customerBreakdown: { [key: string]: { totalToday: number; resolvedToday: number; open: number; pendingTech: number; bugs: number; tasks: number; queries: number; otherActive: number; } } = {};
+    const customerBreakdown: { [key: string]: { totalInPeriod: number; resolvedInPeriod: number; open: number; pendingTech: number; bugs: number; tasks: number; queries: number; otherActive: number; } } = {};
     ticketsCreatedOnSelectedDate.forEach(ticket => {
       const company = ticket.cf_company || 'Unknown Company';
       if (!customerBreakdown[company]) {
-        customerBreakdown[company] = { totalToday: 0, resolvedToday: 0, open: 0, pendingTech: 0, bugs: 0, tasks: 0, queries: 0, otherActive: 0 };
+        customerBreakdown[company] = { totalInPeriod: 0, resolvedInPeriod: 0, open: 0, pendingTech: 0, bugs: 0, tasks: 0, queries: 0, otherActive: 0 };
       }
-      customerBreakdown[company].totalToday++;
-      if (ticket.status === 'Resolved' || ticket.status === 'Closed') customerBreakdown[company].resolvedToday++;
+      customerBreakdown[company].totalInPeriod++;
+      if (ticket.status === 'Resolved' || ticket.status === 'Closed') customerBreakdown[company].resolvedInPeriod++;
       if (ticket.status === 'Open (Being Processed)') customerBreakdown[company].open++;
       if (ticket.status === 'On Tech') customerBreakdown[company].pendingTech++;
       if (ticket.type === 'Bug') customerBreakdown[company].bugs++;

@@ -31,7 +31,7 @@ const CustomerBreakdownTable = ({ data }: CustomerBreakdownTableProps) => {
         return 'text-purple-600 dark:text-purple-400 font-semibold';
       case 'otherActive':
         return 'text-blue-600 dark:text-blue-400 font-semibold';
-      case 'font-bold': // For totalToday, which is just bold
+      case 'font-bold': // For totalInPeriod, which is just bold
         return 'text-foreground font-bold';
       default:
         return 'text-foreground font-semibold';
@@ -40,8 +40,8 @@ const CustomerBreakdownTable = ({ data }: CustomerBreakdownTableProps) => {
 
   // Define the metrics that will be displayed as rows
   const metricDefinitions = [
-    { key: 'totalToday', label: 'Total Tickets', icon: <Users className="h-4 w-4 mr-1" />, colorClass: 'font-bold' },
-    { key: 'resolvedToday', label: 'Resolved', icon: <CheckCircle className="h-4 w-4 mr-1 text-green-500" />, colorClass: 'resolved' },
+    { key: 'totalInPeriod', label: 'Total Tickets', icon: <Users className="h-4 w-4 mr-1" />, colorClass: 'font-bold' },
+    { key: 'resolvedInPeriod', label: 'Resolved', icon: <CheckCircle className="h-4 w-4 mr-1 text-green-500" />, colorClass: 'resolved' },
     { key: 'open', label: 'Open', icon: <Hourglass className="h-4 w-4 mr-1 text-red-500" />, colorClass: 'open' },
     { key: 'pendingTech', label: 'Pending Tech', icon: <ShieldAlert className="h-4 w-4 mr-1 text-yellow-500" />, colorClass: 'pending' },
     { key: 'otherActive', label: 'Other Active', icon: <MessageSquare className="h-4 w-4 mr-1 text-blue-500" />, colorClass: 'otherActive' },

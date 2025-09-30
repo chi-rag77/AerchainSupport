@@ -13,7 +13,7 @@ interface CustomerBreakdownCardProps {
 }
 
 const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerBreakdownCardProps) => {
-  const { name, totalToday, resolvedToday, open, pendingTech, bugs, otherActive } = customerData;
+  const { name, totalInPeriod, resolvedInPeriod, open, pendingTech, bugs, otherActive } = customerData;
 
   const openTicketsHighlight = open > 10 ? 'bg-red-50/50 dark:bg-red-950/30' : '';
   const bugsHighlight = bugs > 0 ? 'bg-red-50/50 dark:bg-red-950/30' : '';
@@ -51,11 +51,11 @@ const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerB
       <CardContent className="space-y-2 text-sm">
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Total Tickets:</span>
-          <span className="font-bold text-lg text-foreground">{totalToday}</span>
+          <span className="font-bold text-lg text-foreground">{totalInPeriod}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground flex items-center"><CheckCircle className="h-4 w-4 mr-1 text-green-500" /> Resolved:</span>
-          <span className={cn("font-semibold", getStatusColorClass(resolvedToday, 'resolved'))}>{resolvedToday}</span>
+          <span className={cn("font-semibold", getStatusColorClass(resolvedInPeriod, 'resolved'))}>{resolvedInPeriod}</span>
         </div>
         <div className={cn("flex justify-between items-center rounded-md px-2 py-1 -mx-2", openTicketsHighlight)}>
           <Tooltip>

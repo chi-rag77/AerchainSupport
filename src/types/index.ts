@@ -34,8 +34,8 @@ export type TicketMessage = {
 
 export interface CustomerBreakdownRow {
   name: string;
-  totalToday: number;
-  resolvedToday: number;
+  totalInPeriod: number; // Renamed from totalToday
+  resolvedInPeriod: number; // Renamed from resolvedToday
   open: number;
   pendingTech: number;
   bugs: number;
