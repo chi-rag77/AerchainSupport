@@ -36,3 +36,18 @@ export const exportToCsv = (data: any[], filename: string) => {
     document.body.removeChild(link);
   }
 };
+
+export const exportCsvTemplate = (headers: string[], filename: string) => {
+  const csvString = headers.map(header => `"${header.replace(/"/g, '""')}"`).join(',');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};

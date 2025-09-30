@@ -9,7 +9,7 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket, ConversationMessage } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2 } from "lucide-react";
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,7 @@ import {
 import FilterNotification from "@/components/FilterNotification";
 import Sidebar from "@/components/Sidebar";
 import { toast } from 'sonner';
+import { exportCsvTemplate } from '@/utils/export'; // Import the new exportCsvTemplate function
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -85,6 +86,17 @@ const TicketsPage = () => {
     } catch (err: any) {
       toast.error(`Failed to sync tickets: ${err.message}`, { id: "sync-tickets" });
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+      "freshdesk_id", "subject", "priority", "status", "type", "requester_email",
+      "created_at", "updated_at", "due_by", "fr_due_by", "description_text",
+      "description_html", "assignee", "cf_company", "cf_country", "cf_module",
+      "cf_dependency", "cf_recurrence", "custom_fields"
+    ];
+    exportCsvTemplate(headers, "freshdesk_tickets_template");
+    toast.info("CSV template downloaded. Fill it with your historical data and upload to Supabase.");
   };
 
   const handleRowClick = (ticket: Ticket) => {
@@ -233,19 +245,29 @@ const TicketsPage = () => {
                   Support & Ticketing
                 </h1>
               </hgroup>
-              <Button
-                onClick={handleSyncTickets} // Changed to handleSyncTickets
-                disabled={isFetching}
-                className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
-              >
-                {isFetching ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                Sync Latest Tickets
-                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
-              </Button>
+              <div className="flex gap-3"> {/* Group buttons */}
+                <Button
+                  onClick={handleDownloadTemplate}
+                  className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
+                  variant="outline"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download CSV Template
+                </Button>
+                <Button
+                  onClick={handleSyncTickets}
+                  disabled={isFetching}
+                  className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
+                >
+                  {isFetching ? (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Sync Latest Tickets
+                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
+                </Button>
+              </div>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Manage and track customer support tickets
