@@ -581,7 +581,7 @@ const Index = () => {
                 {/* The InsightsPanel is now moved into InsightsSheet */}
                 <div className="lg:col-span-1">
                   {/* This space can be used for other widgets or left empty */}
-                  <p className="text-muted-foreground text-sm">Click 'Insights' button for proactive notifications.</p>
+                  {/* Removed: <p className="text-muted-foreground text-sm">Click 'Insights' button for proactive notifications.</p> */}
                 </div>
                 <div className="lg:col-span-2">
                   <div className="flex justify-between items-center mb-4">
