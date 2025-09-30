@@ -576,55 +576,48 @@ const Index = () => {
                 />
               </div>
 
-              {/* Insights Panel and Customer Breakdown Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
-                {/* The InsightsPanel is now moved into InsightsSheet */}
-                <div className="lg:col-span-1">
-                  {/* This space can be used for other widgets or left empty */}
-                  {/* Removed: <p className="text-muted-foreground text-sm">Click 'Insights' button for proactive notifications.</p> */}
-                </div>
-                <div className="lg:col-span-2">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-foreground">Customer Breakdown for {dateRangeDisplay}</h3>
-                    <div className="flex items-center gap-3">
-                      <MultiSelect
-                        options={uniqueCompanies.map(company => ({ value: company, label: company }))}
-                        selected={selectedCustomersForBreakdown}
-                        onSelectedChange={setSelectedCustomersForBreakdown}
-                        placeholder="Select Customers"
-                        className="w-[250px]"
-                      />
-                      <Select value={customerBreakdownView} onValueChange={(value: 'cards' | 'table') => setCustomerBreakdownView(value)}>
-                        <SelectTrigger className="w-[120px]">
-                          {customerBreakdownView === 'cards' ? <LayoutGrid className="h-4 w-4 mr-2" /> : <Table2 className="h-4 w-4 mr-2" />}
-                          <SelectValue placeholder="View As" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cards">Cards</SelectItem>
-                          <SelectItem value="table">Table</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+              {/* Customer Breakdown Section */}
+              <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8"> {/* Removed grid and col-span */}
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-foreground">Customer Breakdown for {dateRangeDisplay}</h3>
+                  <div className="flex items-center gap-3">
+                    <MultiSelect
+                      options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+                      selected={selectedCustomersForBreakdown}
+                      onSelectedChange={setSelectedCustomersForBreakdown}
+                      placeholder="Select Customers"
+                      className="w-[250px]"
+                    />
+                    <Select value={customerBreakdownView} onValueChange={(value: 'cards' | 'table') => setCustomerBreakdownView(value)}>
+                      <SelectTrigger className="w-[120px]">
+                        {customerBreakdownView === 'cards' ? <LayoutGrid className="h-4 w-4 mr-2" /> : <Table2 className="h-4 w-4 mr-2" />}
+                        <SelectValue placeholder="View As" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cards">Cards</SelectItem>
+                        <SelectItem value="table">Table</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  {customerBreakdownData.length === 0 ? (
-                    <p className="text-center text-gray-500 dark:text-gray-400 py-3">
-                      No customer breakdown data for the selected date and filters.
-                    </p>
-                  ) : (
-                    customerBreakdownView === 'cards' ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {customerBreakdownData.map((customer) => (
-                          <CustomerBreakdownCard key={customer.name} customerData={customer} />
-                        ))}
-                        {customerBreakdownData.length > 0 && (
-                          <CustomerBreakdownCard customerData={grandTotalData} isGrandTotal={true} />
-                        )}
-                      </div>
-                    ) : (
-                      <CustomerBreakdownTable data={[...customerBreakdownData, grandTotalData]} />
-                    )
-                  )}
                 </div>
+                {customerBreakdownData.length === 0 ? (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-3">
+                    No customer breakdown data for the selected date and filters.
+                  </p>
+                ) : (
+                  customerBreakdownView === 'cards' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {customerBreakdownData.map((customer) => (
+                        <CustomerBreakdownCard key={customer.name} customerData={customer} />
+                      ))}
+                      {customerBreakdownData.length > 0 && (
+                        <CustomerBreakdownCard customerData={grandTotalData} isGrandTotal={true} />
+                      )}
+                    </div>
+                  ) : (
+                    <CustomerBreakdownTable data={[...customerBreakdownData, grandTotalData]} />
+                  )
+                )}
               </div>
 
               {/* Charts & Visuals Row */}
