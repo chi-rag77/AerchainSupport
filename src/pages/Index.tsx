@@ -188,33 +188,34 @@ const Index = () => {
       return {
         totalTickets: 0,
         openTickets: 0,
-        newThisPeriod: 0,
         resolvedThisPeriod: 0,
-        highPriorityTickets: 0,
-        slaBreaches: 0,
+        bugsReceived: 0, // New metric
+        totalOpenTicketsOverall: 0, // New metric
       };
     }
 
     // All metrics now use filteredDashboardTickets to reflect the selected date range
     const totalTickets = filteredDashboardTickets.length; 
     const openTickets = filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
-    const newThisPeriod = filteredDashboardTickets.length; // Already filtered by creation date
     const resolvedThisPeriod = filteredDashboardTickets.filter(t =>
       (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
       isWithinInterval(new Date(t.updated_at), { start: effectiveStartDate, end: effectiveEndDate })
     ).length;
-    const highPriorityTickets = filteredDashboardTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
-    const slaBreaches = 5; // Placeholder, actual calculation would be more complex
+    
+    // New: Bugs Received (filtered by date)
+    const bugsReceived = filteredDashboardTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
+
+    // New: Total Open Tickets (Overall - NOT filtered by date)
+    const totalOpenTicketsOverall = (freshdeskTickets || []).filter(t => t.status.toLowerCase() === 'open (being processed)').length;
 
     return {
       totalTickets,
       openTickets,
-      newThisPeriod,
       resolvedThisPeriod,
-      highPriorityTickets,
-      slaBreaches,
+      bugsReceived,
+      totalOpenTicketsOverall,
     };
-  }, [filteredDashboardTickets, effectiveStartDate, effectiveEndDate]);
+  }, [filteredDashboardTickets, freshdeskTickets, effectiveStartDate, effectiveEndDate]); // Added freshdeskTickets to dependencies
 
   const customerBreakdownData = useMemo(() => {
     if (!filteredDashboardTickets || !effectiveStartDate || !effectiveEndDate) return [];
@@ -464,18 +465,18 @@ const Index = () => {
                   description="The total number of support tickets created in the selected period."
                 />
                 <DashboardMetricCard
+                  title="Total Open Tickets"
+                  value={metrics.totalOpenTicketsOverall}
+                  icon={Clock} // Using Clock icon for overall open tickets
+                  trend={-5} // Placeholder trend
+                  description="Total number of open tickets across all time, regardless of date filter."
+                />
+                <DashboardMetricCard
                   title="Open Tickets"
                   value={metrics.openTickets}
                   icon={Hourglass}
                   trend={-5}
-                  description="Tickets that are currently open and being processed."
-                />
-                <DashboardMetricCard
-                  title="New This Period"
-                  value={metrics.newThisPeriod}
-                  icon={CalendarDays}
-                  trend={8}
-                  description={`New tickets created in the selected period (${dateRangeDisplay}).`}
+                  description="Tickets that are currently open and being processed within the selected period."
                 />
                 <DashboardMetricCard
                   title="Resolved This Period"
@@ -485,19 +486,13 @@ const Index = () => {
                   description={`Tickets resolved or closed in the selected period (${dateRangeDisplay}).`}
                 />
                 <DashboardMetricCard
-                  title="High Priority"
-                  value={metrics.highPriorityTickets}
-                  icon={AlertCircle}
-                  trend={-2}
-                  description="Tickets marked as High or Urgent priority, requiring immediate attention."
+                  title="Bugs Received"
+                  value={metrics.bugsReceived}
+                  icon={Bug} // Using Bug icon for bugs received
+                  trend={8} // Placeholder trend
+                  description="Number of tickets categorized as 'Bug' in the selected period."
                 />
-                <DashboardMetricCard
-                  title="SLA Breaches"
-                  value={metrics.slaBreaches}
-                  icon={ShieldAlert}
-                  trend={3}
-                  description="Number of tickets that have exceeded their Service Level Agreement (SLA)."
-                />
+                {/* Removed: New This Period, High Priority, SLA Breaches */}
               </div>
 
               {/* Customer Breakdown Section */}
