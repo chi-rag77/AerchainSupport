@@ -479,7 +479,7 @@ const Index = () => {
           ) : (
             <>
               {/* KPI Cards Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
                 <DashboardMetricCard
                   title="Total Tickets"
                   value={metrics.totalTickets}
