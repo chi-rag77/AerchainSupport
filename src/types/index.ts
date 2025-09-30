@@ -49,3 +49,11 @@ export interface ConversationMessage {
   created_at: string;
   is_agent: boolean;
 }
+
+export type Insight = {
+  id: string;
+  type: 'stalledOnTech' | 'highPriority' | 'info'; // Defines the type of insight
+  message: string;
+  severity: 'info' | 'warning' | 'critical'; // Severity for styling
+  icon?: React.ElementType; // Optional Lucide icon for the insight
+};

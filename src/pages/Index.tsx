@@ -13,12 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Ticket, CustomerBreakdownRow } from "@/types";
-import { isWithinInterval, subDays, format, addDays } from 'date-fns';
+import { Ticket, CustomerBreakdownRow, Insight } from "@/types";
+import { isWithinInterval, subDays, format, addDays, differenceInDays } from 'date-fns';
 import { DateRange } from "react-day-picker";
 import { exportToCsv } from '@/utils/export';
 import { toast } from 'sonner';
@@ -31,7 +31,71 @@ import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
 import CustomerBreakdownTable from "@/components/CustomerBreakdownTable";
 import { MultiSelect } from "@/components/MultiSelect";
-import MyOpenTicketsModal from "@/components/MyOpenTicketsModal"; // Import the new modal
+import MyOpenTicketsModal from "@/components/MyOpenTicketsModal";
+import InsightsPanel from "@/components/InsightsPanel"; // Import the new InsightsPanel
+
+const generateDashboardInsights = (tickets: Ticket[], effectiveEndDate: Date, userFullName: string): Insight[] => {
+  const insights: Insight[] = [];
+  const now = new Date();
+
+  // Insight 1: Stalled Tickets (On Tech, not updated in > 2 days)
+  const stalledOnTechTickets = tickets.filter(ticket =>
+    ticket.status.toLowerCase() === 'on tech' &&
+    differenceInDays(now, new Date(ticket.updated_at)) > 2
+  );
+
+  const stalledByCompany: { [company: string]: number } = {};
+  stalledOnTechTickets.forEach(ticket => {
+    const company = ticket.cf_company || 'Unknown Company';
+    stalledByCompany[company] = (stalledByCompany[company] || 0) + 1;
+  });
+
+  Object.entries(stalledByCompany).forEach(([company, count]) => {
+    insights.push({
+      id: `stalled-${company}`,
+      type: 'stalledOnTech',
+      message: `${company} has ${count} tickets pending tech for more than 2 days.`,
+      severity: count > 5 ? 'critical' : 'warning',
+      icon: Clock,
+    });
+  });
+
+  // Insight 2: High Priority Backlog
+  const highPriorityTickets = tickets.filter(ticket =>
+    ticket.priority.toLowerCase() === 'high' || ticket.priority.toLowerCase() === 'urgent'
+  );
+
+  const highPriorityByCompany: { [company: string]: number } = {};
+  highPriorityTickets.forEach(ticket => {
+    const company = ticket.cf_company || 'Unknown Company';
+    highPriorityByCompany[company] = (highPriorityByCompany[company] || 0) + 1;
+  });
+
+  Object.entries(highPriorityByCompany).forEach(([company, count]) => {
+    if (count > 0) {
+      insights.push({
+        id: `high-priority-${company}`,
+        type: 'highPriority',
+        message: `${company} has ${count} high/urgent priority tickets.`,
+        severity: count > 3 ? 'critical' : 'warning',
+        icon: AlertCircle,
+      });
+    }
+  });
+
+  // Insight 3: General info if no specific issues
+  if (insights.length === 0) {
+    insights.push({
+      id: 'no-issues',
+      type: 'info',
+      message: `All clear! No critical insights for ${userFullName} in the selected period.`,
+      severity: 'info',
+      icon: Info,
+    });
+  }
+
+  return insights;
+};
 
 const Index = () => {
   const { session } = useSupabase();
@@ -49,7 +113,7 @@ const Index = () => {
   const [selectedCustomersForBreakdown, setSelectedCustomersForBreakdown] = useState<string[]>([]);
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
   const [customerBreakdownView, setCustomerBreakdownView] = useState<'cards' | 'table'>('cards');
-  const [isMyOpenTicketsModalOpen, setIsMyOpenTicketsModalOpen] = useState(false); // New state for modal
+  const [isMyOpenTicketsModalOpen, setIsMyOpenTicketsModalOpen] = useState(false);
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -59,10 +123,8 @@ const Index = () => {
   const { data: freshdeskTickets, isLoading, error } = useQuery<Ticket[], Error>({
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
-      // Fetch all tickets by setting a sufficiently high limit
       const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('updated_at', { ascending: false }).limit(10000);
       if (error) throw error;
-      // Map freshdesk_id to id for consistency with existing Ticket type
       return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
     },
     onSuccess: () => {
@@ -97,53 +159,53 @@ const Index = () => {
     let end: Date | undefined;
     let display: string = "";
 
-    const now = new Date(); // Get current date/time once for reference
+    const now = new Date();
 
     if (typeof activeDateFilter === 'string') {
       switch (activeDateFilter) {
         case "today":
-          start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0); // Start of today
-          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
+          start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
           display = "Today";
           break;
         case "last7days":
           start = subDays(now, 7);
-          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
           display = "Last 7 Days";
           break;
         case "last14days":
           start = subDays(now, 14);
-          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
           display = "Last 14 Days";
           break;
         case "last30days":
           start = subDays(now, 30);
-          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
           display = "Last 30 Days";
           break;
         case "last90days":
           start = subDays(now, 90);
-          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
           display = "Last 90 Days";
           break;
         case "alltime":
-          start = new Date(0); // Epoch
-          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
+          start = new Date(0);
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
           display = "All Time";
           break;
-        default: // Default to last 7 days if not specified
+        default:
           start = subDays(now, 7);
-          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // End of today
+          end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
           display = "Last 7 Days";
           break;
       }
-    } else { // Custom range logic
+    } else {
       start = activeDateFilter.from ? new Date(activeDateFilter.from) : undefined;
       end = activeDateFilter.to ? new Date(activeDateFilter.to) : undefined;
 
-      if (start) start.setHours(0, 0, 0, 0); // Start of the selected 'from' day
-      if (end) end.setHours(23, 59, 59, 999); // End of the selected 'to' day
-      else end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999); // If 'to' is not selected, default to end of today
+      if (start) start.setHours(0, 0, 0, 0);
+      if (end) end.setHours(23, 59, 59, 999);
+      else end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
       if (start && end) {
         display = `${format(start, "MMM dd, yyyy")} - ${format(end, "MMM dd, yyyy")}`;
@@ -203,23 +265,20 @@ const Index = () => {
         totalTickets: 0,
         openTickets: 0,
         resolvedThisPeriod: 0,
-        bugsReceived: 0, // New metric
-        totalOpenTicketsOverall: 0, // New metric
+        bugsReceived: 0,
+        totalOpenTicketsOverall: 0,
       };
     }
 
-    // All metrics now use filteredDashboardTickets to reflect the selected date range
-    const totalTickets = filteredDashboardTickets.length; 
+    const totalTickets = filteredDashboardTickets.length;
     const openTickets = filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
     const resolvedThisPeriod = filteredDashboardTickets.filter(t =>
       (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
       isWithinInterval(new Date(t.updated_at), { start: effectiveStartDate, end: effectiveEndDate })
     ).length;
     
-    // New: Bugs Received (filtered by date)
     const bugsReceived = filteredDashboardTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
 
-    // New: Total Open Tickets (Overall - NOT filtered by date)
     const totalOpenTicketsOverall = (freshdeskTickets || []).filter(t => t.status.toLowerCase() === 'open (being processed)').length;
 
     return {
@@ -229,7 +288,7 @@ const Index = () => {
       bugsReceived,
       totalOpenTicketsOverall,
     };
-  }, [filteredDashboardTickets, freshdeskTickets, effectiveStartDate, effectiveEndDate]); // Added freshdeskTickets to dependencies
+  }, [filteredDashboardTickets, freshdeskTickets, effectiveStartDate, effectiveEndDate]);
 
   const customerBreakdownData = useMemo(() => {
     if (!filteredDashboardTickets || !effectiveStartDate || !effectiveEndDate) return [];
@@ -246,8 +305,8 @@ const Index = () => {
       if (!customerMap.has(company)) {
         customerMap.set(company, {
           name: company,
-          totalInPeriod: 0, // Renamed
-          resolvedInPeriod: 0, // Renamed
+          totalInPeriod: 0,
+          resolvedInPeriod: 0,
           open: 0,
           pendingTech: 0,
           bugs: 0,
@@ -256,10 +315,10 @@ const Index = () => {
       }
       const customerRow = customerMap.get(company)!;
 
-      customerRow.totalInPeriod++; // Renamed
+      customerRow.totalInPeriod++;
       const statusLower = ticket.status.toLowerCase();
       if (statusLower === 'resolved' || statusLower === 'closed') {
-        customerRow.resolvedInPeriod++; // Renamed
+        customerRow.resolvedInPeriod++;
       } else if (statusLower === 'open (being processed)') {
         customerRow.open++;
       } else {
@@ -269,19 +328,18 @@ const Index = () => {
       if (ticket.type?.toLowerCase() === 'bug') {
         customerRow.bugs++;
       }
-      // For pendingTech, we need to check the status directly
       if (statusLower === 'on tech') {
         customerRow.pendingTech++;
       }
     });
 
-    return Array.from(customerMap.values()).sort((a, b) => b.totalInPeriod - a.totalInPeriod); // Renamed
+    return Array.from(customerMap.values()).sort((a, b) => b.totalInPeriod - a.totalInPeriod);
   }, [filteredDashboardTickets, selectedCustomersForBreakdown]);
 
   const grandTotalData: CustomerBreakdownRow = useMemo(() => {
     return customerBreakdownData.reduce((acc, curr) => {
-      acc.totalInPeriod += curr.totalInPeriod; // Renamed
-      acc.resolvedInPeriod += curr.resolvedInPeriod; // Renamed
+      acc.totalInPeriod += curr.totalInPeriod;
+      acc.resolvedInPeriod += curr.resolvedInPeriod;
       acc.open += curr.open;
       acc.pendingTech += curr.pendingTech;
       acc.bugs += curr.bugs;
@@ -289,8 +347,8 @@ const Index = () => {
       return acc;
     }, {
       name: "Grand Total",
-      totalInPeriod: 0, // Renamed
-      resolvedInPeriod: 0, // Renamed
+      totalInPeriod: 0,
+      resolvedInPeriod: 0,
       open: 0,
       pendingTech: 0,
       bugs: 0,
@@ -298,13 +356,15 @@ const Index = () => {
     });
   }, [customerBreakdownData]);
 
+  const dashboardInsights = useMemo(() => {
+    return generateDashboardInsights(filteredDashboardTickets, effectiveEndDate, fullName);
+  }, [filteredDashboardTickets, effectiveEndDate, fullName]);
+
   const handleExportFilteredTickets = () => {
     exportToCsv(filteredDashboardTickets, `tickets_dashboard_filtered_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
   };
 
   const handleExportCurrentPage = () => {
-    // This function is not directly used on the dashboard, but kept for consistency if needed elsewhere.
-    // For dashboard, filteredDashboardTickets already represents the "current page" of filtered data.
     exportToCsv(filteredDashboardTickets, `tickets_dashboard_current_page_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
   };
 
@@ -490,8 +550,8 @@ const Index = () => {
                 <DashboardMetricCard
                   title="Total Open Tickets"
                   value={metrics.totalOpenTicketsOverall}
-                  icon={Clock} // Using Clock icon for overall open tickets
-                  trend={-5} // Placeholder trend
+                  icon={Clock}
+                  trend={-5}
                   description="Total number of open tickets across all time, regardless of date filter."
                 />
                 <DashboardMetricCard
@@ -511,62 +571,65 @@ const Index = () => {
                 <DashboardMetricCard
                   title="Bugs Received"
                   value={metrics.bugsReceived}
-                  icon={Bug} // Using Bug icon for bugs received
-                  trend={8} // Placeholder trend
+                  icon={Bug}
+                  trend={8}
                   description="Number of tickets categorized as 'Bug' in the selected period."
                 />
-                {/* Removed: New This Period, High Priority, SLA Breaches */}
               </div>
 
-              {/* Customer Breakdown Section */}
-              <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">Customer Breakdown for {dateRangeDisplay}</h3>
-                  <div className="flex items-center gap-3">
-                    <MultiSelect
-                      options={uniqueCompanies.map(company => ({ value: company, label: company }))}
-                      selected={selectedCustomersForBreakdown}
-                      onSelectedChange={setSelectedCustomersForBreakdown}
-                      placeholder="Select Customers"
-                      className="w-[250px]"
-                    />
-                    <Select value={customerBreakdownView} onValueChange={(value: 'cards' | 'table') => setCustomerBreakdownView(value)}>
-                      <SelectTrigger className="w-[120px]">
-                        {customerBreakdownView === 'cards' ? <LayoutGrid className="h-4 w-4 mr-2" /> : <Table2 className="h-4 w-4 mr-2" />}
-                        <SelectValue placeholder="View As" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cards">Cards</SelectItem>
-                        <SelectItem value="table">Table</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+              {/* Insights Panel and Customer Breakdown Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
+                <div className="lg:col-span-1">
+                  <InsightsPanel insights={dashboardInsights} />
                 </div>
-                {customerBreakdownData.length === 0 ? (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-3">
-                    No customer breakdown data for the selected date and filters.
-                  </p>
-                ) : (
-                  customerBreakdownView === 'cards' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {customerBreakdownData.map((customer) => (
-                        <CustomerBreakdownCard key={customer.name} customerData={customer} />
-                      ))}
-                      {customerBreakdownData.length > 0 && (
-                        <CustomerBreakdownCard customerData={grandTotalData} isGrandTotal={true} />
-                      )}
+                <div className="lg:col-span-2">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">Customer Breakdown for {dateRangeDisplay}</h3>
+                    <div className="flex items-center gap-3">
+                      <MultiSelect
+                        options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+                        selected={selectedCustomersForBreakdown}
+                        onSelectedChange={setSelectedCustomersForBreakdown}
+                        placeholder="Select Customers"
+                        className="w-[250px]"
+                      />
+                      <Select value={customerBreakdownView} onValueChange={(value: 'cards' | 'table') => setCustomerBreakdownView(value)}>
+                        <SelectTrigger className="w-[120px]">
+                          {customerBreakdownView === 'cards' ? <LayoutGrid className="h-4 w-4 mr-2" /> : <Table2 className="h-4 w-4 mr-2" />}
+                          <SelectValue placeholder="View As" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cards">Cards</SelectItem>
+                          <SelectItem value="table">Table</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
+                  </div>
+                  {customerBreakdownData.length === 0 ? (
+                    <p className="text-center text-gray-500 dark:text-gray-400 py-3">
+                      No customer breakdown data for the selected date and filters.
+                    </p>
                   ) : (
-                    <CustomerBreakdownTable data={[...customerBreakdownData, grandTotalData]} />
-                  )
-                )}
+                    customerBreakdownView === 'cards' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {customerBreakdownData.map((customer) => (
+                          <CustomerBreakdownCard key={customer.name} customerData={customer} />
+                        ))}
+                        {customerBreakdownData.length > 0 && (
+                          <CustomerBreakdownCard customerData={grandTotalData} isGrandTotal={true} />
+                        )}
+                      </div>
+                    ) : (
+                      <CustomerBreakdownTable data={[...customerBreakdownData, grandTotalData]} />
+                    )
+                  )}
+                </div>
               </div>
 
               {/* Charts & Visuals Row */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 mb-8">
                 <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
                   <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3>
-                  {/* Pass all tickets to the chart, let it filter by date range internally */}
                   <TicketsOverTimeChart tickets={freshdeskTickets || []} startDate={effectiveStartDate} endDate={effectiveEndDate} />
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
