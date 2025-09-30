@@ -57,7 +57,8 @@ const Index = () => {
   const { data: freshdeskTickets, isLoading, error } = useQuery<Ticket[], Error>({
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
-      const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('updated_at', { ascending: false });
+      // Fetch all tickets by setting a sufficiently high limit
+      const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('updated_at', { ascending: false }).limit(10000);
       if (error) throw error;
       // Map freshdesk_id to id for consistency with existing Ticket type
       return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
