@@ -1,5 +1,6 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
@@ -88,8 +89,8 @@ serve(async (req) => {
       const transformedTickets = allFreshdeskTickets.map((ticket: any) => ({
         freshdesk_id: String(ticket.id), // Ensure ID is string
         subject: ticket.subject,
-        priority: ticket.priority_name,
-        status: ticket.status_name,
+        priority: ticket.priority_name || `Unknown (${ticket.priority})`, // Provide fallback for priority
+        status: ticket.status_name || `Unknown (${ticket.status})`,     // Provide fallback for status
         type: ticket.type,
         requester_email: ticket.requester_email,
         created_at: ticket.created_at,

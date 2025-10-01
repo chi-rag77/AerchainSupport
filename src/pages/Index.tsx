@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 // Import chart components
 import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
-import PriorityDistributionChart from "@/components/PriorityDistributionChart";
+import PriorityDistributionChart from "@/components/PriorityDistributionChart"; // Corrected import path
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
 import CustomerBreakdownTable from "@/components/CustomerBreakdownTable";
@@ -103,15 +103,10 @@ const Index = () => {
     },
   } as UseQueryOptions<Ticket[], Error>);
 
-  const { data: dashboardInsights, isLoading: isLoadingInsights, error: insightsError } = useQuery<
-    Insight[], // TQueryFnData
-    Error,     // TError
-    Insight[], // TData
-    readonly ["dashboardInsights", string | undefined] // TQueryKey - Use the exact tuple type here
-  >({
-    queryKey: ["dashboardInsights", authToken],
+  const insightsQueryOptions: UseQueryOptions<Insight[], Error, Insight[], ["dashboardInsights", string]> = {
+    queryKey: ["dashboardInsights", authToken as string], // Cast authToken to string here
     queryFn: async ({ queryKey }) => {
-      const [, token] = queryKey;
+      const [, token] = queryKey; // token will be string
       return fetchDashboardInsights(token);
     },
     enabled: !!authToken,
@@ -123,7 +118,9 @@ const Index = () => {
     onError: (err: Error) => {
       toast.error(`Error fetching insights: ${err.message}`);
     },
-  });
+  };
+
+  const { data: dashboardInsights, isLoading: isLoadingInsights, error: insightsError } = useQuery(insightsQueryOptions);
 
   const uniqueCompanies = useMemo(() => {
     const companies = new Set<string>();
