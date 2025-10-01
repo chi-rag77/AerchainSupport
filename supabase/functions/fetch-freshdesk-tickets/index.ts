@@ -145,6 +145,9 @@ serve(async (req) => {
             const priorityString = PRIORITY_MAP[ticket.priority] || `Unknown (${ticket.priority || 'N/A'})`; // Robust fallback
             const statusString = STATUS_MAP[ticket.status] || `Unknown (${ticket.status || 'N/A'})`; // Robust fallback
 
+            // Log the requester_email before adding to the upsert array
+            console.log(`[DEBUG] Ticket ID: ${ticket.id}, Requester Email: ${requesterEmail}`);
+
             ticketsToUpsert.push({
               freshdesk_id: ticket.id?.toString() || `unknown-${Date.now()}`, // Robust fallback for ID
               subject: ticket.subject || "No Subject Provided", // Robust fallback
