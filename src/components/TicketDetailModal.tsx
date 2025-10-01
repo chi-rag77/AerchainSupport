@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,11 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Ticket } from '@/types';
-import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client'; // Import supabase client
+import { Ticket, TicketMessage } from '@/types'; // Import TicketMessage type
+import { format } from 'date-fns'; // Import format for date formatting
+import { Loader2 } from 'lucide-react'; // Import Loader2 icon for loading state
+import { cn } from '@/lib/utils'; // Import cn for conditional class names
 
 interface TicketDetailModalProps {
   isOpen: boolean;
@@ -24,6 +27,70 @@ const TicketDetailModal = ({
   onClose, 
   ticket, 
 }: TicketDetailModalProps) => {
+  const [conversationMessages, setConversationMessages] = useState<TicketMessage[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && ticket?.id) {
+      const fetchAndSyncMessages = async () => {
+        setIsLoadingMessages(true);
+        
+        // 1. Check if messages already exist for this ticket in Supabase
+        const { data: existingMessages, error: checkError } = await supabase
+          .from('ticket_messages')
+          .select('id')
+          .eq('ticket_id', ticket.id)
+          .limit(1); // Just need to know if at least one exists
+
+        if (checkError) {
+          console.error("Error checking for existing messages:", checkError);
+          // Continue to fetch from Freshdesk even if check fails
+        }
+
+        // If no existing messages, or if check failed, try to sync from Freshdesk
+        if (!existingMessages || existingMessages.length === 0 || checkError) {
+          console.log(`No existing messages found for ticket ${ticket.id}, syncing from Freshdesk...`);
+          try {
+            // Invoke the new Edge Function to fetch and upsert conversations
+            const { data, error: syncError } = await supabase.functions.invoke('fetch-ticket-conversations', {
+              method: 'POST',
+              body: { freshdesk_ticket_id: ticket.id },
+            });
+
+            if (syncError) {
+              console.error("Error syncing conversations from Freshdesk:", syncError);
+              // Optionally show a toast error to the user
+            } else {
+              console.log("Successfully synced conversations:", data);
+            }
+          } catch (err) {
+            console.error("Unexpected error during conversation sync:", err);
+          }
+        } else {
+          console.log(`Existing messages found for ticket ${ticket.id}, skipping Freshdesk sync.`);
+        }
+
+        // 2. Fetch messages from Supabase (whether newly synced or existing)
+        const { data: messagesData, error: fetchError } = await supabase
+          .from('ticket_messages')
+          .select('*')
+          .eq('ticket_id', ticket.id)
+          .order('created_at', { ascending: true });
+
+        if (fetchError) {
+          console.error("Error fetching conversation messages from Supabase:", fetchError);
+          // Optionally show a toast error to the user
+        } else {
+          setConversationMessages(messagesData || []);
+        }
+        setIsLoadingMessages(false);
+      };
+      fetchAndSyncMessages();
+    } else {
+      setConversationMessages([]); // Clear messages when modal closes
+    }
+  }, [isOpen, ticket?.id]); // Re-run effect when modal opens or ticket changes
+
   if (!ticket) return null;
 
   const freshdeskTicketUrl = `http://aerchain.freshdesk.com/a/tickets/${ticket.id}`;
@@ -54,13 +121,29 @@ const TicketDetailModal = ({
         <Separator />
 
         <div className="flex-grow overflow-y-auto p-4 space-y-4">
-          <h3 className="text-lg font-semibold mb-2">Full Conversation</h3>
-          {ticket.description_text ? (
-            <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans">
-              {ticket.description_text}
-            </pre>
+          <h3 className="text-lg font-semibold mb-2">Conversation History</h3>
+          {isLoadingMessages ? (
+            <div className="flex items-center justify-center h-24 text-gray-500 dark:text-gray-400">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading messages...
+            </div>
+          ) : conversationMessages.length > 0 ? (
+            <div className="space-y-4">
+              {conversationMessages.map((message) => (
+                <div key={message.id} className={cn(
+                  "p-3 rounded-lg shadow-sm max-w-[80%]", // Added max-w-[80%] for chat bubble effect
+                  message.is_agent ? "bg-blue-50 dark:bg-blue-950 ml-auto text-right" : "bg-gray-50 dark:bg-gray-700 mr-auto text-left"
+                )}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-semibold text-sm">{message.sender}</span>
+                    <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                  </div>
+                  {/* Render HTML content safely */}
+                  <div dangerouslySetInnerHTML={{ __html: message.body_html || '' }} className="text-sm text-foreground" />
+                </div>
+              ))}
+            </div>
           ) : (
-            <p className="text-center text-gray-500 dark:text-gray-400">No conversation content available in ticket description.</p>
+            <p className="text-center text-gray-500 dark:text-gray-400">No conversation messages found for this ticket.</p>
           )}
         </div>
 

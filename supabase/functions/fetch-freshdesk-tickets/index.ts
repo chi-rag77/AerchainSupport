@@ -2,6 +2,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+// @ts-ignore
+import * as dateFns from "https://esm.sh/date-fns@2.30.0"; // Import dateFns for date calculations
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -55,10 +57,15 @@ serve(async (req) => {
       let page = 1;
       const perPage = 100; // Max per_page for Freshdesk API
 
-      console.log("Starting Freshdesk ticket sync...");
+      // Calculate timestamp for last 24 hours
+      const now = new Date();
+      const twentyFourHoursAgo = dateFns.subHours(now, 24);
+      const updatedSince = dateFns.formatISO(twentyFourHoursAgo, { representation: 'complete' });
+
+      console.log(`Starting Freshdesk ticket sync for tickets updated since: ${updatedSince}`);
 
       while (true) {
-        const freshdeskApiUrl = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?page=${page}&per_page=${perPage}`;
+        const freshdeskApiUrl = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?updated_since=${updatedSince}&page=${page}&per_page=${perPage}`;
         console.log(`Fetching Freshdesk tickets from: ${freshdeskApiUrl}`);
         const freshdeskResponse = await fetch(freshdeskApiUrl, { headers });
 
