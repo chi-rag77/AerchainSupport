@@ -87,25 +87,25 @@ serve(async (req) => {
 
       // Transform Freshdesk ticket data to match Supabase table schema
       const transformedTickets = allFreshdeskTickets.map((ticket: any) => ({
-        freshdesk_id: String(ticket.id), // Ensure ID is string
-        subject: ticket.subject,
-        priority: ticket.priority_name || `Unknown (${ticket.priority})`, // Provide fallback for priority
-        status: ticket.status_name || `Unknown (${ticket.status})`,     // Provide fallback for status
-        type: ticket.type,
-        requester_email: ticket.requester_email,
-        created_at: ticket.created_at,
-        updated_at: ticket.updated_at,
-        due_by: ticket.due_by,
-        fr_due_by: ticket.fr_due_by,
-        description_text: ticket.description_text,
-        description_html: ticket.description_html,
-        assignee: ticket.responder_id ? String(ticket.responder_id) : 'Unassigned', // Store responder_id as string
-        cf_company: ticket.custom_fields?.cf_company,
-        cf_country: ticket.custom_fields?.cf_country,
-        cf_module: ticket.custom_fields?.cf_module,
-        cf_dependency: ticket.custom_fields?.cf_dependency,
-        cf_recurrence: ticket.custom_fields?.cf_recurrence,
-        custom_fields: ticket.custom_fields, // Store all custom fields as JSONB
+        freshdesk_id: String(ticket.id), // Ensure ID is string. Assuming Freshdesk always provides an ID.
+        subject: ticket.subject || 'No Subject Provided', // Fallback for subject
+        priority: ticket.priority_name || `Unknown (${ticket.priority || 'N/A'})`, // Fallback for priority
+        status: ticket.status_name || `Unknown (${ticket.status || 'N/A'})`,     // Fallback for status
+        type: ticket.type, // Nullable
+        requester_email: ticket.requester_email || 'unknown@freshdesk.com', // Fallback for requester_email
+        created_at: ticket.created_at || new Date().toISOString(), // Fallback for created_at
+        updated_at: ticket.updated_at || new Date().toISOString(), // Fallback for updated_at
+        due_by: ticket.due_by, // Nullable
+        fr_due_by: ticket.fr_due_by, // Nullable
+        description_text: ticket.description_text, // Nullable
+        description_html: ticket.description_html, // Nullable
+        assignee: ticket.responder_id ? String(ticket.responder_id) : 'Unassigned', // Fallback for assignee
+        cf_company: ticket.custom_fields?.cf_company, // Nullable
+        cf_country: ticket.custom_fields?.cf_country, // Nullable
+        cf_module: ticket.custom_fields?.cf_module, // Nullable
+        cf_dependency: ticket.custom_fields?.cf_dependency, // Nullable
+        cf_recurrence: ticket.custom_fields?.cf_recurrence, // Nullable
+        custom_fields: ticket.custom_fields || {}, // Store all custom fields as JSONB, default to empty object
       }));
 
       // Upsert into Supabase

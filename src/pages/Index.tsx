@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 // Import chart components
 import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
-import PriorityDistributionChart from "@/components/PriorityDistributionChart"; // Corrected import path
+import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
 import CustomerBreakdownTable from "@/components/CustomerBreakdownTable";
@@ -103,10 +103,10 @@ const Index = () => {
     },
   } as UseQueryOptions<Ticket[], Error>);
 
-  const insightsQueryOptions: UseQueryOptions<Insight[], Error, Insight[], ["dashboardInsights", string]> = {
-    queryKey: ["dashboardInsights", authToken as string], // Cast authToken to string here
+  const insightsQueryOptions = { // Removed explicit UseQueryOptions type annotation
+    queryKey: ["dashboardInsights", authToken as string],
     queryFn: async ({ queryKey }) => {
-      const [, token] = queryKey; // token will be string
+      const [, token] = queryKey;
       return fetchDashboardInsights(token);
     },
     enabled: !!authToken,
