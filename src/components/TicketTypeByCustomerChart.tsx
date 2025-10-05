@@ -59,14 +59,24 @@ const TYPE_COLORS: { [key: string]: string } = {
 };
 
 const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 'all' }: TicketTypeByCustomerChartProps) => {
+  // Debugging logs
+  console.log("TicketTypeByCustomerChart: Received tickets prop:", tickets);
+  console.log("TicketTypeByCustomerChart: selectedCustomer:", selectedCustomer);
+  console.log("TicketTypeByCustomerChart: topNCustomers:", topNCustomers);
+
   const processedData = useMemo(() => {
-    if (!tickets || tickets.length === 0) return [];
+    if (!tickets || tickets.length === 0) {
+      console.log("TicketTypeByCustomerChart: No tickets received or tickets array is empty.");
+      return [];
+    }
 
     const customerTypeMap = new Map<string, { [key: string]: number | string }>();
 
     const relevantTickets = selectedCustomer && selectedCustomer !== "All"
       ? tickets.filter(ticket => (ticket.cf_company || 'Unknown Company') === selectedCustomer)
       : tickets;
+
+    console.log("TicketTypeByCustomerChart: Relevant tickets after customer filter:", relevantTickets);
 
     relevantTickets.forEach(ticket => {
       const customerName = ticket.cf_company || 'Unknown Customer';
@@ -77,6 +87,7 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
       }
       const customerData = customerTypeMap.get(customerName)!;
 
+      // Map Freshdesk types to the desired categories
       let mappedType: string;
       switch (type.toLowerCase()) {
         case 'bug': mappedType = 'bug'; break;
@@ -91,6 +102,7 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
       customerData[mappedType] = ((customerData[mappedType] as number) || 0) + 1;
     });
 
+    // Convert map to array and sort by total tickets (sum of all types)
     const dataArray = Array.from(customerTypeMap.values()).map(data => {
       let total = 0;
       for (const key in data) {
@@ -107,17 +119,22 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
       filteredAndSortedData = filteredAndSortedData.slice(0, topNCustomers);
     }
 
+    console.log("TicketTypeByCustomerChart: Processed data for chart:", filteredAndSortedData);
     return filteredAndSortedData;
   }, [tickets, selectedCustomer, topNCustomers]);
 
   const uniqueTypes = useMemo(() => {
     const types = new Set<string>();
+    // Iterate through the original tickets to get all possible types for the legend
     tickets.forEach(ticket => {
       if (ticket.type) types.add(ticket.type);
     });
-    // Ensure a consistent order for stacking
-    return ['bug', 'csTask', 'duplicate', 'notRelevant', 'query', 'techTask', 'Unknown Type'].filter(t => types.has(t));
-  }, [tickets]);
+    // Ensure a consistent order for stacking and legend
+    return ['bug', 'csTask', 'duplicate', 'notRelevant', 'query', 'techTask', 'Unknown Type'].filter(t => {
+      // Check if the type exists in the processed data, not just the raw tickets
+      return processedData.some(dataRow => dataRow[t] !== undefined && dataRow[t] > 0);
+    });
+  }, [tickets, processedData]); // Added processedData to dependency array
 
   const legendPayload = uniqueTypes.map(type => ({
     value: type,
@@ -128,7 +145,7 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
         data={processedData}
-        layout="horizontal"
+        layout="horizontal" // Horizontal layout
         margin={{
           top: 20,
           right: 30,
@@ -150,7 +167,7 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
           axisLine={false}
           tickLine={false}
           fontSize={11}
-          width={120}
+          width={120} // Increased width for customer names
           tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
           interval={0} // Ensure all labels are shown
           // Custom tick formatter for potentially long names
@@ -165,7 +182,7 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
             stackId="a"
             fill={TYPE_COLORS[type] || TYPE_COLORS['Unknown Type']}
             name={type}
-            radius={[0, 4, 4, 0]}
+            radius={[0, 4, 4, 0]} // Rounded corners for horizontal bars
           />
         ))}
       </BarChart>

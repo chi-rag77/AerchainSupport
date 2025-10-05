@@ -21,7 +21,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         {payload.map((entry: any, index: number) => (
           <p key={index} style={{ color: entry.color }} className="flex items-center">
             <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }}></span>
-            {entry.name === 'achieved' ? 'Achieved' : 'Target'}: {entry.value}
+            {entry.name === 'created' ? 'Created' : 'Closed'}: {entry.value}
           </p>
         ))}
       </div>
@@ -37,7 +37,7 @@ const CustomLineChartLegend = ({ payload }: any) => {
       {payload.map((entry: any, index: number) => (
         <li key={`item-${index}`} className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
           <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
-          <span>{entry.value === 'achieved' ? 'Achieved' : 'Target'}</span>
+          <span>{entry.value === 'created' ? 'Created' : 'Closed'}</span>
         </li>
       ))}
     </ul>
@@ -80,24 +80,29 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
 
     const intervalDays = eachDayOfInterval({ start: effectiveStartDate, end: effectiveEndDate });
 
-    const dataMap = new Map<string, { date: string; achieved: number; target: number; }>();
+    const dataMap = new Map<string, { date: string; created: number; closed: number; }>(); // Changed 'achieved' to 'created', 'target' to 'closed'
 
     intervalDays.forEach(day => {
       const formattedDate = format(day, 'yyyy-MM-dd');
-      dataMap.set(formattedDate, { date: formattedDate, achieved: 0, target: 0 });
+      dataMap.set(formattedDate, { date: formattedDate, created: 0, closed: 0 }); // Changed 'achieved' to 'created', 'target' to 'closed'
     });
 
     tickets.forEach(ticket => {
       const createdAt = startOfDay(parseISO(ticket.created_at));
-      const formattedDate = format(createdAt, 'yyyy-MM-dd');
+      const formattedCreatedAt = format(createdAt, 'yyyy-MM-dd');
 
-      if (isWithinInterval(createdAt, { start: effectiveStartDate, end: effectiveEndDate }) && dataMap.has(formattedDate)) {
-        const entry = dataMap.get(formattedDate)!;
-        const status = ticket.status.toLowerCase();
-        if (status.includes('open')) { // Mapping 'open' to 'achieved'
-          entry.achieved++;
-        } else if (status.includes('closed') || status.includes('resolved')) { // Mapping 'closed'/'resolved' to 'target'
-          entry.target++;
+      if (isWithinInterval(createdAt, { start: effectiveStartDate, end: effectiveEndDate }) && dataMap.has(formattedCreatedAt)) {
+        const entry = dataMap.get(formattedCreatedAt)!;
+        entry.created++; // Increment created count for the creation date
+      }
+
+      const statusLower = ticket.status.toLowerCase();
+      if ((statusLower === 'resolved' || statusLower === 'closed') && ticket.updated_at) {
+        const closedAt = startOfDay(parseISO(ticket.updated_at));
+        const formattedClosedAt = format(closedAt, 'yyyy-MM-dd');
+        if (isWithinInterval(closedAt, { start: effectiveStartDate, end: effectiveEndDate }) && dataMap.has(formattedClosedAt)) {
+          const entry = dataMap.get(formattedClosedAt)!;
+          entry.closed++; // Increment closed count for the resolution/closure date
         }
       }
     });
@@ -110,11 +115,11 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={processedData}> {/* Changed to AreaChart */}
           <defs>
-            <linearGradient id="colorAchieved" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1"> {/* Changed id to colorCreated */}
               <stop offset="5%" stopColor="hsl(28 100% 70%)" stopOpacity={0.8}/>
               <stop offset="95%" stopColor="hsl(28 100% 70%)" stopOpacity={0.1}/>
             </linearGradient>
-            <linearGradient id="colorTarget" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="colorClosed" x1="0" y1="0" x2="0" y2="1"> {/* Changed id to colorClosed */}
               <stop offset="5%" stopColor="hsl(240 60% 70%)" stopOpacity={0.8}/>
               <stop offset="95%" stopColor="hsl(240 60% 70%)" stopOpacity={0.1}/>
             </linearGradient>
@@ -139,29 +144,29 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
           <Tooltip content={<CustomTooltip />} />
           <Area
             type="monotone"
-            dataKey="achieved"
+            dataKey="created" // Changed dataKey to created
             stackId="1" // Stacked areas
             stroke="hsl(28 100% 70%)"
-            fill="url(#colorAchieved)"
+            fill="url(#colorCreated)" // Changed fill to colorCreated
             strokeWidth={2}
             dot={{ fill: 'hsl(28 100% 70%)', strokeWidth: 2, r: 4 }}
-            name="achieved"
+            name="created" // Changed name to created
           />
           <Area
             type="monotone"
-            dataKey="target"
+            dataKey="closed" // Changed dataKey to closed
             stackId="1" // Stacked areas
             stroke="hsl(240 60% 70%)"
-            fill="url(#colorTarget)"
+            fill="url(#colorClosed)" // Changed fill to colorClosed
             strokeWidth={2}
             dot={{ fill: 'hsl(240 60% 70%)', strokeWidth: 2, r: 4 }}
-            name="target"
+            name="closed" // Changed name to closed
           />
         </AreaChart>
       </ResponsiveContainer>
       <CustomLineChartLegend payload={[
-        { value: 'achieved', color: 'hsl(28 100% 70%)' },
-        { value: 'target', color: 'hsl(240 60% 70%)' }
+        { value: 'created', color: 'hsl(28 100% 70%)' }, // Changed value to created
+        { value: 'closed', color: 'hsl(240 60% 70%)' } // Changed value to closed
       ]} />
     </div>
   );
