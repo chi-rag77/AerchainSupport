@@ -4,19 +4,21 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import Sidebar from "@/components/Sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import Logo from "@/components/Logo";
 import HandWaveIcon from "@/components/HandWaveIcon";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Bookmark, ChevronDown, Bug, Clock, User, Loader2, Table2, LayoutGrid, Lightbulb } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb } from "lucide-react"; // Added Lightbulb icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket, CustomerBreakdownRow, Insight } from "@/types";
-import { isWithinInterval, subDays, format, addDays } from 'date-fns';
+import { isWithinInterval, subDays, format, addDays, differenceInDays } from 'date-fns';
 import { DateRange } from "react-day-picker";
 import { exportToCsv } from '@/utils/export';
 import { toast } from 'sonner';
@@ -30,13 +32,14 @@ import CustomerBreakdownCard from "@/components/CustomerBreakdownCard";
 import CustomerBreakdownTable from "@/components/CustomerBreakdownTable";
 import { MultiSelect } from "@/components/MultiSelect";
 import MyOpenTicketsModal from "@/components/MyOpenTicketsModal";
-import InsightsSheet from "@/components/InsightsSheet";
+import InsightsSheet from "@/components/InsightsSheet"; // Import the new InsightsSheet
 
+// This function will now primarily fetch insights from the Edge Function
 const fetchDashboardInsights = async (token: string | undefined): Promise<Insight[]> => {
   if (!token) return [];
 
   try {
-    const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', {
+    const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { // Updated function name
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -69,11 +72,11 @@ const Index = () => {
   const authToken = session?.access_token;
 
   const [showSidebar, setShowSidebar] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(""); // Keeping search term for potential future use, though not directly used in current dashboard filtering
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeDateFilter, setActiveDateFilter] = useState<string | DateRange>("last7days");
   const [filterMyTickets, setFilterMyTickets] = useState(false);
   const [filterHighPriority, setFilterHighPriority] = useState(false);
-  const [filterSLABreached, setFilterSLABreached] = useState(false); // Placeholder for future SLA logic
+  const [filterSLABreached, setFilterSLABreached] = useState(false);
   const [selectedCustomerForChart, setSelectedCustomerForChart] = useState<string>("All");
   const [selectedCustomersForBreakdown, setSelectedCustomersForBreakdown] = useState<string[]>([]);
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
@@ -100,7 +103,7 @@ const Index = () => {
     },
   } as UseQueryOptions<Ticket[], Error>);
 
-  const insightsQueryOptions = {
+  const insightsQueryOptions = { // Removed explicit UseQueryOptions type annotation
     queryKey: ["dashboardInsights", authToken as string],
     queryFn: async ({ queryKey }) => {
       const [, token] = queryKey;
@@ -228,11 +231,6 @@ const Index = () => {
       );
     }
 
-    // Placeholder for SLA Breached filter logic
-    // if (filterSLABreached) {
-    //   currentTickets = currentTickets.filter(ticket => /* SLA breached logic */);
-    // }
-
     return currentTickets;
   }, [freshdeskTickets, effectiveStartDate, effectiveEndDate, filterMyTickets, filterHighPriority, searchTerm, fullName, userEmail]);
 
@@ -350,13 +348,10 @@ const Index = () => {
   };
 
   const handleExportCurrentPage = () => {
-    // In a dashboard context, "current page" usually means the currently filtered data
-    exportToCsv(filteredDashboardTickets, `tickets_dashboard_current_view_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
+    exportToCsv(filteredDashboardTickets, `tickets_dashboard_current_page_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
   };
 
   const handleExportAggregatedReport = () => {
-    // This would typically involve more complex aggregation logic,
-    // for now, we'll export the raw filtered tickets.
     exportToCsv(filteredDashboardTickets, `tickets_dashboard_aggregated_report_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
   };
 
@@ -364,17 +359,17 @@ const Index = () => {
     <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
       <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
       <div className="flex-1 flex flex-col p-4 overflow-y-auto">
-        <div className="bg-card rounded-xl shadow-lg flex flex-col h-full">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col">
           {/* Top Bar */}
-          <div className="p-6 pb-4 border-b border-border shadow-sm">
+          <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <div className="flex flex-col items-start">
-                <p className="text-lg font-bold text-muted-foreground flex items-center mb-2">
+                <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2">
                   Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
                 </p>
                 <div className="flex items-center space-x-4">
                   <LayoutDashboard className="h-8 w-8 text-primary" />
-                  <h1 className="text-3xl font-bold text-foreground">Support Dashboard</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Support Dashboard</h1>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
@@ -394,8 +389,8 @@ const Index = () => {
                   }
                 }}
               >
-                <SelectTrigger className="w-[180px] bg-background">
-                  <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectTrigger className="w-[180px]">
+                  <CalendarDays className="h-4 w-4 mr-2 text-gray-500" />
                   <SelectValue placeholder="Select Date Range">
                     {dateRangeDisplay}
                   </SelectValue>
@@ -416,10 +411,10 @@ const Index = () => {
                 <PopoverTrigger asChild>
                   <Button
                     variant={"outline"}
-                    className="w-[200px] justify-start text-left font-normal bg-background"
+                    className="w-[200px] justify-start text-left font-normal"
                     style={{ display: typeof activeDateFilter !== 'string' || (typeof activeDateFilter === 'string' && activeDateFilter === 'custom') ? 'flex' : 'none' }}
                   >
-                    <CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <CalendarDays className="mr-2 h-4 w-4" />
                     {effectiveStartDate && effectiveEndDate
                       ? `${format(effectiveStartDate, "PPP")} - ${format(effectiveEndDate, "PPP")}`
                       : <span>Pick a custom range</span>}
@@ -450,21 +445,21 @@ const Index = () => {
               <Button
                 variant={filterMyTickets ? "secondary" : "outline"}
                 onClick={() => setFilterMyTickets(!filterMyTickets)}
-                className="flex items-center gap-1 bg-background"
+                className="flex items-center gap-1"
               >
                 <User className="h-4 w-4" /> My Tickets
               </Button>
               <Button
                 variant={filterHighPriority ? "secondary" : "outline"}
                 onClick={() => setFilterHighPriority(!filterHighPriority)}
-                className="flex items-center gap-1 bg-background"
+                className="flex items-center gap-1"
               >
                 <AlertCircle className="h-4 w-4" /> High Priority
               </Button>
               <Button
                 variant={filterSLABreached ? "secondary" : "outline"}
                 onClick={() => setFilterSLABreached(!filterSLABreached)}
-                className="flex items-center gap-1 bg-background"
+                className="flex items-center gap-1"
               >
                 <ShieldAlert className="h-4 w-4" /> SLA Breached
               </Button>
@@ -473,7 +468,7 @@ const Index = () => {
               <Button
                 variant="default"
                 onClick={() => setIsInsightsSheetOpen(true)}
-                className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white shadow-md"
+                className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white"
               >
                 <Lightbulb className="h-4 w-4" /> Insights
               </Button>
@@ -482,7 +477,7 @@ const Index = () => {
               <Button
                 variant="default"
                 onClick={() => setIsMyOpenTicketsModalOpen(true)}
-                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <TicketIcon className="h-4 w-4" /> View Open Tickets
               </Button>
@@ -490,7 +485,7 @@ const Index = () => {
               {/* Saved Views Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1 bg-background">
+                  <Button variant="outline" className="flex items-center gap-1">
                     <Bookmark className="h-4 w-4" /> Saved Views <ChevronDown className="ml-1 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -504,13 +499,13 @@ const Index = () => {
               {/* Export Button */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="flex items-center gap-1 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
+                  <Button className="flex items-center gap-1">
                     <Download className="h-4 w-4" /> Export <ChevronDown className="ml-1 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleExportCurrentPage}>Current View (CSV)</DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportFilteredTickets}>All Filtered Data (CSV)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportCurrentPage}>Current Page (CSV)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportFilteredTickets}>Filtered Results (CSV)</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportAggregatedReport}>Aggregated Report (Excel)</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -518,14 +513,14 @@ const Index = () => {
           </div>
 
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center flex-grow p-6 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center flex-grow p-6 text-gray-500 dark:text-gray-400">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
               <p className="text-lg font-medium">Loading dashboard data...</p>
             </div>
           ) : (
             <>
               {/* KPI Cards Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-6 pb-4 border-b border-border mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8">
                 <DashboardMetricCard
                   title="Total Tickets"
                   value={metrics.totalTickets}
@@ -564,19 +559,19 @@ const Index = () => {
               </div>
 
               {/* Customer Breakdown Section */}
-              <div className="p-6 pb-4 border-b border-border mb-8">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+              <div className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700 mb-8"> {/* Removed grid and col-span */}
+                <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-foreground">Customer Breakdown for {dateRangeDisplay}</h3>
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-3">
                     <MultiSelect
                       options={uniqueCompanies.map(company => ({ value: company, label: company }))}
                       selected={selectedCustomersForBreakdown}
                       onSelectedChange={setSelectedCustomersForBreakdown}
                       placeholder="Select Customers"
-                      className="w-[250px] bg-background"
+                      className="w-[250px]"
                     />
                     <Select value={customerBreakdownView} onValueChange={(value: 'cards' | 'table') => setCustomerBreakdownView(value)}>
-                      <SelectTrigger className="w-[120px] bg-background">
+                      <SelectTrigger className="w-[120px]">
                         {customerBreakdownView === 'cards' ? <LayoutGrid className="h-4 w-4 mr-2" /> : <Table2 className="h-4 w-4 mr-2" />}
                         <SelectValue placeholder="View As" />
                       </SelectTrigger>
@@ -588,7 +583,7 @@ const Index = () => {
                   </div>
                 </div>
                 {customerBreakdownData.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-3">
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-3">
                     No customer breakdown data for the selected date and filters.
                   </p>
                 ) : (
@@ -609,15 +604,15 @@ const Index = () => {
 
               {/* Charts & Visuals Row */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 mb-8">
-                <div className="bg-card p-6 rounded-lg shadow-md flex flex-col items-center justify-center h-80 text-muted-foreground transition-all duration-300 hover:shadow-lg hover:scale-[1.01] border border-border">
+                <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
                   <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3>
                   <TicketsOverTimeChart tickets={freshdeskTickets || []} startDate={effectiveStartDate} endDate={effectiveEndDate} />
                 </div>
-                <div className="bg-card p-6 rounded-lg shadow-md flex flex-col items-center justify-center h-80 text-muted-foreground transition-all duration-300 hover:shadow-lg hover:scale-[1.01] border border-border">
+                <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
                   <div className="flex justify-between items-center w-full mb-2">
                     <h3 className="text-lg font-semibold text-foreground w-full text-center">Ticket Type by Customer</h3>
                     <Select value={selectedCustomerForChart} onValueChange={setSelectedCustomerForChart}>
-                      <SelectTrigger className="w-[180px] h-8 bg-background">
+                      <SelectTrigger className="w-[180px] h-8">
                         <SelectValue placeholder="All Customers" />
                       </SelectTrigger>
                       <SelectContent>
@@ -632,15 +627,15 @@ const Index = () => {
                   </div>
                   <TicketTypeByCustomerChart tickets={filteredDashboardTickets || []} selectedCustomer={selectedCustomerForChart} />
                 </div>
-                <div className="bg-card p-6 rounded-lg shadow-md flex flex-col items-center justify-center h-80 text-muted-foreground transition-all duration-300 hover:shadow-lg hover:scale-[1.01] border border-border">
+                <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
                   <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Priority Distribution</h3>
                   <PriorityDistributionChart tickets={filteredDashboardTickets || []} />
                 </div>
-                <div className="bg-card p-6 rounded-lg shadow-md flex flex-col items-center justify-center h-80 text-muted-foreground transition-all duration-300 hover:shadow-lg hover:scale-[1.01] border border-border">
+                <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
                   <div className="flex justify-between items-center w-full mb-2">
                     <h3 className="text-lg font-semibold text-foreground w-full text-center">Assignee Load</h3>
                     <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
-                      <SelectTrigger className="w-[120px] h-8 bg-background">
+                      <SelectTrigger className="w-[120px] h-8">
                         <SelectValue placeholder="Display Mode" />
                       </SelectTrigger>
                       <SelectContent>
