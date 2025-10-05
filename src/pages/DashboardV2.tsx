@@ -339,7 +339,7 @@ const DashboardV2 = () => {
                   <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
                     <div className="flex justify-between items-center w-full mb-2">
                       <h3 className="text-lg font-semibold text-foreground">Priority Distribution</h3>
-                      <Select value="Aug 25-Sept 25" onValueChange={() => {}}> {/* Placeholder for date range */}
+                      <Select onValueChange={() => {}}> {/* Removed static value */}
                         <SelectTrigger className="w-[150px] h-8">
                           <SelectValue placeholder="Date Range" />
                         </SelectTrigger>
