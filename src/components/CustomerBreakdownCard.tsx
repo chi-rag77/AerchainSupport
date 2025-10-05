@@ -18,7 +18,7 @@ const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerB
   const openTicketsHighlight = open > 10 ? 'bg-red-50/50 dark:bg-red-950/30' : '';
   const bugsHighlight = bugs > 0 ? 'bg-red-50/50 dark:bg-red-950/30' : '';
 
-  const getStatusColorClass = (count: number, type: 'open' | 'resolved' | 'pending' | 'bugs' | 'otherActive') => {
+  const getStatusColorClass = (count: number, type: 'open' | 'resolved' | 'pending' | 'bugs' | 'otherActive' | 'total') => {
     if (count === 0) return 'text-muted-foreground';
     switch (type) {
       case 'open':
@@ -31,6 +31,8 @@ const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerB
         return 'text-red-600 dark:text-red-400';
       case 'otherActive':
         return 'text-blue-600 dark:text-blue-400';
+      case 'total': // New case for totalInPeriod
+        return 'text-foreground'; // Keep default foreground color
       default:
         return 'text-foreground';
     }
@@ -51,7 +53,7 @@ const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerB
       <CardContent className="space-y-2 text-sm">
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Total Tickets:</span>
-          <span className="font-bold text-lg text-foreground">{totalInPeriod}</span>
+          <span className={cn("font-bold text-xl", getStatusColorClass(totalInPeriod, 'total'))}>{totalInPeriod}</span> {/* Increased font size to xl */}
         </div>
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground flex items-center"><CheckCircle className="h-4 w-4 mr-1 text-green-500" /> Resolved:</span>
