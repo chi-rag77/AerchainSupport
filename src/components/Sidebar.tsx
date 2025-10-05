@@ -47,11 +47,11 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
   return (
     <div className={cn(
       "flex flex-col h-screen p-6 shadow-lg rounded-r-xl border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out",
-      showSidebar ? "w-64 bg-white dark:bg-gray-800" : "w-20 bg-white dark:bg-gray-800 items-center"
+      showSidebar ? "w-64 bg-sidebar dark:bg-sidebar" : "w-20 bg-sidebar dark:bg-sidebar items-center"
     )}>
       <div className={cn("mb-10 flex items-center", showSidebar ? "space-x-2" : "justify-center")}>
         <Logo className="h-8 w-8" />
-        {showSidebar && <span className="text-xl font-bold text-gray-900 dark:text-white">Super Admin</span>}
+        {showSidebar && <span className="text-xl font-bold text-white">Super Admin</span>}
       </div>
 
       <nav className="flex-grow space-y-2">
@@ -62,7 +62,8 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
                 variant={item.path === window.location.pathname ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start text-base h-10 px-4",
-                  !showSidebar && "justify-center px-0"
+                  !showSidebar && "justify-center px-0",
+                  item.path === window.location.pathname ? "bg-gray-700 text-white hover:bg-gray-600" : "text-gray-300 hover:bg-gray-700 hover:text-white"
                 )}
                 asChild
               >
@@ -77,11 +78,11 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
         ))}
       </nav>
 
-      <div className="mt-auto pt-6 border-t border-gray-200 dark:border-gray-700 space-y-2">
+      <div className="mt-auto pt-6 border-t border-gray-700 dark:border-gray-700 space-y-2">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" className={cn(
-              "w-full justify-start text-base h-10 px-4 text-gray-600 dark:text-gray-300",
+              "w-full justify-start text-base h-10 px-4 text-gray-300 hover:bg-gray-700 hover:text-white",
               !showSidebar && "justify-center px-0"
             )}>
               <LifeBuoy className={cn("h-5 w-5", showSidebar && "mr-3")} />
@@ -100,14 +101,14 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
               )}>
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user?.user_metadata?.avatar_url || "https://github.com/shadcn.png"} alt={fullName} />
-                  <AvatarFallback className="text-xs bg-gray-200 dark:bg-gray-700">
+                  <AvatarFallback className="text-xs bg-gray-700 text-white">
                     {fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 {showSidebar && (
                   <div className="flex flex-col items-start ml-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{fullName}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{userRole}</span>
+                    <span className="text-sm font-medium text-white">{fullName}</span>
+                    <span className="text-xs text-gray-400">{userRole}</span>
                   </div>
                 )}
               </Button>
@@ -129,7 +130,7 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
                 size="icon"
                 onClick={toggleSidebar}
                 className={cn(
-                  "rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600",
+                  "rounded-lg bg-gray-700 dark:bg-gray-700 text-white hover:bg-gray-600 dark:hover:bg-gray-600",
                   showSidebar ? "h-10 w-10" : "h-8 w-8"
                 )}
               >
