@@ -315,42 +315,35 @@ const TicketsPage = () => {
             </p>
           </div>
 
-          {/* Metrics Overview Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 p-6 pb-3">
+          {/* Metrics Overview Section - Redesigned to be smaller */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-6 pb-3">
             <DashboardMetricCard
               title="Total Tickets"
               value={metrics.totalTickets}
               icon={TicketIcon}
-              trend={12}
               description="All tickets in the system"
+              className="h-auto min-h-[100px]" // Make cards smaller
             />
             <DashboardMetricCard
               title="Open Tickets"
               value={metrics.openTickets}
               icon={Hourglass}
-              trend={-5}
               description="Currently being processed"
-            />
-            <DashboardMetricCard
-              title="Bugs Received"
-              value={metrics.bugsReceived}
-              icon={Bug}
-              trend={8}
-              description="Tickets categorized as bugs"
+              className="h-auto min-h-[100px]" // Make cards smaller
             />
             <DashboardMetricCard
               title="Resolved/Closed"
               value={metrics.resolvedClosedTickets}
               icon={CheckCircle}
-              trend={15}
               description="Successfully handled"
+              className="h-auto min-h-[100px]" // Make cards smaller
             />
             <DashboardMetricCard
               title="High Priority"
               value={metrics.highPriorityTickets}
               icon={XCircle}
-              trend={-2}
               description="Requiring immediate attention"
+              className="h-auto min-h-[100px]" // Make cards smaller
             />
           </div>
 
