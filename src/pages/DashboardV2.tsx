@@ -25,7 +25,7 @@ import HandWaveIcon from "@/components/HandWaveIcon";
 import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
-import PriorityRadialChart from "@/components/PriorityRadialChart"; // NEW IMPORT
+import PriorityDistributionChart from "@/components/PriorityDistributionChart"; // Using the redesigned PriorityDistributionChart
 
 interface TicketSummaryData {
   date: string;
@@ -200,14 +200,6 @@ const DashboardV2 = () => {
 
   const rawTicketsForCharts = processedSummaryData?.rawTickets || [];
 
-  // Data for PriorityRadialChart
-  const priorityData = useMemo(() => {
-    const total = rawTicketsForCharts.length;
-    const active = rawTicketsForCharts.filter(t => t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed').length;
-    const inactive = total - active;
-    return { active, inactive, total };
-  }, [rawTicketsForCharts]);
-
   return (
     <TooltipProvider>
       <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
@@ -346,7 +338,7 @@ const DashboardV2 = () => {
 
                   <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
                     <div className="flex justify-between items-center w-full mb-2">
-                      <h3 className="text-lg font-semibold text-foreground">Priority</h3>
+                      <h3 className="text-lg font-semibold text-foreground">Priority Distribution</h3>
                       <Select value="Aug 25-Sept 25" onValueChange={() => {}}> {/* Placeholder for date range */}
                         <SelectTrigger className="w-[150px] h-8">
                           <SelectValue placeholder="Date Range" />
@@ -356,31 +348,7 @@ const DashboardV2 = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="flex items-center justify-center w-full h-full">
-                      <div className="flex flex-col items-start mr-8">
-                        <div className="flex items-center mb-2">
-                          <span className="inline-block w-3 h-3 rounded-full bg-purple-500 mr-2"></span>
-                          <span className="text-sm text-muted-foreground">Inactive</span>
-                        </div>
-                        <p className="text-2xl font-bold text-foreground mb-4">{priorityData.inactive}</p>
-                        <div className="flex items-center mb-2">
-                          <span className="inline-block w-3 h-3 rounded-full bg-orange-500 mr-2"></span>
-                          <span className="text-sm text-muted-foreground">Active</span>
-                        </div>
-                        <p className="text-2xl font-bold text-foreground mb-4">{priorityData.active}</p>
-                        <div className="flex items-center mb-2">
-                          <span className="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
-                          <span className="text-sm text-muted-foreground">Total</span>
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">{priorityData.total}</p>
-                      </div>
-                      <PriorityRadialChart
-                        activeCount={priorityData.active}
-                        inactiveCount={priorityData.inactive}
-                        totalCount={priorityData.total}
-                        className="flex-shrink-0"
-                      />
-                    </div>
+                    <PriorityDistributionChart tickets={rawTicketsForCharts} />
                   </div>
 
                   <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
