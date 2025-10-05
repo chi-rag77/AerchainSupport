@@ -1,44 +1,60 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Dot } from 'recharts';
 import { format, parseISO, startOfDay, eachDayOfInterval, subDays, isWithinInterval } from 'date-fns';
 import { Ticket } from '@/types';
 
 interface TicketsOverTimeChartProps {
   tickets: Ticket[];
-  dateRange?: string; // e.g., "last7days", "last30days", "alltime" - now optional
-  startDate?: Date;   // New prop for custom start date (optional)
-  endDate?: Date;     // New prop for custom end date (optional)
+  dateRange?: string;
+  startDate?: Date;
+  endDate?: Date;
 }
 
+// Custom Tooltip component to match the image
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-sm">
+        <p className="text-muted-foreground mb-1">{format(parseISO(label), 'MMM dd, yyyy')}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} style={{ color: entry.color }} className="flex items-center">
+            <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }}></span>
+            {entry.name === 'achieved' ? 'Achieved' : 'Target'}: {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+// Custom Legend component to match the image
+const CustomLineChartLegend = ({ payload }: any) => {
+  return (
+    <ul className="flex justify-end space-x-6 text-sm absolute top-0 right-0 p-2"> {/* Positioned top-right */}
+      {payload.map((entry: any, index: number) => (
+        <li key={`item-${index}`} className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+          <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
+          <span>{entry.value === 'achieved' ? 'Achieved' : 'Target'}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: TicketsOverTimeChartProps) => {
-  const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
-
-  const handleLegendClick = (dataKey: any) => {
-    setHiddenSeries(prev => {
-      const newSet = new Set(prev);
-      const keyAsString = String(dataKey);
-      if (newSet.has(keyAsString)) {
-        newSet.delete(keyAsString);
-      } else {
-        newSet.add(keyAsString);
-      }
-      return newSet;
-    });
-  };
-
   const processedData = useMemo(() => {
     if (!tickets || tickets.length === 0) return [];
 
     let effectiveStartDate: Date;
-    let effectiveEndDate: Date = new Date(); // Default end date to now
+    let effectiveEndDate: Date = new Date();
 
-    // Prioritize explicit startDate/endDate props
     if (startDate && endDate) {
       effectiveStartDate = startDate;
       effectiveEndDate = endDate;
-    } else { // Fallback to dateRange string logic
+    } else {
       const now = new Date();
       switch (dateRange) {
         case "last7days":
@@ -54,9 +70,9 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
           effectiveStartDate = subDays(now, 90);
           break;
         case "alltime":
-          effectiveStartDate = new Date(0); // Epoch
+          effectiveStartDate = new Date(0);
           break;
-        default: // Default to last 30 days if not specified
+        default:
           effectiveStartDate = subDays(now, 30);
           break;
       }
@@ -64,11 +80,11 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
 
     const intervalDays = eachDayOfInterval({ start: effectiveStartDate, end: effectiveEndDate });
 
-    const dataMap = new Map<string, { date: string; open: number; 'in progress': number; resolved: number; closed: number; }>();
+    const dataMap = new Map<string, { date: string; achieved: number; target: number; }>();
 
     intervalDays.forEach(day => {
       const formattedDate = format(day, 'yyyy-MM-dd');
-      dataMap.set(formattedDate, { date: formattedDate, open: 0, 'in progress': 0, resolved: 0, closed: 0 });
+      dataMap.set(formattedDate, { date: formattedDate, achieved: 0, target: 0 });
     });
 
     tickets.forEach(ticket => {
@@ -78,14 +94,10 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
       if (isWithinInterval(createdAt, { start: effectiveStartDate, end: effectiveEndDate }) && dataMap.has(formattedDate)) {
         const entry = dataMap.get(formattedDate)!;
         const status = ticket.status.toLowerCase();
-        if (status.includes('open')) {
-          entry.open++;
-        } else if (status.includes('pending') || status.includes('on tech') || status.includes('on product') || status.includes('waiting on customer')) {
-          entry['in progress']++;
-        } else if (status.includes('resolved')) {
-          entry.resolved++;
-        } else if (status.includes('closed')) {
-          entry.closed++;
+        if (status.includes('open')) { // Mapping 'open' to 'achieved'
+          entry.achieved++;
+        } else if (status.includes('closed') || status.includes('resolved')) { // Mapping 'closed'/'resolved' to 'target'
+          entry.target++;
         }
       }
     });
@@ -94,50 +106,64 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
   }, [tickets, dateRange, startDate, endDate]);
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <AreaChart
-        data={processedData}
-        margin={{
-          top: 10,
-          right: 40,
-          left: 20,
-          bottom: 0,
-        }}
-      >
-        <defs>
-          <linearGradient id="colorOpen" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#60A5FA" stopOpacity={0}/>
-          </linearGradient>
-          <linearGradient id="colorInProgress" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#34D399" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#34D399" stopOpacity={0}/>
-          </linearGradient>
-          <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#FBBF24" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#FBBF24" stopOpacity={0}/>
-          </linearGradient>
-          <linearGradient id="colorClosed" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#F87171" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#F87171" stopOpacity={0}/>
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-        <XAxis
-          dataKey="date"
-          tickFormatter={(tick) => format(parseISO(tick), 'MMM dd')}
-          className="text-sm font-semibold text-gray-600 dark:text-gray-400"
-          interval="preserveStartEnd"
-        />
-        <YAxis className="text-sm font-semibold text-gray-600 dark:text-gray-400" />
-        <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
-        <Legend onClick={(e) => handleLegendClick(e.dataKey)} />
-        {!hiddenSeries.has('open') && <Area type="monotone" dataKey="open" stackId="1" stroke="#60A5FA" fill="url(#colorOpen)" name="Open" />}
-        {!hiddenSeries.has('in progress') && <Area type="monotone" dataKey="in progress" stackId="1" stroke="#34D399" fill="url(#colorInProgress)" name="In Progress" />}
-        {!hiddenSeries.has('resolved') && <Area type="monotone" dataKey="resolved" stackId="1" stroke="#FBBF24" fill="url(#colorResolved)" name="Resolved" />}
-        {!hiddenSeries.has('closed') && <Area type="monotone" dataKey="closed" stackId="1" stroke="#F87171" fill="url(#colorClosed)" name="Closed" />}
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className="relative w-full h-full"> {/* Added relative positioning for absolute legend */}
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={processedData}> {/* Changed to AreaChart */}
+          <defs>
+            <linearGradient id="colorAchieved" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(28 100% 70%)" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="hsl(28 100% 70%)" stopOpacity={0.1}/>
+            </linearGradient>
+            <linearGradient id="colorTarget" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(240 60% 70%)" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="hsl(240 60% 70%)" stopOpacity={0.1}/>
+            </linearGradient>
+          </defs>
+          <XAxis
+            dataKey="date"
+            tickFormatter={(tick) => format(parseISO(tick), 'MMM dd')}
+            axisLine={false}
+            tickLine={false}
+            fontSize={12}
+            tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            fontSize={12}
+            tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
+            domain={[0, 'auto']}
+          />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" />
+          <Tooltip content={<CustomTooltip />} />
+          <Area
+            type="monotone"
+            dataKey="achieved"
+            stackId="1" // Stacked areas
+            stroke="hsl(28 100% 70%)"
+            fill="url(#colorAchieved)"
+            strokeWidth={2}
+            dot={{ fill: 'hsl(28 100% 70%)', strokeWidth: 2, r: 4 }}
+            name="achieved"
+          />
+          <Area
+            type="monotone"
+            dataKey="target"
+            stackId="1" // Stacked areas
+            stroke="hsl(240 60% 70%)"
+            fill="url(#colorTarget)"
+            strokeWidth={2}
+            dot={{ fill: 'hsl(240 60% 70%)', strokeWidth: 2, r: 4 }}
+            name="target"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+      <CustomLineChartLegend payload={[
+        { value: 'achieved', color: 'hsl(28 100% 70%)' },
+        { value: 'target', color: 'hsl(240 60% 70%)' }
+      ]} />
+    </div>
   );
 };
 
