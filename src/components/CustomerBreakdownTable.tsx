@@ -56,21 +56,21 @@ const CustomerBreakdownTable = ({ data }: CustomerBreakdownTableProps) => {
   const customerNames = customerDataRows.map(row => row.name);
 
   return (
-    <div className="rounded-lg overflow-hidden shadow-md w-full bg-white dark:bg-gray-800 border border-border">
+    <div className="rounded-lg overflow-hidden shadow-md w-full bg-card border border-border">
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
-          <TableRow>
+        <TableHeader className="bg-muted/50 dark:bg-muted/30">
+          <TableRow className="hover:bg-transparent"> {/* Prevent hover effect on header row */}
             {/* Empty cell for the top-left corner */}
-            <TableHead className="py-2"></TableHead> 
+            <TableHead className="py-3"></TableHead> 
             {/* Customer names as column headers */}
             {customerNames.map(customerName => (
-              <TableHead key={customerName} className="py-2 text-center whitespace-nowrap text-foreground">
+              <TableHead key={customerName} className="py-3 text-center whitespace-nowrap text-foreground font-semibold">
                 {customerName}
               </TableHead>
             ))}
             {/* Grand Total column header */}
             {grandTotalRow && (
-              <TableHead className="py-2 text-center whitespace-nowrap text-primary dark:text-primary-foreground font-bold">
+              <TableHead className="py-3 text-center whitespace-nowrap text-primary dark:text-primary-foreground font-bold">
                 Grand Total
               </TableHead>
             )}
@@ -81,12 +81,12 @@ const CustomerBreakdownTable = ({ data }: CustomerBreakdownTableProps) => {
             <TableRow 
               key={metricDef.key} 
               className={cn(
-                "transition-all duration-200 ease-in-out hover:bg-gray-50 dark:hover:bg-gray-700",
-                metricIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'
+                "transition-all duration-200 ease-in-out hover:bg-accent/50", // Subtle hover
+                metricIndex % 2 === 0 ? 'bg-background' : 'bg-muted/20' // Alternating row colors
               )}
             >
               {/* Metric label as the first cell in each row */}
-              <TableCell className="py-3 font-medium flex items-center whitespace-nowrap">
+              <TableCell className="py-3 font-medium flex items-center whitespace-nowrap text-foreground">
                 {metricDef.icon} {metricDef.label}
               </TableCell>
               {/* Data cells for each customer */}
