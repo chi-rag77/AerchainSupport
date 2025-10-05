@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, Users, BarChart, Shield, MessageSquare, Settings, LifeBuoy, PanelLeftOpen, PanelRightOpen, LogOut, TrendingUp } from 'lucide-react'; // Added TrendingUp icon for Dashboard V2
+import { LayoutDashboard, Users, BarChart, Shield, MessageSquare, Settings, LifeBuoy, PanelLeftOpen, PanelRightOpen, LogOut, TrendingUp, BarChart3 } from 'lucide-react'; // Added BarChart3 icon for Analytics
 import { Button } from '@/components/ui/button';
 import { useSupabase } from '@/components/SupabaseProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,9 +36,9 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-    { icon: TrendingUp, label: "Daily Dashboard", path: "/dashboard-v2" }, // New link for DashboardV2
+    { icon: TrendingUp, label: "Daily Dashboard", path: "/dashboard-v2" },
+    { icon: BarChart3, label: "Analytics", path: "/analytics" }, // New link for Analytics
     { icon: Users, label: "Users", path: "/users" },
-    { icon: BarChart, label: "Analytics", path: "/analytics" },
     { icon: Shield, label: "Security", path: "/security" },
     { icon: MessageSquare, label: "Support & Ticketing", path: "/tickets" },
     { icon: Settings, label: "Settings", path: "/settings" },
