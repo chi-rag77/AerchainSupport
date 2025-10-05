@@ -24,8 +24,8 @@ import HandWaveIcon from "@/components/HandWaveIcon";
 // Import chart components
 import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
+import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
-import PriorityDistributionChart from "@/components/PriorityDistributionChart"; // Using the redesigned PriorityDistributionChart
 
 interface TicketSummaryData {
   date: string;
@@ -323,36 +323,7 @@ const DashboardV2 = () => {
                 {/* Charts & Visuals Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 pb-4 mb-8">
                   <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                    <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Assignee Load</h3>
-                    <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
-                      <SelectTrigger className="w-[120px] h-8">
-                        <SelectValue placeholder="Display Mode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="count">Count</SelectItem>
-                        <SelectItem value="percentage">Percentage</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <AssigneeLoadChart tickets={rawTicketsForCharts} displayMode={assigneeChartMode} />
-                  </div>
-
-                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                    <div className="flex justify-between items-center w-full mb-2">
-                      <h3 className="text-lg font-semibold text-foreground">Priority Distribution</h3>
-                      <Select onValueChange={() => {}}> {/* Removed static value */}
-                        <SelectTrigger className="w-[150px] h-8">
-                          <SelectValue placeholder="Date Range" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Aug 25-Sept 25">Aug 25-Sept 25</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <PriorityDistributionChart tickets={rawTicketsForCharts} />
-                  </div>
-
-                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                    <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3>
+                    <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time (Last 30 Days)</h3>
                     <TicketsOverTimeChart tickets={rawTicketsForCharts} dateRange="last30days" />
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
@@ -372,6 +343,25 @@ const DashboardV2 = () => {
                       </Select>
                     </div>
                     <TicketTypeByCustomerChart tickets={rawTicketsForCharts} selectedCustomer={selectedCustomerFilter} />
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Priority Distribution</h3>
+                    <PriorityDistributionChart tickets={rawTicketsForCharts} />
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <div className="flex justify-between items-center w-full mb-2">
+                      <h3 className="text-lg font-semibold text-foreground w-full text-center">Assignee Load</h3>
+                      <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
+                        <SelectTrigger className="w-[120px] h-8">
+                          <SelectValue placeholder="Display Mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="count">Count</SelectItem>
+                          <SelectItem value="percentage">Percentage</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <AssigneeLoadChart tickets={rawTicketsForCharts} displayMode={assigneeChartMode} />
                   </div>
                 </div>
               </>

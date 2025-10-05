@@ -6,126 +6,64 @@ import { Ticket } from '@/types';
 
 interface TicketTypeByCustomerChartProps {
   tickets: Ticket[];
-  selectedCustomer?: string;
+  selectedCustomer?: string; // New prop for filtering by specific customer
 }
 
-// Custom Tooltip component
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-sm">
-        <p className="font-medium text-foreground mb-1">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} style={{ color: entry.color }} className="flex items-center">
-            <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }}></span>
-            {entry.name}: {entry.value}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
-// Custom Legend component
-const CustomBarChartLegend = ({ payload }: any) => {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 mt-4 text-xs text-gray-600 dark:text-gray-400">
-      {payload.map((entry: any, index: number) => (
-        <div key={index} className="flex items-center space-x-1">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
-          <span>{entry.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// Specific colors for each ticket type from the reference
-const TYPE_COLORS: { [key: string]: string } = {
-  bug: "hsl(28 100% 70%)", // Orange
-  csTask: "hsl(240 60% 70%)", // Purple
-  duplicate: "hsl(180 60% 70%)", // Cyan
-  notRelevant: "hsl(10 80% 70%)", // Red
-  query: "hsl(48 100% 70%)", // Yellow
-  techTask: "hsl(210 10% 70%)", // Gray
-  'Unknown Type': "hsl(210 10% 70%)", // Default for unknown
-};
+// Define the type for the data structure used in the chart
+interface CustomerChartData {
+  name: string;
+  totalTickets: number; // Added for sorting
+  [key: string]: number | string; // Allows 'name' to be a string, and other dynamic keys (ticket types) to be numbers
+}
 
 const TicketTypeByCustomerChart = ({ tickets, selectedCustomer }: TicketTypeByCustomerChartProps) => {
   const processedData = useMemo(() => {
     if (!tickets || tickets.length === 0) return [];
 
-    const customerTypeMap = new Map<string, { [key: string]: number | string }>();
+    const customerTypeMap = new Map<string, CustomerChartData>();
 
+    // Filter tickets by selected customer first
     const relevantTickets = selectedCustomer && selectedCustomer !== "All"
       ? tickets.filter(ticket => (ticket.cf_company || 'Unknown Company') === selectedCustomer)
       : tickets;
 
     relevantTickets.forEach(ticket => {
-      const customerName = ticket.cf_company || 'Unknown Customer';
+      const company = ticket.cf_company || 'Unknown Company';
       const type = ticket.type || 'Unknown Type';
 
-      if (!customerTypeMap.has(customerName)) {
-        customerTypeMap.set(customerName, { customer: customerName });
+      if (!customerTypeMap.has(company)) {
+        customerTypeMap.set(company, { name: company, totalTickets: 0 });
       }
-      const customerData = customerTypeMap.get(customerName)!;
-
-      // Map Freshdesk types to the desired categories
-      let mappedType: string;
-      switch (type.toLowerCase()) {
-        case 'bug': mappedType = 'bug'; break;
-        case 'cs task': mappedType = 'csTask'; break;
-        case 'duplicate': mappedType = 'duplicate'; break;
-        case 'not relevant': mappedType = 'notRelevant'; break;
-        case 'query': mappedType = 'query'; break;
-        case 'tech-task': mappedType = 'techTask'; break;
-        default: mappedType = 'Unknown Type'; break;
-      }
-
-      customerData[mappedType] = ((customerData[mappedType] as number) || 0) + 1;
+      const companyData = customerTypeMap.get(company)!;
+      companyData[type] = ((companyData[type] as number) || 0) + 1;
+      companyData.totalTickets++; // Increment total tickets for sorting
     });
 
-    // Convert map to array and sort by total tickets (sum of all types)
-    const dataArray = Array.from(customerTypeMap.values()).map(data => {
-      let total = 0;
-      for (const key in data) {
-        if (key !== 'customer' && typeof data[key] === 'number') {
-          total += data[key] as number;
-        }
-      }
-      return { ...data, totalTickets: total };
-    });
+    // If a specific customer is selected, only show that customer
+    if (selectedCustomer && selectedCustomer !== "All") {
+      const data = customerTypeMap.get(selectedCustomer);
+      return data ? [data] : [];
+    }
 
-    return dataArray.sort((a, b) => (b.totalTickets as number) - (a.totalTickets as number));
+    // Otherwise, show all customers sorted by total ticket volume
+    return Array.from(customerTypeMap.values()).sort((a, b) => b.totalTickets - a.totalTickets);
   }, [tickets, selectedCustomer]);
 
   const uniqueTypes = useMemo(() => {
     const types = new Set<string>();
-    processedData.forEach(data => {
-      for (const key in data) {
-        if (key !== 'customer' && key !== 'totalTickets' && typeof data[key] === 'number') {
-          types.add(key);
-        }
-      }
+    tickets.forEach(ticket => {
+      if (ticket.type) types.add(ticket.type);
     });
-    // Ensure a consistent order for stacking
-    return ['bug', 'csTask', 'duplicate', 'notRelevant', 'query', 'techTask', 'Unknown Type'].filter(t => types.has(t));
-  }, [processedData]);
+    return Array.from(types).sort();
+  }, [tickets]);
 
-  const legendPayload = uniqueTypes.map(type => ({
-    value: type,
-    color: TYPE_COLORS[type] || TYPE_COLORS['Unknown Type'],
-  }));
+  // Unified color palette - slightly softer and more varied
+  const colors = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#2DD4BF', '#FACC15', '#FB923C', '#A3A3A3', '#C084FC'];
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height={300}>
       <BarChart
         data={processedData}
-        layout="horizontal" // Horizontal layout
         margin={{
           top: 20,
           right: 30,
@@ -133,34 +71,13 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer }: TicketTypeByCu
           bottom: 5,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" />
-        <XAxis
-          type="number"
-          axisLine={false}
-          tickLine={false}
-          fontSize={12}
-          tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
-        />
-        <YAxis
-          dataKey="customer"
-          type="category"
-          axisLine={false}
-          tickLine={false}
-          fontSize={11}
-          width={120} // Increased width for customer names
-          tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
-        />
-        <Tooltip content={<CustomTooltip />} />
-        <Legend content={<CustomBarChartLegend payload={legendPayload} />} />
+        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+        <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} interval={0} className="text-xs text-gray-600 dark:text-gray-400" /> {/* Increased height for labels */}
+        <YAxis className="text-xs text-gray-600 dark:text-gray-400" />
+        <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
+        <Legend verticalAlign="top" height={36} /> {/* Adjusted legend position */}
         {uniqueTypes.map((type, index) => (
-          <Bar
-            key={type}
-            dataKey={type}
-            stackId="a"
-            fill={TYPE_COLORS[type] || TYPE_COLORS['Unknown Type']}
-            name={type}
-            radius={[0, 4, 4, 0]} // Rounded corners for horizontal bars
-          />
+          <Bar key={type} dataKey={type} stackId="a" fill={colors[index % colors.length]} name={type} radius={[4, 4, 0, 0]} />
         ))}
       </BarChart>
     </ResponsiveContainer>
