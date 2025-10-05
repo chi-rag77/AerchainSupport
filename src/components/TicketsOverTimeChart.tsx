@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Dot } from 'recharts'; // Changed to LineChart, added Dot
 import { format, parseISO, startOfDay, eachDayOfInterval, subDays, isWithinInterval } from 'date-fns';
 import { Ticket } from '@/types';
 
 interface TicketsOverTimeChartProps {
   tickets: Ticket[];
-  dateRange?: string; // e.g., "last7days", "last30days", "alltime" - now optional
-  startDate?: Date;   // New prop for custom start date (optional)
-  endDate?: Date;     // New prop for custom end date (optional)
+  dateRange?: string;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: TicketsOverTimeChartProps) => {
@@ -32,13 +32,12 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
     if (!tickets || tickets.length === 0) return [];
 
     let effectiveStartDate: Date;
-    let effectiveEndDate: Date = new Date(); // Default end date to now
+    let effectiveEndDate: Date = new Date();
 
-    // Prioritize explicit startDate/endDate props
     if (startDate && endDate) {
       effectiveStartDate = startDate;
       effectiveEndDate = endDate;
-    } else { // Fallback to dateRange string logic
+    } else {
       const now = new Date();
       switch (dateRange) {
         case "last7days":
@@ -54,9 +53,9 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
           effectiveStartDate = subDays(now, 90);
           break;
         case "alltime":
-          effectiveStartDate = new Date(0); // Epoch
+          effectiveStartDate = new Date(0);
           break;
-        default: // Default to last 30 days if not specified
+        default:
           effectiveStartDate = subDays(now, 30);
           break;
       }
@@ -95,7 +94,7 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <AreaChart
+      <LineChart
         data={processedData}
         margin={{
           top: 10,
@@ -104,39 +103,29 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
           bottom: 0,
         }}
       >
-        <defs>
-          <linearGradient id="colorOpen" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#60A5FA" stopOpacity={0}/>
-          </linearGradient>
-          <linearGradient id="colorInProgress" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#34D399" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#34D399" stopOpacity={0}/>
-          </linearGradient>
-          <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#FBBF24" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#FBBF24" stopOpacity={0}/>
-          </linearGradient>
-          <linearGradient id="colorClosed" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#F87171" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#F87171" stopOpacity={0}/>
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" /> {/* Removed vertical grid lines */}
         <XAxis
           dataKey="date"
-          tickFormatter={(tick) => format(parseISO(tick), 'MMM dd')}
-          className="text-sm font-semibold text-gray-600 dark:text-gray-400"
+          tickFormatter={(tick) => format(parseISO(tick), 'MMM yy')} // Simplified date format
+          className="text-xs font-semibold text-gray-600 dark:text-gray-400"
           interval="preserveStartEnd"
+          axisLine={false} // Hide x-axis line
+          tickLine={false} // Hide x-axis tick lines
         />
-        <YAxis className="text-sm font-semibold text-gray-600 dark:text-gray-400" />
-        <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
+        <YAxis
+          className="text-xs font-semibold text-gray-600 dark:text-gray-400"
+          axisLine={false} // Hide y-axis line
+          tickLine={false} // Hide y-axis tick lines
+        />
+        <Tooltip
+          contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }}
+          labelFormatter={(label) => format(parseISO(label), 'MMM dd, yyyy')}
+        />
         <Legend onClick={(e) => handleLegendClick(e.dataKey)} />
-        {!hiddenSeries.has('open') && <Area type="monotone" dataKey="open" stackId="1" stroke="#60A5FA" fill="url(#colorOpen)" name="Open" />}
-        {!hiddenSeries.has('in progress') && <Area type="monotone" dataKey="in progress" stackId="1" stroke="#34D399" fill="url(#colorInProgress)" name="In Progress" />}
-        {!hiddenSeries.has('resolved') && <Area type="monotone" dataKey="resolved" stackId="1" stroke="#FBBF24" fill="url(#colorResolved)" name="Resolved" />}
-        {!hiddenSeries.has('closed') && <Area type="monotone" dataKey="closed" stackId="1" stroke="#F87171" fill="url(#colorClosed)" name="Closed" />}
-      </AreaChart>
+        {!hiddenSeries.has('open') && <Line type="monotone" dataKey="open" stroke="hsl(28 100% 70%)" strokeWidth={2} dot={<Dot r={4} />} name="Open" />} {/* Soft Orange/Peach */}
+        {!hiddenSeries.has('closed') && <Line type="monotone" dataKey="closed" stroke="hsl(240 60% 70%)" strokeWidth={2} dot={<Dot r={4} />} name="Closed" />} {/* Soft Blue/Purple */}
+        {/* Removed 'in progress' and 'resolved' lines for simplicity and to match image style */}
+      </LineChart>
     </ResponsiveContainer>
   );
 };

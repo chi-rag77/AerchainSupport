@@ -8,29 +8,14 @@ interface PriorityDistributionChartProps {
   tickets: Ticket[];
 }
 
-// Less saturated, unified color palette
-const COLORS = ['#EF4444', '#F97316', '#F59E0B', '#34D399', '#6B7280']; // Red, Orange, Amber, Green, Gray for Unknown
-
-// Custom label component for the PieChart
-const CustomPieChartLabel = ({ cx, cy, midAngle, outerRadius, percent, index, name, value }: any) => {
-  const RADIAN = Math.PI / 180;
-  const radius = outerRadius * 1.1; // Position labels slightly further out
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-  return (
-    <text
-      x={x}
-      y={y}
-      fill="hsl(var(--foreground))"
-      textAnchor={x > cx ? 'start' : 'end'}
-      dominantBaseline="central"
-      className="text-xs"
-    >
-      {`${name} (${value}, ${(percent * 100).toFixed(0)}%)`}
-    </text>
-  );
-};
+// Softer, unified color palette inspired by the image
+const COLORS = [
+  'hsl(10 80% 70%)',   // Soft Red/Coral for Urgent
+  'hsl(28 100% 70%)',  // Soft Orange/Peach for High
+  'hsl(48 100% 70%)',  // Soft Yellow for Medium
+  'hsl(120 60% 70%)',  // Soft Green for Low
+  'hsl(210 10% 70%)',  // Soft Gray for Unknown
+];
 
 const PriorityDistributionChart = ({ tickets }: PriorityDistributionChartProps) => {
   const processedData = useMemo(() => {
@@ -63,12 +48,10 @@ const PriorityDistributionChart = ({ tickets }: PriorityDistributionChartProps) 
           data={processedData}
           cx="50%"
           cy="50%"
-          innerRadius={70} // Thicker donut
-          outerRadius={100} // Thicker donut
-          fill="#8884d8"
+          innerRadius={70}
+          outerRadius={100}
           paddingAngle={5}
           dataKey="value"
-          label={CustomPieChartLabel} // Use custom label component
           labelLine={false} // Hide default label lines
           filter="url(#shadow)" // Apply shadow filter
         >
@@ -77,7 +60,12 @@ const PriorityDistributionChart = ({ tickets }: PriorityDistributionChartProps) 
           ))}
         </Pie>
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
-        <Legend />
+        <Legend
+          layout="vertical" // Changed to vertical layout for legend
+          align="right"    // Aligned to the right
+          verticalAlign="middle" // Vertically centered
+          wrapperStyle={{ paddingLeft: '20px' }} // Add some padding
+        />
         <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-xl font-bold fill-foreground">
           {tickets.length}
         </text>
