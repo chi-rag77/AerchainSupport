@@ -41,6 +41,7 @@ export interface CustomerBreakdownRow {
   pendingTech: number;
   bugs: number;
   otherActive: number; // New field for other active statuses
+  totalTicketsTrend?: number; // New: Percentage change vs. last period
 }
 
 export interface ConversationMessage {

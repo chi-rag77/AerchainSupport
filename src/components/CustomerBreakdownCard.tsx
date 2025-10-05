@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
 import { CustomerBreakdownRow } from '@/types';
-import { Bug, CheckCircle, Hourglass, MessageSquare, ShieldAlert, Users } from 'lucide-react'; // Added Users import
+import { Bug, CheckCircle, Hourglass, MessageSquare, ShieldAlert, Users, ArrowUpRight, ArrowDownRight } from 'lucide-react'; // Added ArrowUpRight, ArrowDownRight
 
 interface CustomerBreakdownCardProps {
   customerData: CustomerBreakdownRow;
@@ -13,7 +13,7 @@ interface CustomerBreakdownCardProps {
 }
 
 const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerBreakdownCardProps) => {
-  const { name, totalInPeriod, resolvedInPeriod, open, pendingTech, bugs, otherActive } = customerData;
+  const { name, totalInPeriod, resolvedInPeriod, open, pendingTech, bugs, otherActive, totalTicketsTrend } = customerData;
 
   const openTicketsHighlight = open > 10 ? 'bg-red-50/50 dark:bg-red-950/30' : '';
   const bugsHighlight = bugs > 0 ? 'bg-red-50/50 dark:bg-red-950/30' : '';
@@ -38,6 +38,9 @@ const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerB
     }
   };
 
+  const trendColor = totalTicketsTrend && totalTicketsTrend > 0 ? "text-green-500" : totalTicketsTrend && totalTicketsTrend < 0 ? "text-red-500" : "text-gray-500";
+  const TrendIcon = totalTicketsTrend && totalTicketsTrend > 0 ? ArrowUpRight : ArrowDownRight;
+
   return (
     <Card className={cn(
       "relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full",
@@ -53,7 +56,15 @@ const CustomerBreakdownCard = ({ customerData, isGrandTotal = false }: CustomerB
       <CardContent className="space-y-2 text-sm">
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Total Tickets:</span>
-          <span className={cn("font-bold text-xl", getStatusColorClass(totalInPeriod, 'total'))}>{totalInPeriod}</span> {/* Increased font size to xl */}
+          <div className="flex items-center space-x-1">
+            <span className={cn("font-bold text-xl", getStatusColorClass(totalInPeriod, 'total'))}>{totalInPeriod}</span>
+            {totalTicketsTrend !== undefined && (
+              <span className={cn("flex items-center text-xs font-medium", trendColor)}>
+                {totalTicketsTrend !== 0 && <TrendIcon className="h-3 w-3" />}
+                {totalTicketsTrend !== 0 && `${Math.abs(totalTicketsTrend).toFixed(1)}%`}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground flex items-center"><CheckCircle className="h-4 w-4 mr-1 text-green-500" /> Resolved:</span>

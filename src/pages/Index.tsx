@@ -72,7 +72,6 @@ const Index = () => {
   const authToken = session?.access_token;
 
   const [showSidebar, setShowSidebar] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const [activeDateFilter, setActiveDateFilter] = useState<string | DateRange>("last7days");
   const [filterMyTickets, setFilterMyTickets] = useState(false);
   const [filterHighPriority, setFilterHighPriority] = useState(false);
@@ -83,6 +82,7 @@ const Index = () => {
   const [customerBreakdownView, setCustomerBreakdownView] = useState<'cards' | 'table'>('cards');
   const [isMyOpenTicketsModalOpen, setIsMyOpenTicketsModalOpen] = useState(false);
   const [isInsightsSheetOpen, setIsInsightsSheetOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(""); // Declared searchTerm state
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -103,24 +103,17 @@ const Index = () => {
     },
   } as UseQueryOptions<Ticket[], Error>);
 
-  const insightsQueryOptions = {
-    queryKey: ["dashboardInsights", authToken as string],
-    queryFn: async ({ queryKey }) => {
-      const [, token] = queryKey;
-      return fetchDashboardInsights(token);
+  const { data: dashboardInsights } = useQuery<Insight[], Error>({
+    queryKey: ["dashboardInsights", authToken],
+    queryFn: () => fetchDashboardInsights(authToken),
+    enabled: !!authToken, // Only run if authToken is available
+    onSuccess: () => {
+      toast.success("Insights loaded successfully!");
     },
-    enabled: !!authToken,
-    onSuccess: (data: Insight[]) => {
-      if (data.length > 0 && data[0].id !== 'insight-fetch-error') {
-        toast.info(`Found ${data.length} new insights!`);
-      }
+    onError: (err) => {
+      toast.error(`Failed to load insights: ${err.message}`);
     },
-    onError: (err: Error) => {
-      toast.error(`Error fetching insights: ${err.message}`);
-    },
-  };
-
-  const { data: dashboardInsights, isLoading: isLoadingInsights, error: insightsError } = useQuery(insightsQueryOptions);
+  } as UseQueryOptions<Insight[], Error>);
 
   const uniqueCompanies = useMemo(() => {
     const companies = new Set<string>();
@@ -141,9 +134,11 @@ const Index = () => {
     }
   }, [uniqueCompanies]);
 
-  const { effectiveStartDate, effectiveEndDate, dateRangeDisplay } = useMemo(() => {
+  const { effectiveStartDate, effectiveEndDate, dateRangeDisplay, previousEffectiveStartDate, previousEffectiveEndDate } = useMemo(() => {
     let start: Date | undefined;
     let end: Date | undefined;
+    let prevStart: Date | undefined;
+    let prevEnd: Date | undefined;
     let display: string = "";
 
     const now = new Date();
@@ -153,36 +148,50 @@ const Index = () => {
         case "today":
           start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
           end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          prevStart = subDays(start, 1);
+          prevEnd = subDays(end, 1);
           display = "Today";
           break;
         case "last7days":
           start = subDays(now, 7);
           end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          prevStart = subDays(start, 7);
+          prevEnd = subDays(end, 7);
           display = "Last 7 Days";
           break;
         case "last14days":
           start = subDays(now, 14);
           end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          prevStart = subDays(start, 14);
+          prevEnd = subDays(end, 14);
           display = "Last 14 Days";
           break;
         case "last30days":
           start = subDays(now, 30);
           end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          prevStart = subDays(start, 30);
+          prevEnd = subDays(end, 30);
           display = "Last 30 Days";
           break;
         case "last90days":
           start = subDays(now, 90);
           end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          prevStart = subDays(start, 90);
+          prevEnd = subDays(end, 90);
           display = "Last 90 Days";
           break;
         case "alltime":
           start = new Date(0);
           end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          prevStart = undefined; // No meaningful previous period for all time
+          prevEnd = undefined;
           display = "All Time";
           break;
         default:
           start = subDays(now, 7);
           end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          prevStart = subDays(start, 7);
+          prevEnd = subDays(end, 7);
           display = "Last 7 Days";
           break;
       }
@@ -195,15 +204,22 @@ const Index = () => {
       else end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
       if (start && end) {
+        const duration = differenceInDays(end, start) + 1;
+        prevStart = subDays(start, duration);
+        prevEnd = subDays(end, duration);
         display = `${format(start, "MMM dd, yyyy")} - ${format(end, "MMM dd, yyyy")}`;
       } else if (start) {
         display = `From ${format(start, "MMM dd, yyyy")}`;
+        prevStart = undefined;
+        prevEnd = undefined;
       } else {
         display = "Custom Range";
+        prevStart = undefined;
+        prevEnd = undefined;
       }
     }
 
-    return { effectiveStartDate: start, effectiveEndDate: end, dateRangeDisplay: display };
+    return { effectiveStartDate: start, effectiveEndDate: end, dateRangeDisplay: display, previousEffectiveStartDate: prevStart, previousEffectiveEndDate: prevEnd };
   }, [activeDateFilter]);
 
   const filteredDashboardTickets: Ticket[] = useMemo(() => {
@@ -278,10 +294,12 @@ const Index = () => {
   }, [filteredDashboardTickets, freshdeskTickets, effectiveStartDate, effectiveEndDate]);
 
   const customerBreakdownData = useMemo(() => {
-    if (!filteredDashboardTickets || !effectiveStartDate || !effectiveEndDate) return [];
+    if (!filteredDashboardTickets || !freshdeskTickets || !effectiveStartDate || !effectiveEndDate) return [];
 
     const customerMap = new Map<string, CustomerBreakdownRow>();
+    const previousCustomerMap = new Map<string, number>(); // To store previous period totals
 
+    // Calculate current period data
     filteredDashboardTickets.forEach(ticket => {
       const company = ticket.cf_company || 'Unknown Company';
       
@@ -320,28 +338,72 @@ const Index = () => {
       }
     });
 
-    return Array.from(customerMap.values()).sort((a, b) => b.totalInPeriod - a.totalInPeriod);
-  }, [filteredDashboardTickets, selectedCustomersForBreakdown]);
+    // Calculate previous period data for trend
+    if (previousEffectiveStartDate && previousEffectiveEndDate) {
+      freshdeskTickets.forEach(ticket => {
+        const company = ticket.cf_company || 'Unknown Company';
+        if (selectedCustomersForBreakdown.length > 0 && !selectedCustomersForBreakdown.includes(company)) {
+          return;
+        }
+        if (isWithinInterval(new Date(ticket.created_at), { start: previousEffectiveStartDate, end: previousEffectiveEndDate })) {
+          previousCustomerMap.set(company, (previousCustomerMap.get(company) || 0) + 1);
+        }
+      });
+    }
+
+    // Add trend to current period data
+    const dataWithTrend = Array.from(customerMap.values()).map(customerRow => {
+      const previousTotal = previousCustomerMap.get(customerRow.name) || 0;
+      let trend: number | undefined;
+      if (previousTotal > 0) {
+        trend = ((customerRow.totalInPeriod - previousTotal) / previousTotal) * 100;
+      } else if (customerRow.totalInPeriod > 0) {
+        trend = 100; // Infinite growth from zero
+      } else {
+        trend = 0; // No change, still zero
+      }
+      return { ...customerRow, totalTicketsTrend: trend };
+    }).sort((a, b) => b.totalInPeriod - a.totalInPeriod);
+
+    return dataWithTrend;
+  }, [filteredDashboardTickets, freshdeskTickets, selectedCustomersForBreakdown, effectiveStartDate, effectiveEndDate, previousEffectiveStartDate, previousEffectiveEndDate]);
 
   const grandTotalData: CustomerBreakdownRow = useMemo(() => {
-    return customerBreakdownData.reduce((acc, curr) => {
-      acc.totalInPeriod += curr.totalInPeriod;
-      acc.resolvedInPeriod += curr.resolvedInPeriod;
-      acc.open += curr.open;
-      acc.pendingTech += curr.pendingTech;
-      acc.bugs += curr.bugs;
-      acc.otherActive += curr.otherActive;
-      return acc;
-    }, {
+    const currentTotal = customerBreakdownData.reduce((acc, curr) => acc + curr.totalInPeriod, 0);
+    const resolvedTotal = customerBreakdownData.reduce((acc, curr) => acc + curr.resolvedInPeriod, 0);
+    const openTotal = customerBreakdownData.reduce((acc, curr) => acc + curr.open, 0);
+    const pendingTechTotal = customerBreakdownData.reduce((acc, curr) => acc + curr.pendingTech, 0);
+    const bugsTotal = customerBreakdownData.reduce((acc, curr) => acc + curr.bugs, 0);
+    const otherActiveTotal = customerBreakdownData.reduce((acc, curr) => acc + curr.otherActive, 0);
+
+    // Calculate grand total trend
+    let grandTotalTrend: number | undefined;
+    if (previousEffectiveStartDate && previousEffectiveEndDate) {
+      const previousGrandTotal = freshdeskTickets?.filter(ticket =>
+        isWithinInterval(new Date(ticket.created_at), { start: previousEffectiveStartDate, end: previousEffectiveEndDate }) &&
+        (selectedCustomersForBreakdown.length === 0 || (ticket.cf_company && selectedCustomersForBreakdown.includes(ticket.cf_company)))
+      ).length || 0;
+
+      if (previousGrandTotal > 0) {
+        grandTotalTrend = ((currentTotal - previousGrandTotal) / previousGrandTotal) * 100;
+      } else if (currentTotal > 0) {
+        grandTotalTrend = 100; // Infinite growth from zero
+      } else {
+        grandTotalTrend = 0; // No change, still zero
+      }
+    }
+
+    return {
       name: "Grand Total",
-      totalInPeriod: 0,
-      resolvedInPeriod: 0,
-      open: 0,
-      pendingTech: 0,
-      bugs: 0,
-      otherActive: 0,
-    });
-  }, [customerBreakdownData]);
+      totalInPeriod: currentTotal,
+      resolvedInPeriod: resolvedTotal,
+      open: openTotal,
+      pendingTech: pendingTechTotal,
+      bugs: bugsTotal,
+      otherActive: otherActiveTotal,
+      totalTicketsTrend: grandTotalTrend,
+    };
+  }, [customerBreakdownData, freshdeskTickets, previousEffectiveStartDate, previousEffectiveEndDate, selectedCustomersForBreakdown]);
 
   const handleExportFilteredTickets = () => {
     exportToCsv(filteredDashboardTickets, `tickets_dashboard_filtered_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
