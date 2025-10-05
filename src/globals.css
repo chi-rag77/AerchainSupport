@@ -34,13 +34,13 @@
 
     --radius: 0.5rem;
 
-    --sidebar-background: 223 50% 20%; /* Dark navy: #1B2A4E */
-    --sidebar-foreground: 210 40% 98%; /* White */
+    --sidebar-background: 220 13% 18%; /* Base for gradient */
+    --sidebar-foreground: 0 0% 98%; /* White text */
     --sidebar-primary: 28 95% 53%; /* Orange accent */
     --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 223 40% 25%; /* Slightly lighter navy for hover */
-    --sidebar-accent-foreground: 210 40% 98%; /* White */
-    --sidebar-border: 223 40% 15%; /* Darker navy border */
+    --sidebar-accent: 220 13% 25%; /* Slightly lighter grey for hover */
+    --sidebar-accent-foreground: 0 0% 98%; /* White */
+    --sidebar-border: 220 13% 15%; /* Darker grey border */
     --sidebar-ring: 28 95% 53%; /* Orange ring for focus */
   }
 
@@ -73,13 +73,13 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
     
-    --sidebar-background: 223 50% 20%; /* Dark navy: #1B2A4E */
-    --sidebar-foreground: 210 40% 98%; /* White */
+    --sidebar-background: 220 13% 18%; /* Base for gradient */
+    --sidebar-foreground: 0 0% 98%; /* White text */
     --sidebar-primary: 28 95% 53%; /* Orange accent */
     --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 223 40% 25%; /* Slightly lighter navy for hover */
-    --sidebar-accent-foreground: 210 40% 98%; /* White */
-    --sidebar-border: 223 40% 15%; /* Darker navy border */
+    --sidebar-accent: 220 13% 25%; /* Slightly lighter grey for hover */
+    --sidebar-accent-foreground: 0 0% 98%; /* White */
+    --sidebar-border: 220 13% 15%; /* Darker grey border */
     --sidebar-ring: 28 95% 53%; /* Orange ring for focus */
   }
 }
@@ -96,4 +96,9 @@
   .gradient-background {
     background: linear-gradient(135deg, hsl(48 100% 95%), hsl(48 100% 90%)); /* Light yellow gradient */
   }
+}
+
+/* Apply the gradient directly to the sidebar background */
+.bg-sidebar {
+  background: linear-gradient(180deg, #2E2E2E 0%, #1E1E1E 100%);
 }
