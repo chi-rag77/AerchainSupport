@@ -75,7 +75,7 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer }: TicketTypeByCu
           bottom: 5,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" /> {/* Removed vertical grid lines */}
+        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" />
         <XAxis
           dataKey="name"
           angle={-45}
@@ -83,13 +83,13 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer }: TicketTypeByCu
           height={80}
           interval={0}
           className="text-xs text-gray-600 dark:text-gray-400"
-          axisLine={false} // Hide x-axis line
-          tickLine={false} // Hide x-axis tick lines
+          axisLine={false}
+          tickLine={false}
         />
         <YAxis
           className="text-xs text-gray-600 dark:text-gray-400"
-          axisLine={false} // Hide y-axis line
-          tickLine={false} // Hide y-axis tick lines
+          axisLine={false}
+          tickLine={false}
         />
         <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }} />
         <Legend verticalAlign="top" height={36} />

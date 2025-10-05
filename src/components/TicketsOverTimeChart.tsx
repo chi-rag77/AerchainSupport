@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Dot } from 'recharts'; // Changed to LineChart, added Dot
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Dot } from 'recharts';
 import { format, parseISO, startOfDay, eachDayOfInterval, subDays, isWithinInterval } from 'date-fns';
 import { Ticket } from '@/types';
 
@@ -11,6 +11,47 @@ interface TicketsOverTimeChartProps {
   startDate?: Date;
   endDate?: Date;
 }
+
+// Custom Tooltip component to match the image
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const openData = payload.find((p: any) => p.dataKey === 'open');
+    const closedData = payload.find((p: any) => p.dataKey === 'closed');
+
+    return (
+      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-sm">
+        <p className="text-muted-foreground mb-1">{format(parseISO(label), 'MMM dd, yyyy')}</p>
+        {openData && (
+          <p className="flex items-center text-orange-500">
+            <span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-2"></span>
+            {openData.value} Open
+          </p>
+        )}
+        {closedData && (
+          <p className="flex items-center text-purple-500">
+            <span className="inline-block w-2 h-2 rounded-full bg-purple-500 mr-2"></span>
+            {closedData.value} Closed
+          </p>
+        )}
+      </div>
+    );
+  }
+  return null;
+};
+
+// Custom Legend component to match the image
+const CustomLineChartLegend = ({ payload }: any) => {
+  return (
+    <ul className="flex justify-end space-x-4 text-sm">
+      {payload.map((entry: any, index: number) => (
+        <li key={`item-${index}`} className="flex items-center text-muted-foreground">
+          <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: entry.color }}></span>
+          {entry.value === 'open' ? 'Achieved' : 'Target'} {/* Map 'open' to 'Achieved' and 'closed' to 'Target' */}
+        </li>
+      ))}
+    </ul>
+  );
+};
 
 const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: TicketsOverTimeChartProps) => {
   const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
@@ -63,11 +104,11 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
 
     const intervalDays = eachDayOfInterval({ start: effectiveStartDate, end: effectiveEndDate });
 
-    const dataMap = new Map<string, { date: string; open: number; 'in progress': number; resolved: number; closed: number; }>();
+    const dataMap = new Map<string, { date: string; open: number; closed: number; }>(); // Simplified to only open and closed
 
     intervalDays.forEach(day => {
       const formattedDate = format(day, 'yyyy-MM-dd');
-      dataMap.set(formattedDate, { date: formattedDate, open: 0, 'in progress': 0, resolved: 0, closed: 0 });
+      dataMap.set(formattedDate, { date: formattedDate, open: 0, closed: 0 });
     });
 
     tickets.forEach(ticket => {
@@ -79,10 +120,6 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
         const status = ticket.status.toLowerCase();
         if (status.includes('open')) {
           entry.open++;
-        } else if (status.includes('pending') || status.includes('on tech') || status.includes('on product') || status.includes('waiting on customer')) {
-          entry['in progress']++;
-        } else if (status.includes('resolved')) {
-          entry.resolved++;
         } else if (status.includes('closed')) {
           entry.closed++;
         }
@@ -103,28 +140,28 @@ const TicketsOverTimeChart = ({ tickets, dateRange, startDate, endDate }: Ticket
           bottom: 0,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" /> {/* Removed vertical grid lines */}
+        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" />
         <XAxis
           dataKey="date"
-          tickFormatter={(tick) => format(parseISO(tick), 'MMM yy')} // Simplified date format
+          tickFormatter={(tick) => format(parseISO(tick), 'MMM yy')}
           className="text-xs font-semibold text-gray-600 dark:text-gray-400"
           interval="preserveStartEnd"
-          axisLine={false} // Hide x-axis line
-          tickLine={false} // Hide x-axis tick lines
+          axisLine={false}
+          tickLine={false}
         />
         <YAxis
           className="text-xs font-semibold text-gray-600 dark:text-gray-400"
-          axisLine={false} // Hide y-axis line
-          tickLine={false} // Hide y-axis tick lines
+          axisLine={false}
+          tickLine={false}
+          domain={[0, 'auto']} // Ensure Y-axis starts from 0
         />
         <Tooltip
-          contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }}
-          labelFormatter={(label) => format(parseISO(label), 'MMM dd, yyyy')}
+          content={<CustomTooltip />}
+          cursor={{ strokeDasharray: '3 3' }} // Vertical dashed line on hover
         />
-        <Legend onClick={(e) => handleLegendClick(e.dataKey)} />
-        {!hiddenSeries.has('open') && <Line type="monotone" dataKey="open" stroke="hsl(28 100% 70%)" strokeWidth={2} dot={<Dot r={4} />} name="Open" />} {/* Soft Orange/Peach */}
-        {!hiddenSeries.has('closed') && <Line type="monotone" dataKey="closed" stroke="hsl(240 60% 70%)" strokeWidth={2} dot={<Dot r={4} />} name="Closed" />} {/* Soft Blue/Purple */}
-        {/* Removed 'in progress' and 'resolved' lines for simplicity and to match image style */}
+        <Legend content={<CustomLineChartLegend />} onClick={(e) => handleLegendClick(e.dataKey)} />
+        {!hiddenSeries.has('open') && <Line type="monotone" dataKey="open" stroke="hsl(28 100% 70%)" strokeWidth={2} dot={<Dot r={4} fill="hsl(28 100% 70%)" stroke="hsl(28 100% 70%)" />} name="open" />} {/* Orange */}
+        {!hiddenSeries.has('closed') && <Line type="monotone" dataKey="closed" stroke="hsl(240 60% 70%)" strokeWidth={2} dot={<Dot r={4} fill="hsl(240 60% 70%)" stroke="hsl(240 60% 70%)" />} name="closed" />} {/* Purple */}
       </LineChart>
     </ResponsiveContainer>
   );
