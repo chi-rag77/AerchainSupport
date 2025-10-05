@@ -9,18 +9,65 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Ticket } from '@/types';
-import { format, formatDistanceToNowStrict, differenceInDays } from 'date-fns'; // Import differenceInDays
+import { format, formatDistanceToNowStrict, differenceInDays } from 'date-fns';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle, Hourglass, Laptop, AlertCircle, XCircle, Clock, Users, Shield, MessageSquare } from 'lucide-react';
+import { CheckCircle, Hourglass, Laptop, AlertCircle, XCircle, Clock, Users, Shield, MessageSquare, Search, Filter } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TicketTableProps {
   tickets: Ticket[];
   onRowClick: (ticket: Ticket) => void;
+  // Props for inline filters - now optional
+  searchTerm?: string;
+  setSearchTerm?: (term: string) => void;
+  filterStatus?: string;
+  setFilterStatus?: (status: string) => void;
+  filterPriority?: string;
+  setFilterPriority?: (priority: string) => void;
+  filterAssignee?: string;
+  setFilterAssignee?: (assignee: string) => void;
+  filterCompany?: string;
+  setFilterCompany?: (company: string) => void;
+  filterType?: string;
+  setFilterType?: (type: string) => void;
+  filterDependency?: string;
+  setFilterDependency?: (dependency: string) => void;
+  uniqueAssignees?: string[];
+  uniqueStatuses?: string[];
+  uniquePriorities?: string[];
+  uniqueCompanies?: string[];
+  uniqueTypes?: string[];
+  uniqueDependencies?: string[];
 }
 
-const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
+const TicketTable = ({
+  tickets,
+  onRowClick,
+  searchTerm,
+  setSearchTerm,
+  filterStatus,
+  setFilterStatus,
+  filterPriority,
+  setFilterPriority,
+  filterAssignee,
+  setFilterAssignee,
+  filterCompany,
+  setFilterCompany,
+  filterType,
+  setFilterType,
+  filterDependency,
+  setFilterDependency,
+  uniqueAssignees,
+  uniqueStatuses,
+  uniquePriorities,
+  uniqueCompanies,
+  uniqueTypes,
+  uniqueDependencies,
+}: TicketTableProps) => {
   const getStatusBadgeClasses = (status: string) => {
     switch (status.toLowerCase()) {
       case 'open (being processed)':
@@ -118,19 +165,171 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
   return (
     <div className="rounded-lg overflow-hidden shadow-md w-full bg-white dark:bg-gray-800">
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700"> {/* Sticky header with light grey background */}
+        <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
           <TableRow>
-            <TableHead className="w-[120px] py-3 whitespace-nowrap">Ticket ID</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Title</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Company</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Type</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Dependency</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Status</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Priority</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Assignee</TableHead>
-            <TableHead className="py-3 text-right whitespace-nowrap">Ageing</TableHead> {/* New Ageing column */}
-            <TableHead className="py-3 text-right whitespace-nowrap">Created</TableHead>
-            <TableHead className="py-3 text-right whitespace-nowrap">Updated</TableHead>
+            <TableHead className="w-[120px] py-3 whitespace-nowrap">
+              <div className="flex flex-col space-y-1">
+                <span className="font-semibold text-foreground">Ticket ID</span>
+                {setSearchTerm && (
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-500" />
+                    <Input
+                      placeholder="Search..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-7 pl-7 text-xs"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                )}
+              </div>
+            </TableHead>
+            <TableHead className="py-3 whitespace-nowrap">
+              <div className="flex flex-col space-y-1">
+                <span className="font-semibold text-foreground">Title</span>
+                {setSearchTerm && (
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-500" />
+                    <Input
+                      placeholder="Search..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-7 pl-7 text-xs"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                )}
+              </div>
+            </TableHead>
+            <TableHead className="py-3 whitespace-nowrap">
+              <div className="flex flex-col space-y-1">
+                <span className="font-semibold text-foreground">Company</span>
+                {setFilterCompany && uniqueCompanies && (
+                  <Select value={filterCompany} onValueChange={setFilterCompany}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <Filter className="h-3 w-3 mr-1 text-gray-500" />
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueCompanies.map(company => (
+                        <SelectItem key={company} value={company}>
+                          {company}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </TableHead>
+            <TableHead className="py-3 whitespace-nowrap">
+              <div className="flex flex-col space-y-1">
+                <span className="font-semibold text-foreground">Type</span>
+                {setFilterType && uniqueTypes && (
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <Filter className="h-3 w-3 mr-1 text-gray-500" />
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueTypes.map(type => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </TableHead>
+            <TableHead className="py-3 whitespace-nowrap">
+              <div className="flex flex-col space-y-1">
+                <span className="font-semibold text-foreground">Dependency</span>
+                {setFilterDependency && uniqueDependencies && (
+                  <Select value={filterDependency} onValueChange={setFilterDependency}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <Filter className="h-3 w-3 mr-1 text-gray-500" />
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueDependencies.map(dependency => (
+                        <SelectItem key={dependency} value={dependency}>
+                          {dependency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </TableHead>
+            <TableHead className="py-3 whitespace-nowrap">
+              <div className="flex flex-col space-y-1">
+                <span className="font-semibold text-foreground">Status</span>
+                {setFilterStatus && uniqueStatuses && (
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <Filter className="h-3 w-3 mr-1 text-gray-500" />
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueStatuses.map(status => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </TableHead>
+            <TableHead className="py-3 whitespace-nowrap">
+              <div className="flex flex-col space-y-1">
+                <span className="font-semibold text-foreground">Priority</span>
+                {setFilterPriority && uniquePriorities && (
+                  <Select value={filterPriority} onValueChange={setFilterPriority}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <Filter className="h-3 w-3 mr-1 text-gray-500" />
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniquePriorities.map(priority => (
+                        <SelectItem key={priority} value={priority}>
+                          {priority}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </TableHead>
+            <TableHead className="py-3 whitespace-nowrap">
+              <div className="flex flex-col space-y-1">
+                <span className="font-semibold text-foreground">Assignee</span>
+                {setFilterAssignee && uniqueAssignees && (
+                  <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <Filter className="h-3 w-3 mr-1 text-gray-500" />
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueAssignees.map(assignee => (
+                        <SelectItem key={assignee} value={assignee}>
+                          {assignee}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </TableHead>
+            <TableHead className="py-3 text-right whitespace-nowrap">
+              <span className="font-semibold text-foreground">Ageing</span>
+            </TableHead>
+            <TableHead className="py-3 text-right whitespace-nowrap">
+              <span className="font-semibold text-foreground">Created</span>
+            </TableHead>
+            <TableHead className="py-3 text-right whitespace-nowrap">
+              <span className="font-semibold text-foreground">Updated</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -211,7 +410,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={11} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3"> {/* Updated colspan */}
+              <TableCell colSpan={11} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3">
                 No tickets found.
               </TableCell>
             </TableRow>
