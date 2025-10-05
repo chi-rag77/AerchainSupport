@@ -8,16 +8,17 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import InsightsFilter from './InsightsFilter'; // Import the new InsightsFilter component
+import InsightsFilter from './InsightsFilter';
 import { Insight } from '@/types';
 
 interface InsightsSheetProps {
   isOpen: boolean;
   onClose: () => void;
   insights: Insight[];
+  uniqueCompanies: string[]; // New prop
 }
 
-const InsightsSheet = ({ isOpen, onClose, insights }: InsightsSheetProps) => {
+const InsightsSheet = ({ isOpen, onClose, insights, uniqueCompanies }: InsightsSheetProps) => {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
@@ -28,7 +29,7 @@ const InsightsSheet = ({ isOpen, onClose, insights }: InsightsSheetProps) => {
           </SheetDescription>
         </SheetHeader>
         <div className="flex-grow overflow-y-auto py-4">
-          <InsightsFilter insights={insights} /> {/* Use InsightsFilter here */}
+          <InsightsFilter insights={insights} uniqueCompanies={uniqueCompanies} />
         </div>
       </SheetContent>
     </Sheet>

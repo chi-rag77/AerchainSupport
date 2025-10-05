@@ -52,8 +52,16 @@ export interface ConversationMessage {
 
 export type Insight = {
   id: string;
-  type: 'stalledOnTech' | 'highPriority' | 'info' | 'highVolumeCustomer'; // Added 'highVolumeCustomer'
+  type: 'stalledOnTech' | 'highPriority' | 'info' | 'highVolumeCustomer';
   message: string;
-  severity: 'info' | 'warning' | 'critical'; // Severity for styling
-  icon?: string; // Changed to string to match Edge Function output
+  severity: 'info' | 'warning' | 'critical';
+  icon?: string;
+  // New structured fields for stalledOnTech insights
+  ticketId?: string;
+  companyName?: string;
+  ticketStatus?: string;
+  daysStalled?: number;
+  // New structured fields for highVolumeCustomer insights
+  customerName?: string;
+  ticketCount?: number;
 };

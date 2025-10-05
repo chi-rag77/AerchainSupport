@@ -103,7 +103,7 @@ const Index = () => {
     },
   } as UseQueryOptions<Ticket[], Error>);
 
-  const insightsQueryOptions = { // Removed explicit UseQueryOptions type annotation
+  const insightsQueryOptions = {
     queryKey: ["dashboardInsights", authToken as string],
     queryFn: async ({ queryKey }) => {
       const [, token] = queryKey;
@@ -660,6 +660,7 @@ const Index = () => {
         isOpen={isInsightsSheetOpen}
         onClose={() => setIsInsightsSheetOpen(false)}
         insights={dashboardInsights || []}
+        uniqueCompanies={uniqueCompanies} // Pass uniqueCompanies here
       />
     </div>
   );

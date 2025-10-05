@@ -13,10 +13,18 @@ const corsHeaders = {
 // Define the Insight type (should match your client-side types/index.ts)
 interface Insight {
   id: string;
-  type: 'stalledOnTech' | 'highPriority' | 'info' | 'highVolumeCustomer'; // Updated type
+  type: 'stalledOnTech' | 'highPriority' | 'info' | 'highVolumeCustomer';
   message: string;
   severity: 'info' | 'warning' | 'critical';
   icon?: string;
+  // New structured fields for stalledOnTech insights
+  ticketId?: string;
+  companyName?: string;
+  ticketStatus?: string;
+  daysStalled?: number;
+  // New structured fields for highVolumeCustomer insights
+  customerName?: string;
+  ticketCount?: number;
 }
 
 // Define the Ticket type (should match your client-side types/index.ts)
@@ -26,7 +34,7 @@ interface Ticket {
   subject: string;
   status: string;
   updated_at: string;
-  created_at: string; // Added created_at for high volume customer activity
+  created_at: string;
   cf_company?: string;
 }
 
@@ -61,7 +69,7 @@ serve(async (req) => {
 
     const { data: tickets, error: fetchError } = await supabase
       .from('freshdesk_tickets')
-      .select('freshdesk_id, subject, status, updated_at, created_at, cf_company') // Select created_at
+      .select('freshdesk_id, subject, status, updated_at, created_at, cf_company')
       .limit(10000);
 
     if (fetchError) {
@@ -99,6 +107,10 @@ serve(async (req) => {
           message: `Ticket ${ticket.freshdesk_id} for ${companyName} has been stalled '${ticket.status}' for ${daysSinceUpdate} days.`,
           severity: daysSinceUpdate >= 5 ? 'critical' : 'warning',
           icon: 'Clock',
+          ticketId: ticket.freshdesk_id,
+          companyName: companyName,
+          ticketStatus: ticket.status,
+          daysStalled: daysSinceUpdate,
         });
       }
     });
@@ -123,8 +135,10 @@ serve(async (req) => {
           id: `high-volume-${companyName.replace(/\s/g, '-')}`,
           type: 'highVolumeCustomer',
           message: `${companyName} has opened ${count} new tickets in the last 24 hours. Consider proactive outreach.`,
-          severity: count >= 10 ? 'critical' : 'warning', // More critical if even higher volume
+          severity: count >= 10 ? 'critical' : 'warning',
           icon: 'Users',
+          customerName: companyName,
+          ticketCount: count,
         });
       }
     });
