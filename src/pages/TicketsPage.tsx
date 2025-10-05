@@ -354,6 +354,105 @@ const TicketsPage = () => {
             />
           </div>
 
+          {/* Search & Filters Bar */}
+          <div className="p-6 pt-3 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
+            <div className="flex flex-wrap gap-3 w-full items-center">
+              <div className="relative flex-grow min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Search by Ticket ID, Title, or Assignee..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-full"
+                />
+              </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[150px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <span className="text-sm font-medium">Status:</span>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueStatuses.map(status => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterPriority} onValueChange={setFilterPriority}>
+                <SelectTrigger className="w-[150px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <span className="text-sm font-medium">Priority:</span>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniquePriorities.map(priority => (
+                    <SelectItem key={priority} value={priority}>
+                      {priority}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+                <SelectTrigger className="w-[150px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <span className="text-sm font-medium">Assignee:</span>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueAssignees.map(assignee => (
+                    <SelectItem key={assignee} value={assignee}>
+                      {assignee}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterCompany} onValueChange={setFilterCompany}>
+                <SelectTrigger className="w-[150px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <span className="text-sm font-medium">Company:</span>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueCompanies.map(company => (
+                    <SelectItem key={company} value={company}>
+                      {company}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-[150px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <span className="text-sm font-medium">Type:</span>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueTypes.map(type => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterDependency} onValueChange={setFilterDependency}>
+                <SelectTrigger className="w-[150px] group">
+                  <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
+                  <span className="text-sm font-medium">Dependency:</span>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueDependencies.map(dependency => (
+                    <SelectItem key={dependency} value={dependency}>
+                      {dependency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="flex-grow overflow-y-auto p-6">
             <FilterNotification
               filteredCount={filteredTickets.length}
@@ -372,30 +471,7 @@ const TicketsPage = () => {
                 <p className="text-lg font-medium">Loading tickets...</p>
               </div>
             ) : (
-              <TicketTable
-                tickets={currentTickets}
-                onRowClick={handleRowClick}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                filterStatus={filterStatus}
-                setFilterStatus={setFilterStatus}
-                filterPriority={filterPriority}
-                setFilterPriority={setFilterPriority}
-                filterAssignee={filterAssignee}
-                setFilterAssignee={setFilterAssignee}
-                filterCompany={filterCompany}
-                setFilterCompany={setFilterCompany}
-                filterType={filterType}
-                setFilterType={setFilterType}
-                filterDependency={filterDependency}
-                setFilterDependency={setFilterDependency}
-                uniqueAssignees={uniqueAssignees}
-                uniqueStatuses={uniqueStatuses}
-                uniquePriorities={uniquePriorities}
-                uniqueCompanies={uniqueCompanies}
-                uniqueTypes={uniqueTypes}
-                uniqueDependencies={uniqueDependencies}
-              />
+              <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
             )}
           </div>
 
