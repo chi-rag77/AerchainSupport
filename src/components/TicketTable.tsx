@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Ticket } from '@/types';
-import { format, formatDistanceToNowStrict } from 'date-fns';
+import { format, formatDistanceToNowStrict, differenceInDays } from 'date-fns'; // Import differenceInDays
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle, Hourglass, Laptop, AlertCircle, XCircle, Clock, Users, Shield, MessageSquare } from 'lucide-react';
@@ -102,6 +102,19 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
     return formatDistanceToNowStrict(date, { addSuffix: true });
   };
 
+  const calculateAgeing = (ticket: Ticket) => {
+    const createdAt = new Date(ticket.created_at);
+    const now = new Date();
+    const statusLower = ticket.status.toLowerCase();
+
+    if (statusLower === 'resolved' || statusLower === 'closed') {
+      const updatedAt = new Date(ticket.updated_at);
+      return differenceInDays(updatedAt, createdAt);
+    } else {
+      return differenceInDays(now, createdAt);
+    }
+  };
+
   return (
     <div className="rounded-lg overflow-hidden shadow-md w-full bg-white dark:bg-gray-800">
       <Table>
@@ -115,6 +128,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
             <TableHead className="py-3 whitespace-nowrap">Status</TableHead>
             <TableHead className="py-3 whitespace-nowrap">Priority</TableHead>
             <TableHead className="py-3 whitespace-nowrap">Assignee</TableHead>
+            <TableHead className="py-3 text-right whitespace-nowrap">Ageing</TableHead> {/* New Ageing column */}
             <TableHead className="py-3 text-right whitespace-nowrap">Created</TableHead>
             <TableHead className="py-3 text-right whitespace-nowrap">Updated</TableHead>
           </TableRow>
@@ -170,6 +184,9 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
+                <TableCell className="py-3 text-right font-semibold">
+                  {calculateAgeing(ticket)} days
+                </TableCell>
                 <TableCell className="py-3 text-right">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -194,7 +211,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={10} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3">
+              <TableCell colSpan={11} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3"> {/* Updated colspan */}
                 No tickets found.
               </TableCell>
             </TableRow>

@@ -21,6 +21,7 @@ export type Ticket = {
   cf_module?: string;
   cf_dependency?: string;
   cf_recurrence?: string;
+  ageing?: number; // Added ageing field
 };
 
 export type TicketMessage = {
