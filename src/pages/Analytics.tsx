@@ -19,6 +19,7 @@ import { DateRange } from "react-day-picker";
 import { toast } from 'sonner';
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { MultiSelect } from "@/components/MultiSelect";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Import Card components
 
 // Import initial chart components
 import TicketVolumeTrendChart from "@/components/TicketVolumeTrendChart";
@@ -38,6 +39,7 @@ const Analytics = () => {
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]); // Assuming channel data will be available
   const [selectedTicketTypes, setSelectedTicketTypes] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
+  const [topNCustomers, setTopNCustomers] = useState<number | 'all'>(10); // State for Top N Customers
 
   const queryClient = useQueryClient();
 
@@ -372,6 +374,8 @@ const Analytics = () => {
                   placeholder="Filter by Priority"
                   className="w-[180px]"
                 />
+                {/* Optional: Apply Filters button */}
+                {/* <Button onClick={handleApplyFilters}>Apply Filters</Button> */}
               </div>
             </div>
 
@@ -388,18 +392,30 @@ const Analytics = () => {
                     <TrendingUp className="h-6 w-6 mr-3 text-blue-600" /> Ticket Trends & Behavior
                   </h2>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Volume Trend (Created vs Resolved)</h3>
-                      <TicketVolumeTrendChart tickets={filteredTickets} startDate={effectiveStartDate} endDate={effectiveEndDate} />
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Lifecycle Flow (Placeholder)</h3>
-                      <p className="text-muted-foreground">Chart for average time in each status, funnel visualization.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Seasonality & Peak Hours (Placeholder)</h3>
-                      <p className="text-muted-foreground">Heatmap for ticket volume by day/hour.</p>
-                    </div>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Ticket Volume Trend (Created vs Resolved)</CardTitle>
+                      </CardHeader>
+                      <CardContent className="h-[calc(100%-60px)]">
+                        <TicketVolumeTrendChart tickets={filteredTickets} startDate={effectiveStartDate} endDate={effectiveEndDate} />
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Ticket Lifecycle Flow</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Ticket Lifecycle Flow chart.</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Seasonality & Peak Hours</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Seasonality & Peak Hours heatmap.</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </section>
 
@@ -409,18 +425,41 @@ const Analytics = () => {
                     <Users className="h-6 w-6 mr-3 text-green-600" /> Customer Analytics
                   </h2>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Top Customers by Ticket Volume</h3>
-                      <TopCustomersChart tickets={filteredTickets} />
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Issue Type Breakdown by Customer (Placeholder)</h3>
-                      <p className="text-muted-foreground">Stacked bar chart or matrix for customer vs ticket types.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Customer Ticket Trend Over Time (Placeholder)</h3>
-                      <p className="text-muted-foreground">Line charts for individual customer ticket trends.</p>
-                    </div>
+                    <Card className="h-96">
+                      <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="text-lg font-semibold text-foreground">Top Customers by Ticket Volume</CardTitle>
+                        <Select value={String(topNCustomers)} onValueChange={(value) => setTopNCustomers(value === 'all' ? 'all' : Number(value))}>
+                          <SelectTrigger className="w-[100px] h-8">
+                            <SelectValue placeholder="Top 10" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">Top 5</SelectItem>
+                            <SelectItem value="10">Top 10</SelectItem>
+                            <SelectItem value="20">Top 20</SelectItem>
+                            <SelectItem value="all">All</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </CardHeader>
+                      <CardContent className="h-[calc(100%-60px)]">
+                        <TopCustomersChart tickets={filteredTickets} topN={topNCustomers === 'all' ? undefined : topNCustomers} />
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Issue Type Breakdown by Customer</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Issue Type Breakdown by Customer chart.</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Customer Ticket Trend Over Time</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Customer Ticket Trend Over Time chart.</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </section>
 
@@ -430,18 +469,30 @@ const Analytics = () => {
                     <User className="h-6 w-6 mr-3 text-purple-600" /> Agent & Team Performance
                   </h2>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Agent Load vs Resolution Efficiency</h3>
-                      <AgentPerformanceChart tickets={filteredTickets} />
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">First Response & Resolution Times (Placeholder)</h3>
-                      <p className="text-muted-foreground">Distribution graphs for response and resolution times.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Reopen & Escalation Rates (Placeholder)</h3>
-                      <p className="text-muted-foreground">Chart for reopened/escalated tickets per agent.</p>
-                    </div>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Agent Load vs Resolution Efficiency</CardTitle>
+                      </CardHeader>
+                      <CardContent className="h-[calc(100%-60px)]">
+                        <AgentPerformanceChart tickets={filteredTickets} />
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">First Response & Resolution Times</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for First Response & Resolution Times charts.</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Reopen & Escalation Rates</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Reopen & Escalation Rates chart.</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </section>
 
@@ -451,18 +502,30 @@ const Analytics = () => {
                     <Bug className="h-6 w-6 mr-3 text-red-600" /> Ticket Quality & Issue Insights
                   </h2>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Frequent Tags / Keyword Analysis (Placeholder)</h3>
-                      <p className="text-muted-foreground">Word cloud or top tags bar chart.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Bug Analysis (Placeholder)</h3>
-                      <p className="text-muted-foreground">Bug volume trend, aging, and percentage.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Duplicate & Not Relevant Tickets (Placeholder)</h3>
-                      <p className="text-muted-foreground">Trend line or share over time.</p>
-                    </div>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Frequent Tags / Keyword Analysis</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Frequent Tags / Keyword Analysis.</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Bug Analysis</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Bug Analysis charts.</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Duplicate & Not Relevant Tickets</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Duplicate & Not Relevant Tickets trend.</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </section>
 
@@ -472,18 +535,30 @@ const Analytics = () => {
                     <Scale className="h-6 w-6 mr-3 text-orange-600" /> Efficiency & Forecasting
                   </h2>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Backlog Growth Forecast (Placeholder)</h3>
-                      <p className="text-muted-foreground">Project open ticket backlog.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">SLA Breach Forecasting (Placeholder)</h3>
-                      <p className="text-muted-foreground">Predict at-risk tickets.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-96">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Channel Effectiveness (Placeholder)</h3>
-                      <p className="text-muted-foreground">Compare metrics per channel.</p>
-                    </div>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Backlog Growth Forecast</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Backlog Growth Forecast.</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">SLA Breach Forecasting</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for SLA Breach Forecasting.</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Channel Effectiveness</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Channel Effectiveness comparison.</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </section>
 
@@ -493,18 +568,30 @@ const Analytics = () => {
                     <LayoutDashboard className="h-6 w-6 mr-3 text-indigo-600" /> Strategic Summary
                   </h2>
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Month-over-Month Comparison (Placeholder)</h3>
-                      <p className="text-muted-foreground">Key metrics comparison.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Top 5 Problem Categories (Placeholder)</h3>
-                      <p className="text-muted-foreground">Comparison of problem categories.</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-64">
-                      <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Customer Health Score (Placeholder)</h3>
-                      <p className="text-muted-foreground">Score based on ticket volume, reopen rates, bugs.</p>
-                    </div>
+                    <Card className="h-64">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Month-over-Month Comparison</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Month-over-Month comparison.</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="h-64">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Top 5 Problem Categories</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Top 5 Problem Categories.</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="h-64">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-foreground">Customer Health Score</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-60px)] text-muted-foreground">
+                        <p>Placeholder for Customer Health Score.</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </section>
               </div>
