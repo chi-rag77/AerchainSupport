@@ -46,7 +46,7 @@ const Sidebar = ({ showSidebar, toggleSidebar }: SidebarProps) => {
 
   return (
     <div className={cn(
-      "flex flex-col h-screen p-6 shadow-lg rounded-r-xl border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out",
+      "flex flex-col h-screen p-6 shadow-lg rounded-r-xl border-r border-border transition-all duration-300 ease-in-out",
       showSidebar ? "w-64 bg-sidebar" : "w-20 bg-sidebar items-center"
     )}>
       <div className={cn("mb-10 flex items-center", showSidebar ? "space-x-2" : "justify-center")}>
