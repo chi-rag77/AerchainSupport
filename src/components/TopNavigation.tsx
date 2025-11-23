@@ -52,7 +52,7 @@ const TopNavigation = () => {
               className={cn(
                 "rounded-full px-4 py-2 text-sm font-medium transition-colors",
                 location.pathname === item.path
-                  ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+                  ? "bg-blue-900 text-white shadow-sm hover:bg-blue-800" // Changed to blue-900
                   : "text-muted-foreground hover:bg-transparent hover:text-foreground"
               )}
               asChild
