@@ -30,7 +30,7 @@ const TopNavigation = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-40 w-full bg-background border-b border-border shadow-sm">
+    <nav className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-md border-b border-border shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Left Section: Logo and Version */}
         <div className="flex items-center space-x-2">
@@ -43,7 +43,7 @@ const TopNavigation = () => {
         </div>
 
         {/* Middle Section: Navigation Links */}
-        <div className="flex items-center space-x-2 rounded-full bg-muted p-1">
+        <div className="flex items-center space-x-2 rounded-full bg-muted/80 backdrop-blur-sm p-1">
           {navItems.map((item) => (
             <Button
               key={item.path}
@@ -52,7 +52,7 @@ const TopNavigation = () => {
               className={cn(
                 "rounded-full px-4 py-2 text-sm font-medium transition-colors",
                 location.pathname === item.path
-                  ? "bg-blue-700 text-white shadow-sm hover:bg-blue-800" // Updated to blue-700 and hover:bg-blue-800
+                  ? "bg-blue-700 text-white shadow-sm hover:bg-blue-800"
                   : "text-muted-foreground hover:bg-transparent hover:text-foreground"
               )}
               asChild
