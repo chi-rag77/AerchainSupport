@@ -30,7 +30,7 @@ const TopNavigation = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-md border-b border-border shadow-sm">
+    <nav className="sticky top-0 z-40 w-full bg-background border-b border-border shadow-sm"> {/* Removed backdrop-blur from main nav */}
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Left Section: Logo and Version */}
         <div className="flex items-center space-x-2">
@@ -43,7 +43,7 @@ const TopNavigation = () => {
         </div>
 
         {/* Middle Section: Navigation Links */}
-        <div className="flex items-center space-x-2 rounded-full bg-muted/80 backdrop-blur-sm p-1">
+        <div className="flex items-center space-x-2 rounded-full bg-white/60 backdrop-blur-md border border-gray-200 dark:bg-gray-800/60 dark:border-gray-700 p-1"> {/* Applied explicit white/60, blur-md, and border */}
           {navItems.map((item) => (
             <Button
               key={item.path}
