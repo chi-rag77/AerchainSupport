@@ -7,14 +7,13 @@ import Index from "./pages/Index";
 import TicketsPage from "./pages/TicketsPage";
 import DashboardV2 from "./pages/DashboardV2";
 import Analytics from "./pages/Analytics";
-import Customer360 from "./pages/Customer360"; // Import the new Customer360 page
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import { SupabaseProvider } from "./components/SupabaseProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./hooks/use-theme";
-import TopNavigation from "./components/TopNavigation"; // Import the new TopNavigation
+import TopNavigation from "./components/TopNavigation";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +26,7 @@ const App = () => (
         <BrowserRouter>
           <SupabaseProvider>
             <div className="flex flex-col min-h-screen">
-              <TopNavigation /> {/* Render the TopNavigation component */}
+              <TopNavigation />
               <main className="flex-grow">
                 <Routes>
                   <Route path="/login" element={<Login />} />
@@ -36,7 +35,7 @@ const App = () => (
                   <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
                   <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2 /></ProtectedRoute>} />
                   <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                  <Route path="/customer360" element={<ProtectedRoute><Customer360 /></ProtectedRoute>} /> {/* New Customer 360 route */}
+                  {/* Customer 360 route removed */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users } from 'lucide-react'; // Import Users icon
+import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -12,7 +12,7 @@ import { ThemeToggle } from './ThemeToggle';
 import Logo from './Logo';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
-import NavPill from './NavPill'; // Import the new NavPill component
+import NavPill from './NavPill';
 
 const TopNavigation = () => {
   const { session } = useSupabase();
@@ -26,9 +26,9 @@ const TopNavigation = () => {
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
-    { icon: Layers, label: "Queue", path: "/tickets" }, // Assuming 'Queue' maps to '/tickets'
-    { icon: BarChart2, label: "Insights", path: "/analytics" }, // Assuming 'Insights' maps to '/analytics'
-    { icon: Users, label: "Customer 360", path: "/customer360" }, // New Customer 360 item
+    { icon: Layers, label: "Queue", path: "/tickets" },
+    { icon: BarChart2, label: "Insights", path: "/analytics" },
+    // Customer 360 item removed
   ];
 
   return (
