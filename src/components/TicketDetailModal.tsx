@@ -1,21 +1,28 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Sheet, // Changed from Dialog
-  SheetContent, // Changed from DialogContent
+  Sheet,
+  SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet"; // Changed from dialog
+} from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/integrations/supabase/client';
 import { Ticket, TicketMessage } from '@/types';
-import { format } from 'date-fns';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { format, isPast, parseISO } from 'date-fns';
+import {
+  Loader2, AlertCircle, Copy, CheckCircle, Hourglass, Clock, Users, Shield, Laptop, XCircle,
+  Tag, Building2, MessageSquare, CalendarDays, User, Info
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TicketDetailModalProps {
   isOpen: boolean;
@@ -23,161 +30,317 @@ interface TicketDetailModalProps {
   ticket: Ticket | null;
 }
 
-const TicketDetailModal = ({ 
-  isOpen, 
-  onClose, 
-  ticket, 
+// Helper function for copying to clipboard
+const copyToClipboard = (text: string) => {
+  navigator.clipboard.writeText(text).then(() => {
+    toast.success("Copied to clipboard!");
+  }).catch(err => {
+    console.error("Failed to copy text: ", err);
+    toast.error("Failed to copy to clipboard.");
+  });
+};
+
+const TicketDetailModal = ({
+  isOpen,
+  onClose,
+  ticket,
 }: TicketDetailModalProps) => {
   const [conversationMessages, setConversationMessages] = useState<TicketMessage[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchAndSyncMessages = async () => {
-      if (!ticket?.id) return;
+  const fetchAndSyncMessages = useCallback(async () => {
+    if (!ticket?.id) return;
 
-      setIsLoadingMessages(true);
-      setFetchError(null); // Clear previous errors
+    setIsLoadingMessages(true);
+    setFetchError(null);
 
-      try {
-        // 1. Verify parent ticket exists in freshdesk_tickets table
-        const { data: parentTicketData, error: parentTicketError } = await supabase
-          .from('freshdesk_tickets')
-          .select('freshdesk_id')
-          .eq('freshdesk_id', ticket.id)
-          .single();
+    try {
+      // 1. Verify parent ticket exists in freshdesk_tickets table
+      const { data: parentTicketData, error: parentTicketError } = await supabase
+        .from('freshdesk_tickets')
+        .select('freshdesk_id')
+        .eq('freshdesk_id', ticket.id)
+        .single();
 
-        if (parentTicketError && parentTicketError.code !== 'PGRST116') { // PGRST116 is 'No rows found'
-          console.error("Error checking parent ticket existence:", parentTicketError);
-          setFetchError(`Failed to verify parent ticket: ${parentTicketError.message}`);
+      if (parentTicketError && parentTicketError.code !== 'PGRST116') {
+        console.error("Error checking parent ticket existence:", parentTicketError);
+        setFetchError(`Failed to verify parent ticket: ${parentTicketError.message}`);
+        setIsLoadingMessages(false);
+        return;
+      }
+
+      if (!parentTicketData) {
+        console.warn(`Parent ticket ${ticket.id} not found in freshdesk_tickets. Attempting to sync all tickets.`);
+        toast.info("Ticket not found in database. Attempting to sync all tickets to ensure data integrity.", { id: "sync-parent-ticket" });
+
+        const { error: syncError } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
+          method: 'POST',
+          body: { action: 'syncTickets' },
+        });
+
+        if (syncError) {
+          console.error("Error during full ticket sync:", syncError);
+          toast.error(`Failed to sync tickets: ${syncError.message}. Please try again.`, { id: "sync-parent-ticket" });
+          setFetchError("Parent ticket not found and failed to sync. Please try syncing tickets manually.");
           setIsLoadingMessages(false);
           return;
-        }
+        } else {
+          toast.success("Tickets synced. Retrying conversation fetch...", { id: "sync-parent-ticket" });
+          const { data: retryParentTicketData, error: retryParentTicketError } = await supabase
+            .from('freshdesk_tickets')
+            .select('freshdesk_id')
+            .eq('freshdesk_id', ticket.id)
+            .single();
 
-        if (!parentTicketData) {
-          console.warn(`Parent ticket ${ticket.id} not found in freshdesk_tickets. Attempting to sync all tickets.`);
-          toast.info("Ticket not found in database. Attempting to sync all tickets to ensure data integrity.", { id: "sync-parent-ticket" });
-          
-          // Trigger a full ticket sync
-          const { error: syncError } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-            method: 'POST',
-            body: { action: 'syncTickets' },
-          });
-
-          if (syncError) {
-            console.error("Error during full ticket sync:", syncError);
-            toast.error(`Failed to sync tickets: ${syncError.message}. Please try again.`, { id: "sync-parent-ticket" });
-            setFetchError("Parent ticket not found and failed to sync. Please try syncing tickets manually.");
+          if (retryParentTicketError || !retryParentTicketData) {
+            console.error(`Parent ticket ${ticket.id} still not found after sync.`);
+            setFetchError("Parent ticket still not found after sync. Please ensure the ticket exists in Freshdesk and try syncing again.");
             setIsLoadingMessages(false);
             return;
-          } else {
-            toast.success("Tickets synced. Retrying conversation fetch...", { id: "sync-parent-ticket" });
-            // After successful sync, re-check for parent ticket
-            const { data: retryParentTicketData, error: retryParentTicketError } = await supabase
-              .from('freshdesk_tickets')
-              .select('freshdesk_id')
-              .eq('freshdesk_id', ticket.id)
-              .single();
-
-            if (retryParentTicketError || !retryParentTicketData) {
-              console.error(`Parent ticket ${ticket.id} still not found after sync.`);
-              setFetchError("Parent ticket still not found after sync. Please ensure the ticket exists in Freshdesk and try syncing again.");
-              setIsLoadingMessages(false);
-              return;
-            }
           }
         }
-
-        // 2. Check if messages already exist for this ticket in Supabase
-        const { data: existingMessages, error: checkError } = await supabase
-          .from('ticket_messages')
-          .select('id')
-          .eq('ticket_id', ticket.id)
-          .limit(1);
-
-        if (checkError) {
-          console.error("Error checking for existing messages:", checkError);
-          // Continue to fetch from Freshdesk even if check fails
-        }
-
-        // If no existing messages, or if check failed, try to sync from Freshdesk
-        if (!existingMessages || existingMessages.length === 0 || checkError) {
-          console.log(`No existing messages found for ticket ${ticket.id}, syncing from Freshdesk...`);
-          const { data, error: syncError } = await supabase.functions.invoke('fetch-ticket-conversations', {
-            method: 'POST',
-            body: { freshdesk_ticket_id: ticket.id },
-          });
-
-          if (syncError) {
-            console.error("Error syncing conversations from Freshdesk:", syncError);
-            setFetchError(`Failed to sync conversations: ${syncError.message}`);
-          } else {
-            console.log("Successfully synced conversations:", data);
-          }
-        } else {
-          console.log(`Existing messages found for ticket ${ticket.id}, skipping Freshdesk sync.`);
-        }
-
-        // 3. Fetch messages from Supabase (whether newly synced or existing)
-        const { data: messagesData, error: fetchMessagesError } = await supabase
-          .from('ticket_messages')
-          .select('*')
-          .eq('ticket_id', ticket.id)
-          .order('created_at', { ascending: true });
-
-        if (fetchMessagesError) {
-          console.error("Error fetching conversation messages from Supabase:", fetchMessagesError);
-          setFetchError(`Failed to load conversation messages: ${fetchMessagesError.message}`);
-        } else {
-          setConversationMessages(messagesData || []);
-        }
-      } catch (err: any) {
-        console.error("Unexpected error during conversation fetch/sync:", err);
-        setFetchError(`An unexpected error occurred: ${err.message}`);
-      } finally {
-        setIsLoadingMessages(false);
       }
-    };
 
+      const { data: existingMessages, error: checkError } = await supabase
+        .from('ticket_messages')
+        .select('id')
+        .eq('ticket_id', ticket.id)
+        .limit(1);
+
+      if (checkError) {
+        console.error("Error checking for existing messages:", checkError);
+      }
+
+      if (!existingMessages || existingMessages.length === 0 || checkError) {
+        console.log(`No existing messages found for ticket ${ticket.id}, syncing from Freshdesk...`);
+        const { data, error: syncError } = await supabase.functions.invoke('fetch-ticket-conversations', {
+          method: 'POST',
+          body: { freshdesk_ticket_id: ticket.id },
+        });
+
+        if (syncError) {
+          console.error("Error syncing conversations from Freshdesk:", syncError);
+          setFetchError(`Failed to sync conversations: ${syncError.message}`);
+        } else {
+          console.log("Successfully synced conversations:", data);
+        }
+      } else {
+        console.log(`Existing messages found for ticket ${ticket.id}, skipping Freshdesk sync.`);
+      }
+
+      const { data: messagesData, error: fetchMessagesError } = await supabase
+        .from('ticket_messages')
+        .select('*')
+        .eq('ticket_id', ticket.id)
+        .order('created_at', { ascending: true });
+
+      if (fetchMessagesError) {
+        console.error("Error fetching conversation messages from Supabase:", fetchMessagesError);
+        setFetchError(`Failed to load conversation messages: ${fetchMessagesError.message}`);
+      } else {
+        setConversationMessages(messagesData || []);
+      }
+    } catch (err: any) {
+      console.error("Unexpected error during conversation fetch/sync:", err);
+      setFetchError(`An unexpected error occurred: ${err.message}`);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  }, [ticket?.id]);
+
+  useEffect(() => {
     if (isOpen && ticket?.id) {
       fetchAndSyncMessages();
     } else {
-      setConversationMessages([]); // Clear messages when modal closes
+      setConversationMessages([]);
       setFetchError(null);
     }
-  }, [isOpen, ticket?.id]); // Re-run effect when modal opens or ticket changes
+  }, [isOpen, ticket?.id, fetchAndSyncMessages]);
 
   if (!ticket) return null;
 
   const freshdeskTicketUrl = `http://aerchain.freshdesk.com/a/tickets/${ticket.id}`;
 
+  const getStatusBadge = (status: string) => {
+    const statusLower = status.toLowerCase();
+    let icon: React.ElementType = Info;
+    let colorClass = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+
+    switch (statusLower) {
+      case 'open (being processed)':
+        icon = Hourglass;
+        colorClass = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        break;
+      case 'pending (awaiting your reply)':
+        icon = Clock;
+        colorClass = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+        break;
+      case 'resolved':
+        icon = CheckCircle;
+        colorClass = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+        break;
+      case 'closed':
+        icon = XCircle;
+        colorClass = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+        break;
+      case 'escalated':
+        icon = AlertCircle;
+        colorClass = "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+        break;
+      case 'waiting on customer':
+        icon = Users;
+        colorClass = "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+        break;
+      case 'on tech':
+        icon = Laptop;
+        colorClass = "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+        break;
+      case 'on product':
+        icon = Shield;
+        colorClass = "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200";
+        break;
+    }
+    const IconComponent = icon;
+    return (
+      <Badge className={cn("flex items-center gap-1 px-2 py-1 text-xs font-semibold", colorClass)}>
+        <IconComponent className="h-3 w-3" />
+        {status}
+      </Badge>
+    );
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const priorityLower = priority.toLowerCase();
+    let icon: React.ElementType = Info;
+    let colorClass = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+
+    switch (priorityLower) {
+      case 'urgent':
+        icon = AlertCircle;
+        colorClass = "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+        break;
+      case 'high':
+        icon = AlertCircle;
+        colorClass = "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+        break;
+      case 'medium':
+        icon = MessageSquare;
+        colorClass = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+        break;
+      case 'low':
+        icon = Clock;
+        colorClass = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+        break;
+    }
+    const IconComponent = icon;
+    return (
+      <Badge className={cn("flex items-center gap-1 px-2 py-1 text-xs font-semibold", colorClass)}>
+        <IconComponent className="h-3 w-3" />
+        {priority}
+      </Badge>
+    );
+  };
+
+  const isOverdue = ticket.due_by && isPast(parseISO(ticket.due_by)) && ticket.status.toLowerCase() !== 'resolved' && ticket.status.toLowerCase() !== 'closed';
+
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}> {/* Changed from Dialog */}
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col"> {/* Changed from DialogContent, added side and flex-col */}
-        <SheetHeader>
-          <SheetTitle className="text-2xl font-bold">{ticket.subject}</SheetTitle>
-          <SheetDescription className="text-sm text-gray-500 dark:text-gray-400">
-            Ticket ID: {ticket.id} | Status: {ticket.status} | Priority: {ticket.priority}
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-0">
+        {/* Ticket Header Capsule */}
+        <SheetHeader className="p-6 pb-4 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-md sticky top-0 z-10">
+          <SheetTitle className="text-3xl font-extrabold leading-tight">
+            {ticket.subject}
+          </SheetTitle>
+          <SheetDescription className="flex flex-col gap-2 text-sm text-blue-100 dark:text-blue-200">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 font-medium">
+                <Tag className="h-4 w-4" /> ID: {ticket.id}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-100 hover:text-white hover:bg-blue-600/30" onClick={() => copyToClipboard(ticket.id)}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Copy Ticket ID</TooltipContent>
+                </Tooltip>
+              </span>
+              {ticket.assignee && ticket.assignee !== "Unassigned" && (
+                <span className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6 border border-blue-200">
+                    <AvatarFallback className="text-xs bg-blue-700 text-white">
+                      {ticket.assignee.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium">{ticket.assignee}</span>
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {getStatusBadge(ticket.status)}
+              {getPriorityBadge(ticket.priority)}
+            </div>
           </SheetDescription>
         </SheetHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm my-4"> {/* Adjusted margin */}
-          <div>
-            <p><span className="font-semibold">Requester:</span> {ticket.requester_email}</p>
-            {ticket.customer && <p><span className="font-semibold">Customer:</span> {ticket.customer}</p>}
-            {ticket.type && <p><span className="font-semibold">Type:</span> {ticket.type}</p>}
-          </div>
-          <div>
-            <p><span className="font-semibold">Created:</span> {format(new Date(ticket.created_at), 'MMM dd, yyyy HH:mm')}</p>
-            <p><span className="font-semibold">Last Updated:</span> {format(new Date(ticket.updated_at), 'MMM dd, yyyy HH:mm')}</p>
-            {ticket.due_by && <p><span className="font-semibold">Due By:</span> {format(new Date(ticket.due_by), 'MMM dd, yyyy HH:mm')}</p>}
-          </div>
-        </div>
+        {/* Main Content Area - Scrollable */}
+        <div className="flex-grow overflow-y-auto p-6 space-y-6">
+          {/* Contextual Detail Panels */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Requester & Company Profile */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" /> Requester Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-1">
+                <p><span className="font-medium">Email:</span> {ticket.requester_email}</p>
+                {ticket.cf_company && <p><span className="font-medium">Company:</span> {ticket.cf_company}</p>}
+                {ticket.cf_country && <p><span className="font-medium">Country:</span> {ticket.cf_country}</p>}
+              </CardContent>
+            </Card>
 
-        <Separator />
+            {/* Ticket Timeline & Lifecycle */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground" /> Timeline
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-1">
+                <p><span className="font-medium">Created:</span> {format(new Date(ticket.created_at), 'MMM dd, yyyy HH:mm')}</p>
+                <p><span className="font-medium">Last Updated:</span> {format(new Date(ticket.updated_at), 'MMM dd, yyyy HH:mm')}</p>
+                {ticket.due_by && (
+                  <p className={cn("font-medium", isOverdue ? "text-red-600 dark:text-red-400" : "")}>
+                    <span>Due By:</span> {format(new Date(ticket.due_by), 'MMM dd, yyyy HH:mm')}
+                    {isOverdue && <span className="ml-2 text-xs font-bold">(OVERDUE)</span>}
+                  </p>
+                )}
+                {ticket.fr_due_by && <p><span className="font-medium">First Response Due:</span> {format(new Date(ticket.fr_due_by), 'MMM dd, yyyy HH:mm')}</p>}
+              </CardContent>
+            </Card>
 
-        <div className="flex-grow overflow-y-auto py-4 space-y-4"> {/* Added flex-grow and overflow-y-auto */}
-          <h3 className="text-lg font-semibold mb-2">Conversation History</h3>
+            {/* Ticket Categorization */}
+            <Card className="md:col-span-2 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-muted-foreground" /> Categorization
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-1">
+                {ticket.type && <p><span className="font-medium">Type:</span> {ticket.type}</p>}
+                {ticket.cf_module && <p><span className="font-medium">Module:</span> {ticket.cf_module}</p>}
+                {ticket.cf_dependency && <p><span className="font-medium">Dependency:</span> {ticket.cf_dependency}</p>}
+                {ticket.cf_recurrence && <p><span className="font-medium">Recurrence:</span> {ticket.cf_recurrence}</p>}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Separator />
+
+          {/* Conversation Stream */}
+          <h3 className="text-lg font-semibold text-foreground">Conversation History</h3>
           {isLoadingMessages ? (
             <div className="flex items-center justify-center h-24 text-gray-500 dark:text-gray-400">
               <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading messages...
@@ -190,17 +353,43 @@ const TicketDetailModal = ({
               <p className="text-sm mt-2">Please try syncing tickets from the main page.</p>
             </div>
           ) : conversationMessages.length > 0 ? (
-            <div className="space-y-4">
-              {conversationMessages.map((message) => (
+            <div className="relative space-y-6 before:absolute before:left-4 before:top-0 before:h-full before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700">
+              {conversationMessages.map((message, index) => (
                 <div key={message.id} className={cn(
-                  "p-3 rounded-lg shadow-sm max-w-[80%]",
-                  message.is_agent ? "bg-blue-50 dark:bg-blue-950 ml-auto text-right" : "bg-gray-50 dark:bg-gray-700 mr-auto text-left"
+                  "flex items-start gap-3 relative",
+                  message.is_agent ? "justify-end" : "justify-start"
                 )}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-semibold text-sm">{message.sender}</span>
-                    <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                  {/* Timeline dot */}
+                  <div className="absolute left-3.5 top-0.5 h-3 w-3 rounded-full bg-primary dark:bg-primary-foreground z-10"></div>
+
+                  {!message.is_agent && (
+                    <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
+                      <AvatarFallback className="text-xs bg-gray-200 dark:bg-gray-700">
+                        {message.sender.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+
+                  <div className={cn(
+                    "p-4 rounded-xl shadow-md max-w-[80%] relative",
+                    message.is_agent
+                      ? "bg-blue-50 dark:bg-blue-950/50 text-right rounded-br-none"
+                      : "bg-gray-50 dark:bg-gray-700 rounded-bl-none"
+                  )}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-semibold text-sm text-foreground">{message.sender}</span>
+                      <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                    </div>
+                    <div dangerouslySetInnerHTML={{ __html: message.body_html || '' }} className="text-sm text-foreground break-words" />
                   </div>
-                  <div dangerouslySetInnerHTML={{ __html: message.body_html || '' }} className="text-sm text-foreground" />
+
+                  {message.is_agent && (
+                    <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
+                      <AvatarFallback className="text-xs bg-blue-700 text-white">
+                        {message.sender.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
               ))}
             </div>
@@ -209,9 +398,9 @@ const TicketDetailModal = ({
           )}
         </div>
 
-        <Separator />
-
-        <div className="flex justify-end pt-4">
+        {/* Action Bar */}
+        <Separator className="mt-auto" />
+        <div className="flex justify-end p-6 bg-background shadow-lg sticky bottom-0 z-10">
           <Button asChild variant="outline" className="mr-2">
             <a href={freshdeskTicketUrl} target="_blank" rel="noopener noreferrer">
               View in Freshdesk
