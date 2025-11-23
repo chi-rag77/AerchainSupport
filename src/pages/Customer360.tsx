@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Users, Loader2, LayoutDashboard, Handshake } from "lucide-react";
+import { Users, Loader2, LayoutDashboard, Handshake, TrendingUp, BarChart3, ShieldCheck } from "lucide-react"; // Added ShieldCheck, TrendingUp, BarChart3
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,8 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CustomerSummaryCards from "@/components/CustomerSummaryCards";
 import CustomerTicketTypeChart from "@/components/CustomerTicketTypeChart";
-import CustomerTicketsTable from "@/components/CustomerTicketsTable";
-import CustomerTimeline from "@/components/CustomerTimeline";
+// Removed: import CustomerTicketsTable from "@/components/CustomerTicketsTable";
+// Removed: import CustomerTimeline from "@/components/CustomerTimeline";
+import CustomerSLAPerformance from "@/components/CustomerSLAPerformance"; // New import
+import CustomerRecurringIssues from "@/components/CustomerRecurringIssues"; // New import
+import CustomerEngagementTrendChart from "@/components/CustomerEngagementTrendChart"; // New import
 import { toast } from 'sonner';
 
 const Customer360 = () => {
@@ -91,7 +94,7 @@ const Customer360 = () => {
             </div>
 
             {/* Customer Selector */}
-            <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-center gap-4 mt-4 px-8"> {/* Added px-8 for consistent padding */}
               <h3 className="text-lg font-semibold text-foreground">Select Customer:</h3>
               <Select value={selectedCustomer || ""} onValueChange={setSelectedCustomer}>
                 <SelectTrigger className="w-[250px]">
@@ -128,10 +131,10 @@ const Customer360 = () => {
                 <CustomerSummaryCards tickets={customerTickets} />
               </section>
 
-              {/* Section 2: Ticket Breakdown & Timeline */}
+              {/* Section 2: Ticket Breakdown & SLA Performance */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  <Handshake className="h-6 w-6 mr-3 text-green-600" /> Interaction & Ticket Insights
+                  <ShieldCheck className="h-6 w-6 mr-3 text-green-600" /> Service Performance & Issue Insights
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card className="h-96">
@@ -142,23 +145,40 @@ const Customer360 = () => {
                       <CustomerTicketTypeChart tickets={customerTickets} />
                     </CardContent>
                   </Card>
-                  <Card className="h-96 overflow-y-auto">
+                  <Card className="h-96">
                     <CardHeader>
-                      <CardTitle className="text-lg font-semibold text-foreground">Customer Interaction Timeline</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-foreground">Customer SLA Performance</CardTitle>
                     </CardHeader>
-                    <CardContent className="h-[calc(100%-60px)]">
-                      <CustomerTimeline tickets={customerTickets} />
+                    <CardContent className="h-[calc(100%-60px)] flex items-center justify-center">
+                      <CustomerSLAPerformance tickets={customerTickets} />
                     </CardContent>
                   </Card>
                 </div>
               </section>
 
-              {/* Section 3: All Customer Tickets */}
+              {/* Section 3: Recurring Issues & Engagement Trend */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  <Users className="h-6 w-6 mr-3 text-purple-600" /> All Tickets for {selectedCustomer}
+                  <TrendingUp className="h-6 w-6 mr-3 text-purple-600" /> Engagement & Recurring Patterns
                 </h2>
-                <CustomerTicketsTable tickets={customerTickets} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="h-96">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold text-foreground">Recurring Issues by Type/Module</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[calc(100%-60px)]">
+                      <CustomerRecurringIssues tickets={customerTickets} />
+                    </CardContent>
+                  </Card>
+                  <Card className="h-96">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold text-foreground">Ticket Creation Trend</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[calc(100%-60px)]">
+                      <CustomerEngagementTrendChart tickets={customerTickets} />
+                    </CardContent>
+                  </Card>
+                </div>
               </section>
             </div>
           )}
