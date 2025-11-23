@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Users, Loader2, LayoutDashboard, Handshake } from "lucide-react";
@@ -32,15 +32,18 @@ const Customer360 = () => {
       return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
     },
     onSuccess: (data) => {
+      console.log("Successfully loaded all tickets:", data.length);
       if (!selectedCustomer && data.length > 0) {
         const firstCustomer = data.find(t => t.cf_company)?.cf_company;
         if (firstCustomer) {
           setSelectedCustomer(firstCustomer);
+          console.log("Automatically selected first customer:", firstCustomer);
         }
       }
       toast.success("Customer 360 data loaded successfully!");
     },
     onError: (err) => {
+      console.error("Failed to load customer data:", err);
       toast.error(`Failed to load customer data: ${err.message}`);
     },
   } as UseQueryOptions<Ticket[], Error>);
@@ -57,8 +60,14 @@ const Customer360 = () => {
 
   const customerTickets = useMemo(() => {
     if (!allTickets || !selectedCustomer) return [];
-    return allTickets.filter(ticket => ticket.cf_company === selectedCustomer);
+    const filtered = allTickets.filter(ticket => ticket.cf_company === selectedCustomer);
+    console.log(`Filtered tickets for '${selectedCustomer}':`, filtered.length);
+    return filtered;
   }, [allTickets, selectedCustomer]);
+
+  useEffect(() => {
+    console.log("Current selectedCustomer state:", selectedCustomer);
+  }, [selectedCustomer]);
 
   if (error) {
     return (
