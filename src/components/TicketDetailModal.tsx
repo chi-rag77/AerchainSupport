@@ -165,40 +165,40 @@ const TicketDetailModal = ({
   const getStatusBadge = (status: string) => {
     const statusLower = status.toLowerCase();
     let icon: React.ElementType = Info;
-    let colorClass = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+    let colorClass = "bg-gray-50 text-gray-700 border border-gray-200 shadow-sm"; // Default soft-neon
 
     switch (statusLower) {
       case 'open (being processed)':
         icon = Hourglass;
-        colorClass = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        colorClass = "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm";
         break;
       case 'pending (awaiting your reply)':
         icon = Clock;
-        colorClass = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+        colorClass = "bg-yellow-50 text-yellow-700 border border-yellow-200 shadow-sm";
         break;
       case 'resolved':
         icon = CheckCircle;
-        colorClass = "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+        colorClass = "bg-green-50 text-green-700 border border-green-200 shadow-sm";
         break;
       case 'closed':
         icon = XCircle;
-        colorClass = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+        colorClass = "bg-gray-50 text-gray-700 border border-gray-200 shadow-sm";
         break;
       case 'escalated':
         icon = AlertCircle;
-        colorClass = "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+        colorClass = "bg-red-50 text-red-700 border border-red-200 shadow-sm"; // Soft red for escalated status
         break;
       case 'waiting on customer':
         icon = Users;
-        colorClass = "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+        colorClass = "bg-purple-50 text-purple-700 border border-purple-200 shadow-sm";
         break;
       case 'on tech':
         icon = Laptop;
-        colorClass = "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+        colorClass = "bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm";
         break;
       case 'on product':
         icon = Shield;
-        colorClass = "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200";
+        colorClass = "bg-pink-50 text-pink-700 border border-pink-200 shadow-sm";
         break;
     }
     const IconComponent = icon;
@@ -213,24 +213,24 @@ const TicketDetailModal = ({
   const getPriorityBadge = (priority: string) => {
     const priorityLower = priority.toLowerCase();
     let icon: React.ElementType = Info;
-    let colorClass = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+    let colorClass = "bg-gray-50 text-gray-700 border border-gray-200 shadow-sm"; // Default soft-neon
 
     switch (priorityLower) {
       case 'urgent':
         icon = AlertCircle;
-        colorClass = "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+        colorClass = "bg-gradient-to-r from-red-400 to-red-300 text-white shadow-md"; // Bold gradient for urgent
         break;
       case 'high':
         icon = AlertCircle;
-        colorClass = "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+        colorClass = "bg-gradient-to-r from-orange-400 to-orange-300 text-white shadow-md"; // Bold gradient for high
         break;
       case 'medium':
         icon = MessageSquare;
-        colorClass = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+        colorClass = "bg-yellow-50 text-yellow-700 border border-yellow-200 shadow-sm"; // Soft yellow for medium
         break;
       case 'low':
         icon = Clock;
-        colorClass = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+        colorClass = "bg-gray-50 text-gray-700 border border-gray-200 shadow-sm"; // Soft gray for low
         break;
     }
     const IconComponent = icon;
@@ -248,39 +248,45 @@ const TicketDetailModal = ({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-0">
         {/* Ticket Header Capsule */}
-        <SheetHeader className="p-6 pb-4 bg-gradient-to-br from-blue-200 to-purple-300 shadow-md sticky top-0 z-10">
-          <SheetTitle className="text-3xl font-extrabold leading-tight text-foreground">
-            {ticket.subject}
-          </SheetTitle>
-          <SheetDescription className="flex flex-col gap-2 text-sm text-white">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 font-medium">
-                <Tag className="h-4 w-4" /> ID: {ticket.id}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:text-white hover:bg-blue-600/30" onClick={() => copyToClipboard(ticket.id)}>
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Copy Ticket ID</TooltipContent>
-                </Tooltip>
-              </span>
-              {ticket.assignee && ticket.assignee !== "Unassigned" && (
-                <span className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6 border border-blue-200">
-                    <AvatarFallback className="text-xs bg-blue-700 text-white">
-                      {ticket.assignee.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{ticket.assignee}</span>
+        <SheetHeader className="p-6 pb-4 bg-gradient-to-r from-[#8EC5FC] to-[#E0C3FC] backdrop-blur-md bg-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.05)] sticky top-0 z-10">
+          <div className="mb-4"> {/* Added mb-4 for spacing under title block */}
+            <SheetTitle className="text-3xl font-extrabold leading-tight text-foreground">
+              {ticket.subject}
+            </SheetTitle>
+            <SheetDescription className="flex flex-col gap-2 text-sm text-gray-700 dark:text-gray-200">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 font-medium">
+                  <Tag className="h-4 w-4 text-gray-600 dark:text-gray-300" /> ID: {ticket.id}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-600 dark:text-gray-300 hover:text-foreground hover:bg-white/10" onClick={() => copyToClipboard(ticket.id)}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Copy Ticket ID</TooltipContent>
+                  </Tooltip>
                 </span>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {getStatusBadge(ticket.status)}
-              {getPriorityBadge(ticket.priority)}
-            </div>
-          </SheetDescription>
+                {ticket.assignee && ticket.assignee !== "Unassigned" && (
+                  <>
+                    <span className="text-gray-400 dark:text-gray-500">•</span>
+                    <span className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6 border border-gray-300 dark:border-gray-600">
+                        <AvatarFallback className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                          {ticket.assignee.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium text-gray-700 dark:text-gray-200">{ticket.assignee}</span>
+                    </span>
+                  </>
+                )}
+              </div>
+            </SheetDescription>
+          </div>
+          {/* Dedicated row for chips */}
+          <div className="flex flex-wrap items-center gap-2">
+            {getStatusBadge(ticket.status)}
+            {getPriorityBadge(ticket.priority)}
+          </div>
         </SheetHeader>
 
         {/* Main Content Area - Scrollable */}
