@@ -67,3 +67,11 @@ export type Insight = {
   customerName?: string;
   ticketCount?: number;
 };
+
+export type TicketTimelineEvent = {
+  id: string;
+  type: 'created' | 'message' | 'assigned' | 'priority_changed' | 'status_changed';
+  timestamp: string;
+  description: string;
+  icon?: React.ElementType;
+};
