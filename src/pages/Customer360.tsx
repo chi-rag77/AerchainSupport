@@ -10,10 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import CustomerSummaryCards from "@/components/CustomerSummaryCards";
+import CustomerHeaderCard from "@/components/CustomerHeaderCard"; // New import
+// Removed: import CustomerSummaryCards from "@/components/CustomerSummaryCards";
 import CustomerTicketTypeChart from "@/components/CustomerTicketTypeChart";
-// Removed: import CustomerSLAPerformance from "@/components/CustomerSLAPerformance"; // Removed old component
-import CustomerHealthScore from "@/components/CustomerHealthScore"; // New import
+import CustomerHealthScore from "@/components/CustomerHealthScore";
 import CustomerRecurringIssues from "@/components/CustomerRecurringIssues";
 import CustomerEngagementTrendChart from "@/components/CustomerEngagementTrendChart";
 import CustomerCleanlinessScore from "@/components/CustomerCleanlinessScore";
@@ -126,12 +126,12 @@ const Customer360 = () => {
             </div>
           ) : (
             <div className="p-8 space-y-8">
-              {/* Section 1: Customer Summary */}
+              {/* Section 1: Customer Header Card (Executive Summary) */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  <LayoutDashboard className="h-6 w-6 mr-3 text-blue-600" /> Customer Summary
+                  <LayoutDashboard className="h-6 w-6 mr-3 text-blue-600" /> Executive Summary
                 </h2>
-                <CustomerSummaryCards tickets={customerTickets} />
+                <CustomerHeaderCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
               {/* Section 2: Service Performance & Issue Insights */}
@@ -148,7 +148,7 @@ const Customer360 = () => {
                       <CustomerTicketTypeChart tickets={customerTickets} />
                     </CardContent>
                   </Card>
-                  {/* Replaced CustomerSLAPerformance with CustomerHealthScore */}
+                  {/* Customer Health Score */}
                   <CustomerHealthScore tickets={customerTickets} customerName={selectedCustomer || "N/A"} />
                 </div>
               </section>
