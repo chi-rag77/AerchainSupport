@@ -28,7 +28,7 @@ const TopNavigation = () => {
     { icon: Home, label: "Home", path: "/" },
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: BarChart2, label: "Insights", path: "/analytics" },
-    // Customer 360 item removed
+    { icon: Users, label: "Customer 360", path: "/customer360" }, // Re-added Customer 360 item
   ];
 
   return (
