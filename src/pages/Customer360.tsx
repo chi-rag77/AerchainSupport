@@ -12,13 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CustomerSummaryCards from "@/components/CustomerSummaryCards";
 import CustomerTicketTypeChart from "@/components/CustomerTicketTypeChart";
-import CustomerSLAPerformance from "@/components/CustomerSLAPerformance";
+// Removed: import CustomerSLAPerformance from "@/components/CustomerSLAPerformance"; // Removed old component
+import CustomerHealthScore from "@/components/CustomerHealthScore"; // New import
 import CustomerRecurringIssues from "@/components/CustomerRecurringIssues";
 import CustomerEngagementTrendChart from "@/components/CustomerEngagementTrendChart";
-import CustomerCleanlinessScore from "@/components/CustomerCleanlinessScore"; // New import
-import CustomerResolutionOutcomePatterns from "@/components/CustomerResolutionOutcomePatterns"; // New import
-import CustomerRoutineCalendar from "@/components/CustomerRoutineCalendar"; // New import
-import CustomerKnowledgeGaps from "@/components/CustomerKnowledgeGaps"; // New import
+import CustomerCleanlinessScore from "@/components/CustomerCleanlinessScore";
+import CustomerResolutionOutcomePatterns from "@/components/CustomerResolutionOutcomePatterns";
+import CustomerRoutineCalendar from "@/components/CustomerRoutineCalendar";
+import CustomerKnowledgeGaps from "@/components/CustomerKnowledgeGaps";
 import { toast } from 'sonner';
 
 const Customer360 = () => {
@@ -147,14 +148,8 @@ const Customer360 = () => {
                       <CustomerTicketTypeChart tickets={customerTickets} />
                     </CardContent>
                   </Card>
-                  <Card className="h-96">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold text-foreground">Customer SLA Performance</CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[calc(100%-60px)] flex items-center justify-center">
-                      <CustomerSLAPerformance tickets={customerTickets} />
-                    </CardContent>
-                  </Card>
+                  {/* Replaced CustomerSLAPerformance with CustomerHealthScore */}
+                  <CustomerHealthScore tickets={customerTickets} customerName={selectedCustomer || "N/A"} />
                 </div>
               </section>
 
