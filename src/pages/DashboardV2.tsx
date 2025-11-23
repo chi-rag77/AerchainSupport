@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
+import Sidebar from "@/components/Sidebar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,10 +54,15 @@ const DashboardV2 = () => {
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
+  const [showSidebar, setShowSidebar] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedCustomerFilter, setSelectedCustomerFilter] = useState<string>("All");
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
   const [topNCustomers, setTopNCustomers] = useState<number | 'all'>(5); // New state for Top N Customers filter
+
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
+  };
 
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
   const dateRangeDisplay = selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Today";
@@ -197,195 +204,202 @@ const DashboardV2 = () => {
   const rawTicketsForCharts = processedSummaryData?.rawTickets || [];
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col">
-        {/* Title Bar */}
-        <div className="p-8 pb-6 border-b border-gray-200 dark:border-gray-700 shadow-sm"> {/* Increased padding */}
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex flex-col items-start">
-              <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2">
-                Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
-              </p>
-              <div className="flex items-center space-x-4">
-                <LayoutDashboard className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Ticket Analytics Dashboard</h1> {/* Updated Title */}
+    <TooltipProvider>
+      <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
+        <Sidebar showSidebar={showSidebar} toggleSidebar={toggleSidebar} />
+        <div className="flex-1 flex flex-col p-6 overflow-y-auto"> {/* Increased overall padding */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col">
+            {/* Title Bar */}
+            <div className="p-8 pb-6 border-b border-gray-200 dark:border-gray-700 shadow-sm"> {/* Increased padding */}
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col items-start">
+                  <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2">
+                    Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
+                  </p>
+                  <div className="flex items-center space-x-4">
+                    <LayoutDashboard className="h-8 w-8 text-primary" />
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Ticket Analytics Dashboard</h1> {/* Updated Title */}
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    Data for: <span className="font-semibold">{dateRangeDisplay}</span>
+                  </p>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <ThemeToggle />
+                </div>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                Data for: <span className="font-semibold">{dateRangeDisplay}</span>
-              </p>
-            </div>
-            {/* ThemeToggle is now in Navbar */}
-          </div>
 
-          <div className="flex flex-wrap gap-4 items-center mt-4"> {/* Increased gap */}
-            {/* Date Picker */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className="w-[200px] justify-start text-left font-normal"
-                >
-                  <CalendarDays className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+              <div className="flex flex-wrap gap-4 items-center mt-4"> {/* Increased gap */}
+                {/* Date Picker */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className="w-[200px] justify-start text-left font-normal"
+                    >
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
 
-            {/* Customer Filter */}
-            <Select value={selectedCustomerFilter} onValueChange={setSelectedCustomerFilter}>
-              <SelectTrigger className="w-[200px]">
-                <Users className="h-4 w-4 mr-2 text-gray-500" />
-                <SelectValue placeholder="All Customers" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueCompanies.map(company => (
-                  <SelectItem key={company} value={company}>
-                    {company === "All" ? "All Customers" : company}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Top N Customers Filter */}
-            <Select value={String(topNCustomers)} onValueChange={(value) => setTopNCustomers(value === 'all' ? 'all' : Number(value))}>
-              <SelectTrigger className="w-[150px]">
-                <Filter className="h-4 w-4 mr-2 text-gray-500" />
-                <SelectValue placeholder="Top N Customers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Customers</SelectItem>
-                <SelectItem value="5">Top 5</SelectItem>
-                <SelectItem value="10">Top 10</SelectItem>
-                <SelectItem value="20">Top 20</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Export Button */}
-            <Button onClick={handleExportSummary} className="flex items-center gap-1">
-              <Download className="h-4 w-4" /> Export Summary (CSV)
-            </Button>
-          </div>
-        </div>
-
-        {isLoadingAllTickets ? (
-          <div className="flex flex-col items-center justify-center flex-grow p-8 text-gray-500 dark:text-gray-400"> {/* Increased padding */}
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="text-lg font-medium">Loading daily dashboard data...</p>
-          </div>
-        ) : (
-          <>
-            {/* KPI Cards Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 p-8 pb-6 border-b border-gray-200 dark:border-gray-700"> {/* Increased padding and gap */}
-              <DashboardMetricCard
-                title="Total Tickets Today"
-                value={processedSummaryData?.totalTicketsToday || 0}
-                icon={TicketIcon}
-                description={`Total tickets created on ${formattedDate}`}
-              />
-              <DashboardMetricCard
-                title="Resolved Today"
-                value={processedSummaryData?.resolvedToday || 0}
-                icon={CheckCircle}
-                description={`Tickets resolved or closed on ${formattedDate}`}
-              />
-              <DashboardMetricCard
-                title="Open Tickets"
-                value={processedSummaryData?.openCount || 0}
-                icon={Hourglass}
-                description="Tickets currently in 'Open' status"
-              />
-              <DashboardMetricCard
-                title="Pending on Tech"
-                value={processedSummaryData?.pendingOnTech || 0}
-                icon={Clock}
-                description="Tickets currently 'On Tech' status"
-              />
-              <DashboardMetricCard
-                title="Bugs Today"
-                value={processedSummaryData?.typeBreakdown?.Bug || 0}
-                icon={Bug}
-                description={`Bugs created on ${formattedDate}`}
-              />
-              <DashboardMetricCard
-                title="Tasks Today"
-                value={processedSummaryData?.typeBreakdown?.Task || 0}
-                icon={ShieldAlert}
-                description={`Tasks created on ${formattedDate}`}
-              />
-            </div>
-
-            {/* Customer Breakdown Table */}
-            <div className="p-8 pb-6 border-b border-gray-200 dark:border-gray-700"> {/* Increased padding */}
-              <h3 className="text-lg font-semibold mb-4 text-foreground">Customer Breakdown for {formattedDate}</h3>
-              {/* <CustomerBreakdownTable data={processedSummaryData?.customerBreakdown || []} /> */}
-            </div>
-
-            {/* Charts & Visuals Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-8"> {/* Increased padding and gap */}
-              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Assignee Load</h3>
-                <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
-                  <SelectTrigger className="w-[120px] h-8">
-                    <SelectValue placeholder="Display Mode" />
+                {/* Customer Filter */}
+                <Select value={selectedCustomerFilter} onValueChange={setSelectedCustomerFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <Users className="h-4 w-4 mr-2 text-gray-500" />
+                    <SelectValue placeholder="All Customers" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="count">Count</SelectItem>
-                    <SelectItem value="percentage">Percentage</SelectItem>
+                    {uniqueCompanies.map(company => (
+                      <SelectItem key={company} value={company}>
+                        {company === "All" ? "All Customers" : company}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <AssigneeLoadChart tickets={rawTicketsForCharts} displayMode={assigneeChartMode} />
-              </div>
 
-              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                <div className="flex justify-between items-center w-full mb-2">
-                  <h3 className="text-lg font-semibold text-foreground">Priority Distribution</h3>
-                  <Select onValueChange={() => {}}>
-                    <SelectTrigger className="w-[150px] h-8">
-                      <SelectValue placeholder="Date Range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Aug 25-Sept 25">Aug 25-Sept 25</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <PriorityDistributionChart tickets={rawTicketsForCharts} />
-              </div>
+                {/* Top N Customers Filter */}
+                <Select value={String(topNCustomers)} onValueChange={(value) => setTopNCustomers(value === 'all' ? 'all' : Number(value))}>
+                  <SelectTrigger className="w-[150px]">
+                    <Filter className="h-4 w-4 mr-2 text-gray-500" />
+                    <SelectValue placeholder="Top N Customers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Customers</SelectItem>
+                    <SelectItem value="5">Top 5</SelectItem>
+                    <SelectItem value="10">Top 10</SelectItem>
+                    <SelectItem value="20">Top 20</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3>
-                <TicketsOverTimeChart tickets={rawTicketsForCharts} dateRange="last30days" />
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                <div className="flex justify-between items-center w-full mb-2">
-                  <h3 className="text-lg font-semibold text-foreground w-full text-center">Ticket Type by Customer</h3>
-                  <Select value={selectedCustomerFilter} onValueChange={setSelectedCustomerFilter}>
-                    <SelectTrigger className="w-[180px] h-8">
-                      <SelectValue placeholder="All Customers" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {uniqueCompanies.map(company => (
-                        <SelectItem key={company} value={company}>
-                          {company === "All" ? "All Customers" : company}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <TicketTypeByCustomerChart tickets={rawTicketsForCharts} selectedCustomer={selectedCustomerFilter} topNCustomers={topNCustomers} />
+                {/* Export Button */}
+                <Button onClick={handleExportSummary} className="flex items-center gap-1">
+                  <Download className="h-4 w-4" /> Export Summary (CSV)
+                </Button>
               </div>
             </div>
-          </>
-        )}
+
+            {isLoadingAllTickets ? (
+              <div className="flex flex-col items-center justify-center flex-grow p-8 text-gray-500 dark:text-gray-400"> {/* Increased padding */}
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <p className="text-lg font-medium">Loading daily dashboard data...</p>
+              </div>
+            ) : (
+              <>
+                {/* KPI Cards Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 p-8 pb-6 border-b border-gray-200 dark:border-gray-700"> {/* Increased padding and gap */}
+                  <DashboardMetricCard
+                    title="Total Tickets Today"
+                    value={processedSummaryData?.totalTicketsToday || 0}
+                    icon={TicketIcon}
+                    description={`Total tickets created on ${formattedDate}`}
+                  />
+                  <DashboardMetricCard
+                    title="Resolved Today"
+                    value={processedSummaryData?.resolvedToday || 0}
+                    icon={CheckCircle}
+                    description={`Tickets resolved or closed on ${formattedDate}`}
+                  />
+                  <DashboardMetricCard
+                    title="Open Tickets"
+                    value={processedSummaryData?.openCount || 0}
+                    icon={Hourglass}
+                    description="Tickets currently in 'Open' status"
+                  />
+                  <DashboardMetricCard
+                    title="Pending on Tech"
+                    value={processedSummaryData?.pendingOnTech || 0}
+                    icon={Clock}
+                    description="Tickets currently 'On Tech' status"
+                  />
+                  <DashboardMetricCard
+                    title="Bugs Today"
+                    value={processedSummaryData?.typeBreakdown?.Bug || 0}
+                    icon={Bug}
+                    description={`Bugs created on ${formattedDate}`}
+                  />
+                  <DashboardMetricCard
+                    title="Tasks Today"
+                    value={processedSummaryData?.typeBreakdown?.Task || 0}
+                    icon={ShieldAlert}
+                    description={`Tasks created on ${formattedDate}`}
+                  />
+                </div>
+
+                {/* Customer Breakdown Table */}
+                <div className="p-8 pb-6 border-b border-gray-200 dark:border-gray-700"> {/* Increased padding */}
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">Customer Breakdown for {formattedDate}</h3>
+                  {/* <CustomerBreakdownTable data={processedSummaryData?.customerBreakdown || []} /> */}
+                </div>
+
+                {/* Charts & Visuals Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-8"> {/* Increased padding and gap */}
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Assignee Load</h3>
+                    <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
+                      <SelectTrigger className="w-[120px] h-8">
+                        <SelectValue placeholder="Display Mode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="count">Count</SelectItem>
+                        <SelectItem value="percentage">Percentage</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <AssigneeLoadChart tickets={rawTicketsForCharts} displayMode={assigneeChartMode} />
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <div className="flex justify-between items-center w-full mb-2">
+                      <h3 className="text-lg font-semibold text-foreground">Priority Distribution</h3>
+                      <Select onValueChange={() => {}}>
+                        <SelectTrigger className="w-[150px] h-8">
+                          <SelectValue placeholder="Date Range" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Aug 25-Sept 25">Aug 25-Sept 25</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <PriorityDistributionChart tickets={rawTicketsForCharts} />
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3>
+                    <TicketsOverTimeChart tickets={rawTicketsForCharts} dateRange="last30days" />
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
+                    <div className="flex justify-between items-center w-full mb-2">
+                      <h3 className="text-lg font-semibold text-foreground w-full text-center">Ticket Type by Customer</h3>
+                      <Select value={selectedCustomerFilter} onValueChange={setSelectedCustomerFilter}>
+                        <SelectTrigger className="w-[180px] h-8">
+                          <SelectValue placeholder="All Customers" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {uniqueCompanies.map(company => (
+                            <SelectItem key={company} value={company}>
+                              {company === "All" ? "All Customers" : company}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <TicketTypeByCustomerChart tickets={rawTicketsForCharts} selectedCustomer={selectedCustomerFilter} topNCustomers={topNCustomers} />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 
