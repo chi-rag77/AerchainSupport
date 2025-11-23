@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { cn } from '@/lib/utils';
-import { TicketIcon, Clock, CheckCircle, AlertCircle, Hourglass, Users, Tag, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { TicketIcon, Clock, CheckCircle, AlertCircle, Hourglass, Users, Tag, ArrowUpRight, ArrowDownRight, TrendingUp } from 'lucide-react';
 import { differenceInDays, parseISO, subDays, isPast } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,7 @@ const CustomerOverviewCard = ({ customerName, tickets }: CustomerOverviewCardPro
     const prev30DaysStart = subDays(now, 60); // For trend calculation
 
     const ticketsLast30 = tickets.filter(t => parseISO(t.created_at) >= last30DaysStart);
-    const ticketsLast90 = tickets.filter(t => parseISO(t.created_at) >= last90DaysStart);
+    const ticketsLast90 = tickets.filter(t => parseISO(t.created.at) >= last90DaysStart);
     const ticketsPrev30 = tickets.filter(t => parseISO(t.created_at) >= prev30DaysStart && parseISO(t.created_at) < last30DaysStart);
 
     let ticketVolumeTrend = 0;
