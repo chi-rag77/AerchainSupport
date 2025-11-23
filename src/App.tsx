@@ -3,16 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index"; // This is now the Dashboard
-import TicketsPage from "./pages/TicketsPage"; // The old Index is now TicketsPage
-import DashboardV2 from "./pages/DashboardV2"; // New DashboardV2 page
-import Analytics from "./pages/Analytics"; // Import the new Analytics page
+import Index from "./pages/Index";
+import TicketsPage from "./pages/TicketsPage";
+import DashboardV2 from "./pages/DashboardV2";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import { SupabaseProvider } from "./components/SupabaseProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./hooks/use-theme";
+import TopNavigation from "./components/TopNavigation"; // Import the new TopNavigation
 
 const queryClient = new QueryClient();
 
@@ -24,16 +25,20 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <SupabaseProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} /> {/* New Dashboard as root */}
-              <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} /> {/* Dedicated Tickets page */}
-              <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2 /></ProtectedRoute>} /> {/* New DashboardV2 route */}
-              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} /> {/* New Analytics route */}
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <div className="flex flex-col min-h-screen"> {/* Added flex-col and min-h-screen for layout */}
+              <TopNavigation /> {/* Render the TopNavigation component */}
+              <main className="flex-grow"> {/* Main content area */}
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                  <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
+                  <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2 /></ProtectedRoute>} />
+                  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
           </SupabaseProvider>
         </BrowserRouter>
       </TooltipProvider>
