@@ -1,28 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Sheet,
-  SheetContent,
+  Sheet, // Changed from Dialog
+  SheetContent, // Changed from DialogContent
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet";
+} from "@/components/ui/sheet"; // Changed from dialog
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/integrations/supabase/client';
-import { Ticket, TicketMessage, TicketTimelineEvent } from '@/types';
+import { Ticket, TicketMessage } from '@/types';
 import { format } from 'date-fns';
-import { Loader2, AlertCircle, Clock, MessageSquare, UserPlus, Tag } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-
-// Import new sub-components
-import TicketHeader from './TicketHeader';
-import TicketMetadataCards from './TicketMetadataCards';
-import TicketTimeline from './TicketTimeline';
-import ConversationBubble from './ConversationBubble';
-import TicketActionBar from './TicketActionBar';
 
 interface TicketDetailModalProps {
   isOpen: boolean;
@@ -154,90 +147,37 @@ const TicketDetailModal = ({
     }
   }, [isOpen, ticket?.id]); // Re-run effect when modal opens or ticket changes
 
-  const timelineEvents: TicketTimelineEvent[] = useMemo(() => {
-    if (!ticket) return [];
-
-    const events: TicketTimelineEvent[] = [];
-
-    // Ticket Created event
-    events.push({
-      id: `created-${ticket.id}`,
-      type: 'created',
-      timestamp: ticket.created_at,
-      description: 'Ticket created',
-      icon: Clock,
-    });
-
-    // First message event
-    if (conversationMessages.length > 0) {
-      const firstMessage = conversationMessages[0];
-      events.push({
-        id: `first-message-${firstMessage.id}`,
-        type: 'message',
-        timestamp: firstMessage.created_at,
-        description: `First message from ${firstMessage.sender}`,
-        icon: MessageSquare,
-      });
-    }
-
-    // Assigned event (simplified: if assignee exists and is not 'Unassigned')
-    if (ticket.assignee && ticket.assignee !== 'Unassigned') {
-      // This assumes assignment happens around creation or first update.
-      // For a more accurate timeline, historical assignment data would be needed.
-      events.push({
-        id: `assigned-${ticket.id}`,
-        type: 'assigned',
-        timestamp: ticket.updated_at, // Using updated_at as a proxy for assignment time
-        description: `Assigned to ${ticket.assignee}`,
-        icon: UserPlus,
-      });
-    }
-
-    // Priority changed event (simplified: if priority is High/Urgent, assume it was set)
-    if (ticket.priority === 'High' || ticket.priority === 'Urgent') {
-      events.push({
-        id: `priority-${ticket.id}`,
-        type: 'priority_changed',
-        timestamp: ticket.updated_at, // Using updated_at as a proxy
-        description: `Priority set to ${ticket.priority}`,
-        icon: AlertCircle,
-      });
-    }
-
-    // Sort events by timestamp
-    return events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  }, [ticket, conversationMessages]);
-
-
   if (!ticket) return null;
 
   const freshdeskTicketUrl = `http://aerchain.freshdesk.com/a/tickets/${ticket.id}`;
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent
-        side="right"
-        className={cn(
-          "w-full sm:max-w-[520px] flex flex-col",
-          "backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 border border-gray-200/50 dark:border-gray-700/50 shadow-2xl rounded-l-3xl"
-        )}
-      >
-        {/* Header Block */}
-        <TicketHeader ticket={ticket} />
+    <Sheet open={isOpen} onOpenChange={onClose}> {/* Changed from Dialog */}
+      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col"> {/* Changed from DialogContent, added side and flex-col */}
+        <SheetHeader>
+          <SheetTitle className="text-2xl font-bold">{ticket.subject}</SheetTitle>
+          <SheetDescription className="text-sm text-gray-500 dark:text-gray-400">
+            Ticket ID: {ticket.id} | Status: {ticket.status} | Priority: {ticket.priority}
+          </SheetDescription>
+        </SheetHeader>
 
-        {/* Metadata Cards */}
-        <TicketMetadataCards ticket={ticket} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm my-4"> {/* Adjusted margin */}
+          <div>
+            <p><span className="font-semibold">Requester:</span> {ticket.requester_email}</p>
+            {ticket.customer && <p><span className="font-semibold">Customer:</span> {ticket.customer}</p>}
+            {ticket.type && <p><span className="font-semibold">Type:</span> {ticket.type}</p>}
+          </div>
+          <div>
+            <p><span className="font-semibold">Created:</span> {format(new Date(ticket.created_at), 'MMM dd, yyyy HH:mm')}</p>
+            <p><span className="font-semibold">Last Updated:</span> {format(new Date(ticket.updated_at), 'MMM dd, yyyy HH:mm')}</p>
+            {ticket.due_by && <p><span className="font-semibold">Due By:</span> {format(new Date(ticket.due_by), 'MMM dd, yyyy HH:mm')}</p>}
+          </div>
+        </div>
 
-        <Separator className="mx-6 w-auto" />
+        <Separator />
 
-        {/* Timeline View */}
-        <TicketTimeline events={timelineEvents} />
-
-        <Separator className="mx-6 w-auto" />
-
-        {/* Conversation Area */}
-        <div className="flex-grow overflow-y-auto p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Conversation</h3>
+        <div className="flex-grow overflow-y-auto py-4 space-y-4"> {/* Added flex-grow and overflow-y-auto */}
+          <h3 className="text-lg font-semibold mb-2">Conversation History</h3>
           {isLoadingMessages ? (
             <div className="flex items-center justify-center h-24 text-gray-500 dark:text-gray-400">
               <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading messages...
@@ -252,11 +192,16 @@ const TicketDetailModal = ({
           ) : conversationMessages.length > 0 ? (
             <div className="space-y-4">
               {conversationMessages.map((message) => (
-                <ConversationBubble
-                  key={message.id}
-                  message={message}
-                  requesterEmail={ticket.requester_email}
-                />
+                <div key={message.id} className={cn(
+                  "p-3 rounded-lg shadow-sm max-w-[80%]",
+                  message.is_agent ? "bg-blue-50 dark:bg-blue-950 ml-auto text-right" : "bg-gray-50 dark:bg-gray-700 mr-auto text-left"
+                )}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-semibold text-sm">{message.sender}</span>
+                    <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                  </div>
+                  <div dangerouslySetInnerHTML={{ __html: message.body_html || '' }} className="text-sm text-foreground" />
+                </div>
               ))}
             </div>
           ) : (
@@ -264,8 +209,16 @@ const TicketDetailModal = ({
           )}
         </div>
 
-        {/* Bottom Action Bar */}
-        <TicketActionBar onClose={onClose} freshdeskTicketUrl={freshdeskTicketUrl} />
+        <Separator />
+
+        <div className="flex justify-end pt-4">
+          <Button asChild variant="outline" className="mr-2">
+            <a href={freshdeskTicketUrl} target="_blank" rel="noopener noreferrer">
+              View in Freshdesk
+            </a>
+          </Button>
+          <Button onClick={onClose}>Close</Button>
+        </div>
       </SheetContent>
     </Sheet>
   );
