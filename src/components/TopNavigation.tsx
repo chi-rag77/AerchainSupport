@@ -12,6 +12,7 @@ import { ThemeToggle } from './ThemeToggle';
 import Logo from './Logo';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
+import NavPill from './NavPill'; // Import the new NavPill component
 
 const TopNavigation = () => {
   const { session } = useSupabase();
@@ -42,28 +43,8 @@ const TopNavigation = () => {
           </Link>
         </div>
 
-        {/* Middle Section: Navigation Links */}
-        <div className="flex items-center space-x-2 rounded-full bg-white/80 backdrop-blur-xl border border-gray-200 dark:bg-gray-800/80 dark:border-gray-700 p-1"> {/* Increased opacity and blur */}
-          {navItems.map((item) => (
-            <Button
-              key={item.path}
-              variant={location.pathname === item.path ? "default" : "ghost"}
-              size="sm"
-              className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                location.pathname === item.path
-                  ? "bg-blue-700 text-white shadow-sm hover:bg-blue-800"
-                  : "text-muted-foreground hover:bg-transparent hover:text-foreground"
-              )}
-              asChild
-            >
-              <Link to={item.path}>
-                <item.icon className="h-4 w-4 mr-2" />
-                {item.label}
-              </Link>
-            </Button>
-          ))}
-        </div>
+        {/* Middle Section: Navigation Links (using NavPill) */}
+        <NavPill items={navItems} activePath={location.pathname} />
 
         {/* Right Section: Notifications and User Profile */}
         <div className="flex items-center space-x-4">

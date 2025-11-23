@@ -63,7 +63,9 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         // Added for alternate row coloring in dark mode
-        "gray-750": "hsl(217.2 25% 15%)", 
+        "gray-750": "hsl(217.2 25% 15%)",
+        // Custom color for glass effect
+        'glass-blue-100': 'rgba(99,102,241,0.06)',
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -96,6 +98,15 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-slow": "pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+      },
+      // Custom box shadows for glass effect
+      boxShadow: {
+        'glass': '0 6px 20px rgba(7,12,25,0.06)',
+        'glass-glow': '0 8px 30px rgba(99,102,241,0.08)'
+      },
+      // Custom background image for noise texture
+      backgroundImage: {
+        'noise': "url('/a7087093-d4e0-4854-8db6-d6c44cb24e88.png')",
       },
     },
   },
