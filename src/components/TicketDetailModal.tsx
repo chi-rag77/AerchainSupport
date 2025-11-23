@@ -248,17 +248,17 @@ const TicketDetailModal = ({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-0">
         {/* Ticket Header Capsule */}
-        <SheetHeader className="p-6 pb-4 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-md sticky top-0 z-10">
-          <SheetTitle className="text-3xl font-extrabold leading-tight">
+        <SheetHeader className="p-6 pb-4 bg-gradient-to-br from-blue-200 to-purple-300 shadow-md sticky top-0 z-10">
+          <SheetTitle className="text-3xl font-extrabold leading-tight text-foreground">
             {ticket.subject}
           </SheetTitle>
-          <SheetDescription className="flex flex-col gap-2 text-sm text-blue-100 dark:text-blue-200">
+          <SheetDescription className="flex flex-col gap-2 text-sm text-white">
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1 font-medium">
                 <Tag className="h-4 w-4" /> ID: {ticket.id}
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-100 hover:text-white hover:bg-blue-600/30" onClick={() => copyToClipboard(ticket.id)}>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:text-white hover:bg-blue-600/30" onClick={() => copyToClipboard(ticket.id)}>
                       <Copy className="h-3 w-3" />
                     </Button>
                   </TooltipTrigger>
