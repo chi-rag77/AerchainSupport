@@ -2,20 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Sheet, // Changed from Dialog
+  SheetContent, // Changed from DialogContent
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"; // Changed from dialog
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { supabase } from '@/integrations/supabase/client'; // Import supabase client
-import { Ticket, TicketMessage } from '@/types'; // Import TicketMessage type
-import { format } from 'date-fns'; // Import format for date formatting
-import { Loader2, AlertCircle } from 'lucide-react'; // Import Loader2 icon for loading state, AlertCircle for error
-import { cn } from '@/lib/utils'; // Import cn for conditional class names
-import { toast } from 'sonner'; // Import toast for user notifications
+import { supabase } from '@/integrations/supabase/client';
+import { Ticket, TicketMessage } from '@/types';
+import { format } from 'date-fns';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface TicketDetailModalProps {
   isOpen: boolean;
@@ -152,16 +152,16 @@ const TicketDetailModal = ({
   const freshdeskTicketUrl = `http://aerchain.freshdesk.com/a/tickets/${ticket.id}`;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">{ticket.subject}</DialogTitle>
-          <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
+    <Sheet open={isOpen} onOpenChange={onClose}> {/* Changed from Dialog */}
+      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col"> {/* Changed from DialogContent, added side and flex-col */}
+        <SheetHeader>
+          <SheetTitle className="text-2xl font-bold">{ticket.subject}</SheetTitle>
+          <SheetDescription className="text-sm text-gray-500 dark:text-gray-400">
             Ticket ID: {ticket.id} | Status: {ticket.status} | Priority: {ticket.priority}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm my-4"> {/* Adjusted margin */}
           <div>
             <p><span className="font-semibold">Requester:</span> {ticket.requester_email}</p>
             {ticket.customer && <p><span className="font-semibold">Customer:</span> {ticket.customer}</p>}
@@ -176,7 +176,7 @@ const TicketDetailModal = ({
 
         <Separator />
 
-        <div className="flex-grow overflow-y-auto p-4 space-y-4">
+        <div className="flex-grow overflow-y-auto py-4 space-y-4"> {/* Added flex-grow and overflow-y-auto */}
           <h3 className="text-lg font-semibold mb-2">Conversation History</h3>
           {isLoadingMessages ? (
             <div className="flex items-center justify-center h-24 text-gray-500 dark:text-gray-400">
@@ -211,7 +211,7 @@ const TicketDetailModal = ({
 
         <Separator />
 
-        <div className="flex justify-end p-4">
+        <div className="flex justify-end pt-4">
           <Button asChild variant="outline" className="mr-2">
             <a href={freshdeskTicketUrl} target="_blank" rel="noopener noreferrer">
               View in Freshdesk
@@ -219,8 +219,8 @@ const TicketDetailModal = ({
           </Button>
           <Button onClick={onClose}>Close</Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 
