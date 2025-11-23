@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Home, Layers, BarChart2 } from "lucide-react";
+import { Home, Layers, BarChart2, Users } from "lucide-react"; // Import Users icon
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom"; // Import Link for navigation
 

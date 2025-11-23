@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import TicketsPage from "./pages/TicketsPage";
 import DashboardV2 from "./pages/DashboardV2";
 import Analytics from "./pages/Analytics";
+import Customer360 from "./pages/Customer360"; // Import the new Customer360 page
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -35,6 +36,7 @@ const App = () => (
                   <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
                   <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2 /></ProtectedRoute>} />
                   <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                  <Route path="/customer360" element={<ProtectedRoute><Customer360 /></ProtectedRoute>} /> {/* New Customer 360 route */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
