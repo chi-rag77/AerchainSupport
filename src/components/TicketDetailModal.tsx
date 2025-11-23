@@ -248,7 +248,7 @@ const TicketDetailModal = ({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-0">
         {/* Ticket Header Capsule */}
-        <SheetHeader className="p-6 pb-4 bg-sky-100 backdrop-blur-md bg-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.05)] sticky top-0 z-10">
+        <SheetHeader className="p-6 pb-4 bg-sky-100 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.05)] sticky top-0 z-10">
           <div className="mb-4"> {/* Added mb-4 for spacing under title block */}
             <SheetTitle className="text-3xl font-extrabold leading-tight text-foreground">
               {ticket.subject}
