@@ -13,7 +13,7 @@ import Signup from "./pages/Signup";
 import { SupabaseProvider } from "./components/SupabaseProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./hooks/use-theme";
-import TopNavigation from "./components/TopNavigation"; // Import the new TopNavigation
+import DynamicIslandNav from "./components/DynamicIslandNav"; // Import the new DynamicIslandNav
 
 const queryClient = new QueryClient();
 
@@ -25,9 +25,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <SupabaseProvider>
-            <div className="flex flex-col min-h-screen"> {/* Added flex-col and min-h-screen for layout */}
-              <TopNavigation /> {/* Render the TopNavigation component */}
-              <main className="flex-grow"> {/* Main content area */}
+            <div className="flex flex-col min-h-screen">
+              <DynamicIslandNav /> {/* Render the DynamicIslandNav component */}
+              <main className="flex-grow">
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
