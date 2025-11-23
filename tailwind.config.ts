@@ -66,12 +66,6 @@ export default {
         "gray-750": "hsl(217.2 25% 15%)",
         // Custom color for glass effect
         'glass-blue-100': 'rgba(99,102,241,0.06)',
-        // Customer 360° Palette
-        'neon-blue': '#4EE1FF',
-        'electric-purple': '#8A3FFC',
-        'lime-green': '#A7FF3D',
-        'hot-pink': '#FF5CA8',
-        'midnight-glass': 'rgba(11, 16, 32, 0.7)', // Semi-transparent
       },
       borderRadius: {
         lg: "var(--radius)",
