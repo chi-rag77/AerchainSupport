@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Users, Loader2, LayoutDashboard, Handshake, TrendingUp, BarChart3, ShieldCheck } from "lucide-react"; // Added ShieldCheck, TrendingUp, BarChart3
+import { Users, Loader2, LayoutDashboard, Handshake, TrendingUp, BarChart3, ShieldCheck, Sparkles, BookOpen, CalendarDays } from "lucide-react"; // Added new icons
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,11 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CustomerSummaryCards from "@/components/CustomerSummaryCards";
 import CustomerTicketTypeChart from "@/components/CustomerTicketTypeChart";
-// Removed: import CustomerTicketsTable from "@/components/CustomerTicketsTable";
-// Removed: import CustomerTimeline from "@/components/CustomerTimeline";
-import CustomerSLAPerformance from "@/components/CustomerSLAPerformance"; // New import
-import CustomerRecurringIssues from "@/components/CustomerRecurringIssues"; // New import
-import CustomerEngagementTrendChart from "@/components/CustomerEngagementTrendChart"; // New import
+import CustomerSLAPerformance from "@/components/CustomerSLAPerformance";
+import CustomerRecurringIssues from "@/components/CustomerRecurringIssues";
+import CustomerEngagementTrendChart from "@/components/CustomerEngagementTrendChart";
+import CustomerCleanlinessScore from "@/components/CustomerCleanlinessScore"; // New import
+import CustomerResolutionOutcomePatterns from "@/components/CustomerResolutionOutcomePatterns"; // New import
+import CustomerRoutineCalendar from "@/components/CustomerRoutineCalendar"; // New import
+import CustomerKnowledgeGaps from "@/components/CustomerKnowledgeGaps"; // New import
 import { toast } from 'sonner';
 
 const Customer360 = () => {
@@ -94,7 +96,7 @@ const Customer360 = () => {
             </div>
 
             {/* Customer Selector */}
-            <div className="flex items-center gap-4 mt-4 px-8"> {/* Added px-8 for consistent padding */}
+            <div className="flex items-center gap-4 mt-4 px-8">
               <h3 className="text-lg font-semibold text-foreground">Select Customer:</h3>
               <Select value={selectedCustomer || ""} onValueChange={setSelectedCustomer}>
                 <SelectTrigger className="w-[250px]">
@@ -131,7 +133,7 @@ const Customer360 = () => {
                 <CustomerSummaryCards tickets={customerTickets} />
               </section>
 
-              {/* Section 2: Ticket Breakdown & SLA Performance */}
+              {/* Section 2: Service Performance & Issue Insights */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
                   <ShieldCheck className="h-6 w-6 mr-3 text-green-600" /> Service Performance & Issue Insights
@@ -176,6 +178,55 @@ const Customer360 = () => {
                     </CardHeader>
                     <CardContent className="h-[calc(100%-60px)]">
                       <CustomerEngagementTrendChart tickets={customerTickets} />
+                    </CardContent>
+                  </Card>
+                </div>
+              </section>
+
+              {/* Section 4: Unique Operational Insights */}
+              <section>
+                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
+                  <BarChart3 className="h-6 w-6 mr-3 text-orange-600" /> Unique Operational Insights
+                </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <CustomerCleanlinessScore tickets={customerTickets} />
+                  <Card className="h-96">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                        <BookOpen className="h-5 w-5 text-primary" /> Knowledge Gaps Map
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[calc(100%-60px)]">
+                      <CustomerKnowledgeGaps tickets={customerTickets} />
+                    </CardContent>
+                  </Card>
+                  <Card className="h-96">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                        <CalendarDays className="h-5 w-5 text-primary" /> Customer Routine Calendar
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[calc(100%-60px)]">
+                      <CustomerRoutineCalendar tickets={customerTickets} />
+                    </CardContent>
+                  </Card>
+                  <Card className="h-96">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                        <LayoutDashboard className="h-5 w-5 text-primary" /> Resolution Outcome Patterns
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[calc(100%-60px)]">
+                      <CustomerResolutionOutcomePatterns tickets={customerTickets} />
+                    </CardContent>
+                  </Card>
+                  {/* Placeholder for Ops Footprint Scoreboard - Not feasible with current data */}
+                  <Card className="h-96 flex items-center justify-center text-muted-foreground text-center p-4">
+                    <CardContent>
+                      <h3 className="text-lg font-semibold mb-2">Ops Footprint Scoreboard</h3>
+                      <p className="text-sm">
+                        This feature requires historical agent assignment and status change data, which is not available in the current ticket structure.
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
