@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2 } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, BarChart3, TrendingUp, Scale, MessageSquare, RefreshCw } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,7 @@ import { exportToCsv } from '@/utils/export';
 import { toast } from 'sonner';
 import HandWaveIcon from "@/components/HandWaveIcon";
 
-// Import chart components
+// Import chart components (keeping them for now, but they won't be rendered)
 import TicketsOverTimeChart from "@/components/TicketsOverTimeChart";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
@@ -208,184 +208,28 @@ const DashboardV2 = () => {
                 </p>
                 <div className="flex items-center space-x-4">
                   <LayoutDashboard className="h-8 w-8 text-primary" />
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Ticket Analytics Dashboard</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Revamped Dashboard</h1>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  Data for: <span className="font-semibold">{dateRangeDisplay}</span>
+                  This is your new dashboard, ready for a fresh design!
                 </p>
               </div>
               <div className="flex items-center space-x-4">
-                {/* ThemeToggle removed as it's now in TopNavigation */}
+                <Button
+                  onClick={handleExportSummary}
+                  className="flex items-center gap-1"
+                >
+                  <Download className="h-4 w-4" /> Export Summary (CSV)
+                </Button>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4 items-center mt-4">
-              {/* Date Picker */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className="w-[200px] justify-start text-left font-normal"
-                  >
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-
-              {/* Customer Filter */}
-              <Select value={selectedCustomerFilter} onValueChange={setSelectedCustomerFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <Users className="h-4 w-4 mr-2 text-gray-500" />
-                  <SelectValue placeholder="All Customers" />
-                </SelectTrigger>
-                <SelectContent>
-                  {uniqueCompanies.map(company => (
-                    <SelectItem key={company} value={company}>
-                      {company === "All" ? "All Customers" : company}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Top N Customers Filter */}
-              <Select value={String(topNCustomers)} onValueChange={(value) => setTopNCustomers(value === 'all' ? 'all' : Number(value))}>
-                <SelectTrigger className="w-[150px]">
-                  <Filter className="h-4 w-4 mr-2 text-gray-500" />
-                  <SelectValue placeholder="Top N Customers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Customers</SelectItem>
-                  <SelectItem value="5">Top 5</SelectItem>
-                  <SelectItem value="10">Top 10</SelectItem>
-                  <SelectItem value="20">Top 20</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Export Button */}
-              <Button onClick={handleExportSummary} className="flex items-center gap-1">
-                <Download className="h-4 w-4" /> Export Summary (CSV)
-              </Button>
+            {/* Placeholder for new content */}
+            <div className="p-8 text-center text-muted-foreground">
+              <p className="text-xl mb-4">Start building your amazing new dashboard here!</p>
+              <p>You have a clean canvas. Feel free to add new components, charts, and layouts.</p>
             </div>
           </div>
-
-          {isLoadingAllTickets ? (
-            <div className="flex flex-col items-center justify-center flex-grow p-8 text-gray-500 dark:text-gray-400">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-lg font-medium">Loading daily dashboard data...</p>
-            </div>
-          ) : (
-            <>
-              {/* KPI Cards Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 p-8 pb-6 border-b border-gray-200 dark:border-gray-700">
-                <DashboardMetricCard
-                  title="Total Tickets Today"
-                  value={processedSummaryData?.totalTicketsToday || 0}
-                  icon={TicketIcon}
-                  description={`Total tickets created on ${formattedDate}`}
-                />
-                <DashboardMetricCard
-                  title="Resolved Today"
-                  value={processedSummaryData?.resolvedToday || 0}
-                  icon={CheckCircle}
-                  description={`Tickets resolved or closed on ${formattedDate}`}
-                />
-                <DashboardMetricCard
-                  title="Open Tickets"
-                  value={processedSummaryData?.openCount || 0}
-                  icon={Hourglass}
-                  description="Tickets currently in 'Open' status"
-                />
-                <DashboardMetricCard
-                  title="Pending on Tech"
-                  value={processedSummaryData?.pendingOnTech || 0}
-                  icon={Clock}
-                  description="Tickets currently 'On Tech' status"
-                />
-                <DashboardMetricCard
-                  title="Bugs Today"
-                  value={processedSummaryData?.typeBreakdown?.Bug || 0}
-                  icon={Bug}
-                  description={`Bugs created on ${formattedDate}`}
-                />
-                <DashboardMetricCard
-                  title="Tasks Today"
-                  value={processedSummaryData?.typeBreakdown?.Task || 0}
-                  icon={ShieldAlert}
-                  description={`Tasks created on ${formattedDate}`}
-                />
-              </div>
-
-              {/* Customer Breakdown Table */}
-              <div className="p-8 pb-6 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold mb-4 text-foreground">Customer Breakdown for {formattedDate}</h3>
-                {/* <CustomerBreakdownTable data={processedSummaryData?.customerBreakdown || []} /> */}
-              </div>
-
-              {/* Charts & Visuals Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-8">
-                <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                  <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Assignee Load</h3>
-                  <Select value={assigneeChartMode} onValueChange={(value: 'count' | 'percentage') => setAssigneeChartMode(value)}>
-                    <SelectTrigger className="w-[120px] h-8">
-                      <SelectValue placeholder="Display Mode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="count">Count</SelectItem>
-                      <SelectItem value="percentage">Percentage</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <AssigneeLoadChart tickets={rawTicketsForCharts} displayMode={assigneeChartMode} />
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                  <div className="flex justify-between items-center w-full mb-2">
-                    <h3 className="text-lg font-semibold text-foreground">Priority Distribution</h3>
-                    <Select onValueChange={() => {}}>
-                      <SelectTrigger className="w-[150px] h-8">
-                        <SelectValue placeholder="Date Range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Aug 25-Sept 25">Aug 25-Sept 25</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <PriorityDistributionChart tickets={rawTicketsForCharts} />
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                  <h3 className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</h3>
-                  <TicketsOverTimeChart tickets={rawTicketsForCharts} dateRange="last30days" />
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400 transition-all duration-300 hover:shadow-lg hover:scale-[1.01]">
-                  <div className="flex justify-between items-center w-full mb-2">
-                    <h3 className="text-lg font-semibold text-foreground w-full text-center">Ticket Type by Customer</h3>
-                    <Select value={selectedCustomerFilter} onValueChange={setSelectedCustomerFilter}>
-                      <SelectTrigger className="w-[180px] h-8">
-                        <SelectValue placeholder="All Customers" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {uniqueCompanies.map(company => (
-                          <SelectItem key={company} value={company}>
-                            {company === "All" ? "All Customers" : company}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <TicketTypeByCustomerChart tickets={rawTicketsForCharts} selectedCustomer={selectedCustomerFilter} topNCustomers={topNCustomers} />
-                </div>
-              </div>
-            </>
-          )}
         </div>
       </div>
     </TooltipProvider>
