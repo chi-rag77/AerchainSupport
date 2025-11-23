@@ -13,7 +13,7 @@ import Signup from "./pages/Signup";
 import { SupabaseProvider } from "./components/SupabaseProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./hooks/use-theme";
-import DynamicIslandNav from "./components/DynamicIslandNav"; // Import the new DynamicIslandNav
+import TopNavigation from "./components/TopNavigation"; // Import the new TopNavigation
 
 const queryClient = new QueryClient();
 
@@ -26,7 +26,7 @@ const App = () => (
         <BrowserRouter>
           <SupabaseProvider>
             <div className="flex flex-col min-h-screen">
-              <DynamicIslandNav /> {/* Render the DynamicIslandNav component */}
+              <TopNavigation /> {/* Render the TopNavigation component */}
               <main className="flex-grow">
                 <Routes>
                   <Route path="/login" element={<Login />} />
