@@ -15,6 +15,7 @@ interface FilterNotificationProps {
   filterCompany: string;
   filterType: string;
   filterDependency: string;
+  className?: string; // Added className prop
 }
 
 const FilterNotification = ({
@@ -27,6 +28,7 @@ const FilterNotification = ({
   filterCompany,
   filterType,
   filterDependency,
+  className, // Destructure className
 }: FilterNotificationProps) => {
   const activeFilters: string[] = [];
 
@@ -72,7 +74,8 @@ const FilterNotification = ({
     <div className={cn(
       "flex items-center p-3 rounded-md text-sm font-medium mb-4",
       bgColor,
-      textColor
+      textColor,
+      className // Apply external className
     )}>
       {icon}
       {message}
