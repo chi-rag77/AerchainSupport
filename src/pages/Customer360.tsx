@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare, AlertTriangle, TrendingUp } from "lucide-react"; // Added AlertTriangle, TrendingUp
+import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare, AlertTriangle, TrendingUp, History } from "lucide-react"; // Added History icon
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,8 @@ import CustomerPerformanceMetricsCard from "@/components/customer360/CustomerPer
 import CustomerIssueInsightsCard from "@/components/customer360/CustomerIssueInsightsCard";
 import CustomerRiskIndicatorsCard from "@/components/customer360/CustomerRiskIndicatorsCard";
 import CustomerOperationalLoadCard from "@/components/customer360/CustomerOperationalLoadCard";
-import CustomerConversationActivityCard from "@/components/customer360/CustomerConversationActivityCard"; // New import
+import CustomerConversationActivityCard from "@/components/customer360/CustomerConversationActivityCard";
+import CustomerHistoricalBehaviourCard from "@/components/customer360/CustomerHistoricalBehaviourCard"; // New import
 import TicketDetailModal from "@/components/TicketDetailModal"; // Import TicketDetailModal
 
 const Customer360 = () => {
@@ -198,14 +199,12 @@ const Customer360 = () => {
                 <CustomerConversationActivityCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
-              {/* Placeholder for Historical Behaviour */}
+              {/* 7️⃣ Historical Behaviour */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  Historical Behaviour
+                  <History className="h-6 w-6 mr-3 text-orange-600" /> Historical Behaviour
                 </h2>
-                <Card className="h-48 flex items-center justify-center text-muted-foreground">
-                  <CardContent>Placeholder for Activity Heatmap, Most Active Customer Contacts, Contact-Based Ticket Summary</CardContent>
-                </Card>
+                <CustomerHistoricalBehaviourCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
             </div>
           )}
