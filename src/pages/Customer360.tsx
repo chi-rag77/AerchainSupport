@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 // New components for Customer 360
 import CustomerOverviewCard from "@/components/customer360/CustomerOverviewCard";
 import CustomerHealthScore from "@/components/customer360/CustomerHealthScore";
+import CustomerPerformanceMetricsCard from "@/components/customer360/CustomerPerformanceMetricsCard"; // New import
 
 const Customer360 = () => {
   const { session } = useSupabase();
@@ -32,18 +33,18 @@ const Customer360 = () => {
       return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
     },
     onSuccess: (data) => {
-      console.log("Successfully loaded all tickets:", data.length);
+      console.log("Customer360: Successfully loaded all tickets:", data.length);
       if (!selectedCustomer && data.length > 0) {
         const firstCustomer = data.find(t => t.cf_company)?.cf_company;
         if (firstCustomer) {
           setSelectedCustomer(firstCustomer);
-          console.log("Automatically selected first customer:", firstCustomer);
+          console.log("Customer360: Automatically selected first customer:", firstCustomer);
         }
       }
       toast.success("Customer 360 data loaded successfully!");
     },
     onError: (err) => {
-      console.error("Failed to load customer data:", err);
+      console.error("Customer360: Failed to load customer data:", err);
       toast.error(`Failed to load customer data: ${err.message}`);
     },
   } as UseQueryOptions<Ticket[], Error>);
@@ -61,12 +62,12 @@ const Customer360 = () => {
   const customerTickets = useMemo(() => {
     if (!allTickets || !selectedCustomer) return [];
     const filtered = allTickets.filter(ticket => ticket.cf_company === selectedCustomer);
-    console.log(`Filtered tickets for '${selectedCustomer}':`, filtered.length);
+    console.log(`Customer360: Filtered tickets for '${selectedCustomer}':`, filtered.length);
     return filtered;
   }, [allTickets, selectedCustomer]);
 
   useEffect(() => {
-    console.log("Current selectedCustomer state:", selectedCustomer);
+    console.log("Customer360: Current selectedCustomer state:", selectedCustomer);
   }, [selectedCustomer]);
 
   if (error) {
@@ -140,16 +141,15 @@ const Customer360 = () => {
                 </div>
               </section>
 
-              {/* Placeholder for other sections */}
+              {/* 2️⃣ Customer Performance Metrics */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
                   Customer Performance Metrics
                 </h2>
-                <Card className="h-48 flex items-center justify-center text-muted-foreground">
-                  <CardContent>Placeholder for SLA Performance, Response Metrics, Resolution Metrics</CardContent>
-                </Card>
+                <CustomerPerformanceMetricsCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
+              {/* Placeholder for other sections */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
                   Issue & Category Insights
