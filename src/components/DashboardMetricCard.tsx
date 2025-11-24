@@ -31,17 +31,17 @@ const DashboardMetricCard = ({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Card className={cn("relative overflow-hidden group cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-[1.02] h-full", className)} onClick={onClick}>
+        <Card className={cn("relative overflow-hidden group cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-[1.02]", className)} onClick={onClick}>
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-2 pb-0"> {/* Adjusted padding */}
             <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">{value}</div> {/* Increased font size */}
+          <CardContent className="p-2"> {/* Reduced padding */}
+            <div className="text-2xl font-bold text-foreground">{value}</div> {/* Reduced font size */}
             {trend !== undefined && (
               <p className={cn("text-xs flex items-center mt-1", trendColor)}>
-                <TrendIcon className="h-3 w-3 mr-1" />
+                {trend !== 0 && <TrendIcon className="h-3 w-3 mr-1" />}
                 {Math.abs(trend)}% this week
               </p>
             )}
