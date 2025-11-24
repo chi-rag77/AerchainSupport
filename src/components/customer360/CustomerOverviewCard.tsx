@@ -8,6 +8,7 @@ import { TicketIcon, Clock, CheckCircle, AlertCircle, Hourglass, Users, Tag, Arr
 import { differenceInDays, parseISO, subDays, isPast } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface CustomerOverviewCardProps {
   customerName: string;
@@ -73,9 +74,9 @@ const CustomerOverviewCard = ({ customerName, tickets }: CustomerOverviewCardPro
   const TrendIcon = metrics.ticketVolumeTrend > 0 ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full">
+    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full bg-card border border-border shadow-sm">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-2xl font-bold text-foreground flex items-center gap-2">
           {customerName}
         </CardTitle>
@@ -86,60 +87,63 @@ const CustomerOverviewCard = ({ customerName, tickets }: CustomerOverviewCardPro
           <Users className="h-6 w-6 text-muted-foreground" />
         </div>
       </CardHeader>
-      <CardContent className="text-sm space-y-3">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+      <CardContent className="text-sm space-y-5">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-4">
           <div className="flex flex-col">
-            <span className="text-muted-foreground flex items-center gap-1"><TicketIcon className="h-4 w-4" /> Total Tickets (30D):</span>
-            <span className="text-xl font-bold text-foreground">{metrics.totalTicketsLast30}</span>
+            <span className="text-muted-foreground flex items-center gap-1 mb-1"><TicketIcon className="h-4 w-4" /> Total Tickets (30D):</span>
+            <span className="text-3xl font-bold text-foreground">{metrics.totalTicketsLast30}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-muted-foreground flex items-center gap-1"><TicketIcon className="h-4 w-4" /> Total Tickets (90D):</span>
-            <span className="text-xl font-bold text-foreground">{metrics.totalTicketsLast90}</span>
+            <span className="text-muted-foreground flex items-center gap-1 mb-1"><TicketIcon className="h-4 w-4" /> Total Tickets (90D):</span>
+            <span className="text-3xl font-bold text-foreground">{metrics.totalTicketsLast90}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-muted-foreground flex items-center gap-1"><TrendingUp className="h-4 w-4" /> Volume Trend (30D):</span>
-            <span className={cn("text-xl font-bold flex items-center", trendColorClass)}>
-              {metrics.ticketVolumeTrend !== 0 && <TrendIcon className="h-5 w-5 mr-1" />}
+            <span className="text-muted-foreground flex items-center gap-1 mb-1"><TrendingUp className="h-4 w-4" /> Volume Trend (30D):</span>
+            <span className={cn("text-3xl font-bold flex items-center", trendColorClass)}>
+              {metrics.ticketVolumeTrend !== 0 && <TrendIcon className="h-6 w-6 mr-1" />}
               {metrics.ticketVolumeTrend}%
             </span>
           </div>
           <div className="flex flex-col">
-            <span className="text-muted-foreground flex items-center gap-1"><Hourglass className="h-4 w-4 text-blue-500" /> Current Open Tickets:</span>
-            <span className="text-xl font-bold text-foreground">{metrics.openTicketsCount}</span>
+            <span className="text-muted-foreground flex items-center gap-1 mb-1"><Hourglass className="h-4 w-4 text-blue-500" /> Current Open Tickets:</span>
+            <span className="text-3xl font-bold text-foreground">{metrics.openTicketsCount}</span>
           </div>
         </div>
 
         {metrics.openTicketsCount > 0 && (
-          <div className="mt-4 pt-3 border-t border-border">
-            <h4 className="font-semibold text-foreground mb-2">Open Tickets Breakdown:</h4>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {metrics.openTicketsBreakdown.urgent > 0 && (
-                <Badge variant="destructive" className="flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" /> Urgent: {metrics.openTicketsBreakdown.urgent}
-                </Badge>
-              )}
-              {metrics.openTicketsBreakdown.high > 0 && (
-                <Badge className="bg-orange-500 text-white flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" /> High: {metrics.openTicketsBreakdown.high}
-                </Badge>
-              )}
-              {metrics.openTicketsBreakdown.medium > 0 && (
-                <Badge className="bg-yellow-500 text-black flex items-center gap-1">
-                  <Hourglass className="h-3 w-3" /> Medium: {metrics.openTicketsBreakdown.medium}
-                </Badge>
-              )}
-              {metrics.openTicketsBreakdown.low > 0 && (
-                <Badge className="bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> Low: {metrics.openTicketsBreakdown.low}
-                </Badge>
-              )}
-              {metrics.openTicketsBreakdown.other > 0 && (
-                <Badge className="bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 flex items-center gap-1">
-                  <Tag className="h-3 w-3" /> Other: {metrics.openTicketsBreakdown.other}
-                </Badge>
-              )}
+          <>
+            <Separator />
+            <div className="mt-4 pt-3">
+              <h4 className="font-semibold text-foreground mb-3">Open Tickets Breakdown:</h4>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {metrics.openTicketsBreakdown.urgent > 0 && (
+                  <Badge variant="destructive" className="flex items-center gap-1 px-2 py-1">
+                    <AlertCircle className="h-3 w-3" /> Urgent: {metrics.openTicketsBreakdown.urgent}
+                  </Badge>
+                )}
+                {metrics.openTicketsBreakdown.high > 0 && (
+                  <Badge className="bg-orange-500 text-white flex items-center gap-1 px-2 py-1">
+                    <AlertCircle className="h-3 w-3" /> High: {metrics.openTicketsBreakdown.high}
+                  </Badge>
+                )}
+                {metrics.openTicketsBreakdown.medium > 0 && (
+                  <Badge className="bg-yellow-500 text-black flex items-center gap-1 px-2 py-1">
+                    <Hourglass className="h-3 w-3" /> Medium: {metrics.openTicketsBreakdown.medium}
+                  </Badge>
+                )}
+                {metrics.openTicketsBreakdown.low > 0 && (
+                  <Badge className="bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 flex items-center gap-1 px-2 py-1">
+                    <Clock className="h-3 w-3" /> Low: {metrics.openTicketsBreakdown.low}
+                  </Badge>
+                )}
+                {metrics.openTicketsBreakdown.other > 0 && (
+                  <Badge className="bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 flex items-center gap-1 px-2 py-1">
+                    <Tag className="h-3 w-3" /> Other: {metrics.openTicketsBreakdown.other}
+                  </Badge>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </CardContent>
     </Card>

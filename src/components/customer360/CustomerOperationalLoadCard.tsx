@@ -4,10 +4,11 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { cn } from '@/lib/utils';
-import { Clock, Users, MessageSquare, User, TrendingUp } from 'lucide-react';
+import { Clock, Users, MessageSquare, User, TrendingUp, BarChart } from 'lucide-react'; // Added BarChart
 import { differenceInDays, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface CustomerOperationalLoadCardProps {
   customerName: string;
@@ -47,9 +48,9 @@ const CustomerOperationalLoadCard = ({ customerName, tickets }: CustomerOperatio
   }, [tickets]);
 
   return (
-    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full">
+    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full bg-card border border-border shadow-sm">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-purple-500" /> Operational Load & Efficiency
         </CardTitle>
@@ -57,52 +58,55 @@ const CustomerOperationalLoadCard = ({ customerName, tickets }: CustomerOperatio
           {customerName}
         </Badge>
       </CardHeader>
-      <CardContent className="text-sm space-y-4">
+      <CardContent className="text-sm space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Average Open Ticket Age */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <span className="text-muted-foreground flex items-center gap-1 mb-2 font-medium">
               <Clock className="h-4 w-4 text-blue-500" /> Avg. Open Ticket Age:
             </span>
-            <span className="text-2xl font-bold text-foreground">{metrics.avgOpenTicketAge} days</span>
+            <span className="text-3xl font-bold text-foreground">{metrics.avgOpenTicketAge} days</span>
           </div>
 
           {/* Total Open Tickets */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <span className="text-muted-foreground flex items-center gap-1 mb-2 font-medium">
               <Users className="h-4 w-4 text-green-500" /> Total Open Tickets:
             </span>
-            <span className="text-2xl font-bold text-foreground">{metrics.totalOpenTickets}</span>
+            <span className="text-3xl font-bold text-foreground">{metrics.totalOpenTickets}</span>
           </div>
         </div>
 
         {/* Tickets per Agent */}
         {Object.keys(metrics.agentTicketCounts).length > 0 && (
-          <div className="mt-4 pt-3 border-t border-border">
-            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-              <User className="h-4 w-4 text-muted-foreground" /> Tickets per Agent (Open):
-            </h4>
-            <ul className="space-y-2">
-              {Object.entries(metrics.agentTicketCounts)
-                .sort(([, countA], [, countB]) => countB - countA)
-                .map(([agent, count]) => (
-                  <li key={agent} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded-md border border-border shadow-sm">
-                    <span className="text-foreground font-medium">{agent}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {count} tickets
-                    </Badge>
-                  </li>
-                ))}
-            </ul>
-          </div>
+          <>
+            <Separator />
+            <div className="mt-4 pt-3">
+              <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" /> Tickets per Agent (Open):
+              </h4>
+              <ul className="space-y-3">
+                {Object.entries(metrics.agentTicketCounts)
+                  .sort(([, countA], [, countB]) => countB - countA)
+                  .map(([agent, count]) => (
+                    <li key={agent} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-border shadow-sm">
+                      <span className="text-foreground font-medium text-base">{agent}</span>
+                      <Badge variant="outline" className="text-xs px-2 py-1">
+                        {count} tickets
+                      </Badge>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          </>
         )}
 
         {/* Placeholder for Average Messages per Ticket */}
-        <div className="mt-4 pt-3 border-t border-border">
+        <div className="mt-4 pt-4 border-t border-border">
           <h4 className="font-semibold text-muted-foreground text-sm mb-2">Advanced Metrics (Requires more data):</h4>
           <ul className="text-xs text-muted-foreground space-y-1">
-            <li><MessageSquare className="h-3 w-3 inline-block mr-1 text-red-500" /> Average Messages per Ticket: Requires fetching conversation data for all tickets.</li>
-            <li><Clock className="h-3 w-3 inline-block mr-1 text-red-500" /> Ticket Handoffs Count: Requires historical assignee data.</li>
+            <li><XCircle className="h-3 w-3 inline-block mr-1 text-red-500" /> Average Messages per Ticket: Requires fetching conversation data for all tickets.</li>
+            <li><XCircle className="h-3 w-3 inline-block mr-1 text-red-500" /> Ticket Handoffs Count: Requires historical assignee data.</li>
           </ul>
         </div>
       </CardContent>

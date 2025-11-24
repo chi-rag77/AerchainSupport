@@ -4,10 +4,11 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { cn } from '@/lib/utils';
-import { CheckCircle, Clock, AlertCircle, Timer, MessageSquare, TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, Timer, MessageSquare, TrendingUp, ArrowUpRight, ArrowDownRight, Gauge } from 'lucide-react';
 import { differenceInDays, parseISO, isPast, isBefore, subDays } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface CustomerPerformanceMetricsCardProps {
   customerName: string;
@@ -110,59 +111,59 @@ const CustomerPerformanceMetricsCard = ({ customerName, tickets }: CustomerPerfo
   const TrendIcon = metrics.resolutionTimeTrend > 0 ? ArrowUpRight : ArrowDownRight; // Up arrow for faster, down for slower
 
   return (
-    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full">
+    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full bg-card border border-border shadow-sm">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-blue-500" /> Performance Metrics
+          <Gauge className="h-5 w-5 text-indigo-500" /> Performance Metrics
         </CardTitle>
-        <Badge variant="secondary" className="text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+        <Badge variant="secondary" className="text-sm font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
           {customerName}
         </Badge>
       </CardHeader>
-      <CardContent className="text-sm space-y-4">
+      <CardContent className="text-sm space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Resolution SLA Adherence */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <span className="text-muted-foreground flex items-center gap-1 mb-2 font-medium">
               <CheckCircle className="h-4 w-4 text-green-500" /> Resolution SLA Adherence:
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-foreground">{metrics.slaAdherence.percentage}%</span>
+              <span className="text-3xl font-bold text-foreground">{metrics.slaAdherence.percentage}%</span>
               <span className="text-xs text-muted-foreground">({metrics.slaAdherence.met}/{metrics.slaAdherence.total} met)</span>
             </div>
           </div>
 
           {/* First Response SLA Adherence */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <span className="text-muted-foreground flex items-center gap-1 mb-2 font-medium">
               <Timer className="h-4 w-4 text-purple-500" /> First Response SLA:
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-foreground">{metrics.frSlaAdherence.percentage}%</span>
+              <span className="text-3xl font-bold text-foreground">{metrics.frSlaAdherence.percentage}%</span>
               <span className="text-xs text-muted-foreground">({metrics.frSlaAdherence.met}/{metrics.frSlaAdherence.total} met)</span>
             </div>
           </div>
 
           {/* Average Resolution Time */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <span className="text-muted-foreground flex items-center gap-1 mb-2 font-medium">
               <Clock className="h-4 w-4 text-orange-500" /> Avg. Resolution Time:
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-foreground">{metrics.avgResolutionTime.days}</span>
+              <span className="text-3xl font-bold text-foreground">{metrics.avgResolutionTime.days}</span>
               <span className="text-xs text-muted-foreground">days ({metrics.avgResolutionTime.count} tickets)</span>
             </div>
           </div>
 
           {/* Resolution Time Trend */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <span className="text-muted-foreground flex items-center gap-1 mb-2 font-medium">
               <TrendingUp className="h-4 w-4 text-indigo-500" /> Resolution Time Trend (30D):
             </span>
             <div className="flex items-baseline justify-between">
-              <span className={cn("text-2xl font-bold flex items-center", getTrendColorClass(metrics.resolutionTimeTrend))}>
-                {metrics.resolutionTimeTrend !== 0 && <TrendIcon className="h-5 w-5 mr-1" />}
+              <span className={cn("text-3xl font-bold flex items-center", getTrendColorClass(metrics.resolutionTimeTrend))}>
+                {metrics.resolutionTimeTrend !== 0 && <TrendIcon className="h-6 w-6 mr-1" />}
                 {Math.abs(metrics.resolutionTimeTrend)}%
               </span>
               <span className="text-xs text-muted-foreground">vs. prev 30 days</span>

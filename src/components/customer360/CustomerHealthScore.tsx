@@ -4,10 +4,12 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { cn } from '@/lib/utils';
-import { Heart, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Sparkles, MessageSquare, CalendarX, Timer } from 'lucide-react';
+import { Heart, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Sparkles, MessageSquare, CalendarX, Timer, Gauge } from 'lucide-react';
 import { differenceInDays, parseISO, isPast, subDays } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress"; // Import Progress component
+import { Separator } from "@/components/ui/separator";
 
 interface CustomerHealthScoreProps {
   tickets: Ticket[];
@@ -167,31 +169,40 @@ const CustomerHealthScore = ({ tickets, customerName }: CustomerHealthScoreProps
     }
   };
 
+  const getProgressBarColor = (score: number) => {
+    if (score >= 80) return "bg-green-500";
+    if (score >= 60) return "bg-yellow-500";
+    if (score >= 40) return "bg-orange-500";
+    return "bg-red-500";
+  };
+
   return (
-    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full">
+    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full bg-card border border-border shadow-sm">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
           <Heart className="h-5 w-5 text-red-500" /> Customer Health Score
         </CardTitle>
-        <span className={cn("px-3 py-1 rounded-full text-xs font-semibold", getTierColorClass(healthMetrics.tier))}>
+        <Badge className={cn("px-3 py-1 rounded-full text-xs font-semibold", getTierColorClass(healthMetrics.tier))}>
           {healthMetrics.tier}
-        </span>
+        </Badge>
       </CardHeader>
-      <CardContent className="text-sm space-y-4">
-        <div className="flex items-baseline justify-between">
-          <p className="text-muted-foreground">Overall Health:</p>
-          <div className="text-5xl font-bold">
+      <CardContent className="text-sm space-y-6">
+        <div className="flex flex-col items-center justify-center space-y-3">
+          <div className="text-6xl font-extrabold">
             <span className={getHealthColorClass(healthMetrics.score)}>{healthMetrics.score}</span>
-            <span className="text-xl text-muted-foreground">/100</span>
+            <span className="text-2xl text-muted-foreground">/100</span>
           </div>
+          <Progress value={healthMetrics.score} className="w-full h-3" indicatorClassName={getProgressBarColor(healthMetrics.score)} />
         </div>
 
-        <div className="space-y-2">
+        <Separator />
+
+        <div className="space-y-3">
           <h4 className="font-semibold text-foreground flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-muted-foreground" /> Component Scores
+            <Gauge className="h-4 w-4 text-muted-foreground" /> Component Scores
           </h4>
-          <ul className="space-y-1">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             <li className="flex justify-between items-center">
               <span className="text-muted-foreground flex items-center gap-1"><CheckCircle className="h-4 w-4 text-green-500" /> SLA Adherence:</span>
               <Tooltip>

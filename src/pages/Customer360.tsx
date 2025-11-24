@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare, AlertTriangle, TrendingUp, History } from "lucide-react"; // Added History icon
+import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare, AlertTriangle, TrendingUp, History, BarChart2, Gauge } from "lucide-react"; // Added Gauge icon
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { Ticket } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from 'sonner';
+import { Separator } from "@/components/ui/separator";
 
 // New components for Customer 360
 import CustomerOverviewCard from "@/components/customer360/CustomerOverviewCard";
@@ -20,8 +21,8 @@ import CustomerIssueInsightsCard from "@/components/customer360/CustomerIssueIns
 import CustomerRiskIndicatorsCard from "@/components/customer360/CustomerRiskIndicatorsCard";
 import CustomerOperationalLoadCard from "@/components/customer360/CustomerOperationalLoadCard";
 import CustomerConversationActivityCard from "@/components/customer360/CustomerConversationActivityCard";
-import CustomerHistoricalBehaviourCard from "@/components/customer360/CustomerHistoricalBehaviourCard"; // New import
-import TicketDetailModal from "@/components/TicketDetailModal"; // Import TicketDetailModal
+import CustomerHistoricalBehaviourCard from "@/components/customer360/CustomerHistoricalBehaviourCard";
+import TicketDetailModal from "@/components/TicketDetailModal";
 
 const Customer360 = () => {
   const { session } = useSupabase();
@@ -29,10 +30,9 @@ const Customer360 = () => {
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
-  const [isTicketDetailModalOpen, setIsTicketDetailModalOpen] = useState(false); // State for modal
-  const [selectedTicketForModal, setSelectedTicketForModal] = useState<Ticket | null>(null); // State for ticket in modal
+  const [isTicketDetailModalOpen, setIsTicketDetailModalOpen] = useState(false);
+  const [selectedTicketForModal, setSelectedTicketForModal] = useState<Ticket | null>(null);
 
-  // Fetch all tickets to get unique customer names and then filter
   const { data: allTickets, isLoading, error } = useQuery<Ticket[], Error>({
     queryKey: ["allFreshdeskTicketsFor360"],
     queryFn: async () => {
@@ -41,18 +41,15 @@ const Customer360 = () => {
       return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
     },
     onSuccess: (data) => {
-      console.log("Customer360: Successfully loaded all tickets:", data.length);
       if (!selectedCustomer && data.length > 0) {
         const firstCustomer = data.find(t => t.cf_company)?.cf_company;
         if (firstCustomer) {
           setSelectedCustomer(firstCustomer);
-          console.log("Customer360: Automatically selected first customer:", firstCustomer);
         }
       }
       toast.success("Customer 360 data loaded successfully!");
     },
     onError: (err) => {
-      console.error("Customer360: Failed to load customer data:", err);
       toast.error(`Failed to load customer data: ${err.message}`);
     },
   } as UseQueryOptions<Ticket[], Error>);
@@ -69,14 +66,8 @@ const Customer360 = () => {
 
   const customerTickets = useMemo(() => {
     if (!allTickets || !selectedCustomer) return [];
-    const filtered = allTickets.filter(ticket => ticket.cf_company === selectedCustomer);
-    console.log(`Customer360: Filtered tickets for '${selectedCustomer}':`, filtered.length);
-    return filtered;
+    return allTickets.filter(ticket => ticket.cf_company === selectedCustomer);
   }, [allTickets, selectedCustomer]);
-
-  useEffect(() => {
-    console.log("Customer360: Current selectedCustomer state:", selectedCustomer);
-  }, [selectedCustomer]);
 
   const handleViewTicketDetails = (ticket: Ticket) => {
     setSelectedTicketForModal(ticket);
@@ -99,10 +90,10 @@ const Customer360 = () => {
 
   return (
     <TooltipProvider>
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
-          {/* Title Bar */}
-          <div className="p-8 pb-6 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-background">
+        <Card className="flex flex-col h-full p-0 overflow-hidden border-none shadow-xl">
+          {/* Header Section */}
+          <div className="p-8 pb-6 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <div className="flex flex-col items-start">
                 <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2">
@@ -119,10 +110,12 @@ const Customer360 = () => {
             </div>
 
             {/* Customer Selector */}
-            <div className="flex items-center gap-4 mt-4 px-8">
-              <h3 className="text-lg font-semibold text-foreground">Select Customer:</h3>
+            <div className="flex items-center gap-4 mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" /> Select Customer:
+              </h3>
               <Select value={selectedCustomer || ""} onValueChange={setSelectedCustomer}>
-                <SelectTrigger className="w-[250px]">
+                <SelectTrigger className="w-[250px] bg-card">
                   <SelectValue placeholder="Choose a customer" />
                 </SelectTrigger>
                 <SelectContent>
@@ -147,11 +140,11 @@ const Customer360 = () => {
               <p className="text-lg font-medium">Please select a customer to view their 360-degree overview.</p>
             </div>
           ) : (
-            <div className="p-8 space-y-8">
+            <div className="flex-grow p-8 space-y-10 bg-gray-50 dark:bg-gray-900/50">
               {/* 1️⃣ EXECUTIVE SUMMARY (Top Overview Section) */}
               <section>
-                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  <LayoutDashboard className="h-6 w-6 mr-3 text-blue-600" /> Executive Summary
+                <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                  <LayoutDashboard className="h-6 w-6 text-blue-600" /> Executive Summary
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <CustomerOverviewCard customerName={selectedCustomer} tickets={customerTickets} />
@@ -159,56 +152,68 @@ const Customer360 = () => {
                 </div>
               </section>
 
+              <Separator className="my-10" />
+
               {/* 2️⃣ Customer Performance Metrics */}
               <section>
-                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  Customer Performance Metrics
+                <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                  <Gauge className="h-6 w-6 text-indigo-600" /> Performance Metrics
                 </h2>
                 <CustomerPerformanceMetricsCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
+              <Separator className="my-10" />
+
               {/* 3️⃣ Issue & Category Insights */}
               <section>
-                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  <MessageSquare className="h-6 w-6 mr-3 text-green-600" /> Issue & Category Insights
+                <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                  <BarChart2 className="h-6 w-6 mr-1 text-green-600" /> Issue & Category Insights
                 </h2>
                 <CustomerIssueInsightsCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
+              <Separator className="my-10" />
+
               {/* 4️⃣ Risk Indicators */}
               <section>
-                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  <AlertTriangle className="h-6 w-6 mr-3 text-red-600" /> Risk Indicators
+                <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                  <AlertTriangle className="h-6 w-6 text-red-600" /> Risk Indicators
                 </h2>
                 <CustomerRiskIndicatorsCard customerName={selectedCustomer} tickets={customerTickets} onViewTicketDetails={handleViewTicketDetails} />
               </section>
 
+              <Separator className="my-10" />
+
               {/* 5️⃣ Operational Load & Efficiency */}
               <section>
-                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  <TrendingUp className="h-6 w-6 mr-3 text-purple-600" /> Operational Load & Efficiency
+                <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                  <TrendingUp className="h-6 w-6 text-purple-600" /> Operational Load & Efficiency
                 </h2>
                 <CustomerOperationalLoadCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
+              <Separator className="my-10" />
+
               {/* 6️⃣ Conversation Depth & Activity */}
               <section>
-                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  <MessageSquare className="h-6 w-6 mr-3 text-blue-600" /> Conversation Depth & Activity
+                <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                  <MessageSquare className="h-6 w-6 text-blue-600" /> Conversation Depth & Activity
                 </h2>
                 <CustomerConversationActivityCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
+              <Separator className="my-10" />
+
               {/* 7️⃣ Historical Behaviour */}
               <section>
-                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  <History className="h-6 w-6 mr-3 text-orange-600" /> Historical Behaviour
+                <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                  <History className="h-6 w-6 text-orange-600" /> Historical Behaviour
                 </h2>
                 <CustomerHistoricalBehaviourCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
             </div>
           )}
-        </div>
+        </Card>
       </div>
       <TicketDetailModal
         isOpen={isTicketDetailModalOpen}

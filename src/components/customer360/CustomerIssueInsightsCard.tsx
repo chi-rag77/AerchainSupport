@@ -3,8 +3,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
-import { MessageSquare, PieChart, BarChart } from 'lucide-react';
+import { MessageSquare, PieChart, BarChart2 } from 'lucide-react'; // Changed BarChart to BarChart2
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
@@ -16,21 +17,21 @@ interface CustomerIssueInsightsCardProps {
 
 const CustomerIssueInsightsCard = ({ customerName, tickets }: CustomerIssueInsightsCardProps) => {
   return (
-    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full">
+    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full bg-card border border-border shadow-sm">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-green-500" /> Issue & Category Insights
+          <BarChart2 className="h-5 w-5 text-green-500" /> Issue & Category Insights
         </CardTitle>
         <Badge variant="secondary" className="text-sm font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
           {customerName}
         </Badge>
       </CardHeader>
       <CardContent className="text-sm space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[400px]"> {/* Fixed height for charts */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-1">
-              <BarChart className="h-4 w-4 text-muted-foreground" /> Ticket Type Breakdown
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]"> {/* Fixed height for charts */}
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+              <BarChart2 className="h-4 w-4 text-muted-foreground" /> Ticket Type Breakdown
             </h4>
             <div className="flex-grow">
               {tickets.length > 0 ? (
@@ -41,8 +42,8 @@ const CustomerIssueInsightsCard = ({ customerName, tickets }: CustomerIssueInsig
             </div>
           </div>
 
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
               <PieChart className="h-4 w-4 text-muted-foreground" /> Priority Distribution
             </h4>
             <div className="flex-grow">

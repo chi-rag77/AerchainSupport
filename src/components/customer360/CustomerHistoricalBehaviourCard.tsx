@@ -4,8 +4,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { cn } from '@/lib/utils';
-import { History, BarChart2, Users, MessageSquare, XCircle } from 'lucide-react'; // Changed Heatmap to BarChart2
+import { History, BarChart2, Users, MessageSquare, XCircle, Clock } from 'lucide-react'; // Added Clock
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface CustomerHistoricalBehaviourCardProps {
   customerName: string;
@@ -14,9 +15,9 @@ interface CustomerHistoricalBehaviourCardProps {
 
 const CustomerHistoricalBehaviourCard = ({ customerName, tickets }: CustomerHistoricalBehaviourCardProps) => {
   return (
-    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full">
+    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full bg-card border border-border shadow-sm">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
           <History className="h-5 w-5 text-orange-500" /> Historical Behaviour
         </CardTitle>
@@ -24,11 +25,11 @@ const CustomerHistoricalBehaviourCard = ({ customerName, tickets }: CustomerHist
           {customerName}
         </Badge>
       </CardHeader>
-      <CardContent className="text-sm space-y-4">
+      <CardContent className="text-sm space-y-5">
         <div className="grid grid-cols-1 gap-4">
           {/* Placeholder for Activity Heatmap */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
               <BarChart2 className="h-4 w-4 text-muted-foreground" /> Activity Heatmap
             </h4>
             <p className="text-muted-foreground text-xs">
@@ -40,8 +41,8 @@ const CustomerHistoricalBehaviourCard = ({ customerName, tickets }: CustomerHist
           </div>
 
           {/* Placeholder for Most Active Customer Contacts */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" /> Most Active Customer Contacts
             </h4>
             <p className="text-muted-foreground text-xs">
@@ -53,8 +54,8 @@ const CustomerHistoricalBehaviourCard = ({ customerName, tickets }: CustomerHist
           </div>
 
           {/* Placeholder for Contact-Based Ticket Summary */}
-          <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-1">
+          <div className="flex flex-col p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-border shadow-inner">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-muted-foreground" /> Contact-Based Ticket Summary
             </h4>
             <p className="text-muted-foreground text-xs">
