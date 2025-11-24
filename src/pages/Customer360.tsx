@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare } from "lucide-react"; // Added MessageSquare
+import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare, AlertTriangle } from "lucide-react"; // Added AlertTriangle
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +16,9 @@ import { toast } from 'sonner';
 import CustomerOverviewCard from "@/components/customer360/CustomerOverviewCard";
 import CustomerHealthScore from "@/components/customer360/CustomerHealthScore";
 import CustomerPerformanceMetricsCard from "@/components/customer360/CustomerPerformanceMetricsCard";
-import CustomerIssueInsightsCard from "@/components/customer360/CustomerIssueInsightsCard"; // New import
+import CustomerIssueInsightsCard from "@/components/customer360/CustomerIssueInsightsCard";
+import CustomerRiskIndicatorsCard from "@/components/customer360/CustomerRiskIndicatorsCard"; // New import
+import TicketDetailModal from "@/components/TicketDetailModal"; // Import TicketDetailModal
 
 const Customer360 = () => {
   const { session } = useSupabase();
@@ -24,6 +26,8 @@ const Customer360 = () => {
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+  const [isTicketDetailModalOpen, setIsTicketDetailModalOpen] = useState(false); // State for modal
+  const [selectedTicketForModal, setSelectedTicketForModal] = useState<Ticket | null>(null); // State for ticket in modal
 
   // Fetch all tickets to get unique customer names and then filter
   const { data: allTickets, isLoading, error } = useQuery<Ticket[], Error>({
@@ -70,6 +74,16 @@ const Customer360 = () => {
   useEffect(() => {
     console.log("Customer360: Current selectedCustomer state:", selectedCustomer);
   }, [selectedCustomer]);
+
+  const handleViewTicketDetails = (ticket: Ticket) => {
+    setSelectedTicketForModal(ticket);
+    setIsTicketDetailModalOpen(true);
+  };
+
+  const handleCloseTicketDetailModal = () => {
+    setIsTicketDetailModalOpen(false);
+    setSelectedTicketForModal(null);
+  };
 
   if (error) {
     return (
@@ -158,16 +172,15 @@ const Customer360 = () => {
                 <CustomerIssueInsightsCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
-              {/* Placeholder for other sections */}
+              {/* 4️⃣ Risk Indicators */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  Risk Indicators
+                  <AlertTriangle className="h-6 w-6 mr-3 text-red-600" /> Risk Indicators
                 </h2>
-                <Card className="h-48 flex items-center justify-center text-muted-foreground">
-                  <CardContent>Placeholder for Escalation Panel, Reopen Analysis, SLA Breach Details, Aged Tickets</CardContent>
-                </Card>
+                <CustomerRiskIndicatorsCard customerName={selectedCustomer} tickets={customerTickets} onViewTicketDetails={handleViewTicketDetails} />
               </section>
 
+              {/* Placeholder for other sections */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
                   Operational Load & Efficiency
@@ -198,6 +211,11 @@ const Customer360 = () => {
           )}
         </div>
       </div>
+      <TicketDetailModal
+        isOpen={isTicketDetailModalOpen}
+        onClose={handleCloseTicketDetailModal}
+        ticket={selectedTicketForModal}
+      />
     </TooltipProvider>
   );
 };
