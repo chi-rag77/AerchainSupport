@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { cn } from '@/lib/utils';
-import { History, Heatmap, Users, MessageSquare, XCircle } from 'lucide-react'; // Added History icon
+import { History, BarChart2, Users, MessageSquare, XCircle } from 'lucide-react'; // Changed Heatmap to BarChart2
 import { Badge } from "@/components/ui/badge";
 
 interface CustomerHistoricalBehaviourCardProps {
@@ -29,7 +29,7 @@ const CustomerHistoricalBehaviourCard = ({ customerName, tickets }: CustomerHist
           {/* Placeholder for Activity Heatmap */}
           <div className="flex flex-col p-3 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-1">
-              <Heatmap className="h-4 w-4 text-muted-foreground" /> Activity Heatmap
+              <BarChart2 className="h-4 w-4 text-muted-foreground" /> Activity Heatmap
             </h4>
             <p className="text-muted-foreground text-xs">
               Visual representation of ticket creation/resolution patterns over time.
