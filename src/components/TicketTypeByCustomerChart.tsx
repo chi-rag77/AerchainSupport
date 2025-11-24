@@ -124,17 +124,20 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
   }, [tickets, selectedCustomer, topNCustomers]);
 
   const uniqueTypes = useMemo(() => {
-    const types = new Set<string>();
-    // Iterate through the original tickets to get all possible types for the legend
-    tickets.forEach(ticket => {
-      if (ticket.type) types.add(ticket.type);
+    const typesSet = new Set<string>();
+    processedData.forEach(dataRow => {
+      for (const key in dataRow) {
+        if (key !== 'customer' && key !== 'totalTickets' && typeof dataRow[key] === 'number' && dataRow[key] > 0) {
+          typesSet.add(key);
+        }
+      }
     });
-    // Ensure a consistent order for stacking and legend
-    return ['bug', 'csTask', 'duplicate', 'notRelevant', 'query', 'techTask', 'Unknown Type'].filter(t => {
-      // Check if the type exists in the processed data, not just the raw tickets
-      return processedData.some(dataRow => dataRow[t] !== undefined && dataRow[t] > 0);
-    });
-  }, [tickets, processedData]); // Added processedData to dependency array
+    // Ensure a consistent order for stacking and legend, and include 'Unknown Type' if present
+    const orderedTypes = ['bug', 'csTask', 'duplicate', 'notRelevant', 'query', 'techTask', 'Unknown Type'];
+    const result = orderedTypes.filter(type => typesSet.has(type));
+    console.log("TicketTypeByCustomerChart: Calculated uniqueTypes for legend/bars:", result);
+    return result;
+  }, [processedData]);
 
   const legendPayload = uniqueTypes.map(type => ({
     value: type,
