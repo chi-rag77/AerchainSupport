@@ -8,6 +8,7 @@ import { AlertTriangle, Clock, CalendarX, ListOrdered, ArrowRight } from 'lucide
 import { differenceInDays, parseISO, isPast, format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button"; // Added this import
 
 interface CustomerRiskIndicatorsCardProps {
   customerName: string;
