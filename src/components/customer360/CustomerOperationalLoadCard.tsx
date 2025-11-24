@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { cn } from '@/lib/utils';
-import { Clock, Users, MessageSquare, User, TrendingUp, BarChart } from 'lucide-react'; // Added BarChart
+import { Clock, Users, MessageSquare, User, TrendingUp, BarChart, XCircle } from 'lucide-react'; // Added XCircle
 import { differenceInDays, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
