@@ -18,7 +18,8 @@ import CustomerHealthScore from "@/components/customer360/CustomerHealthScore";
 import CustomerPerformanceMetricsCard from "@/components/customer360/CustomerPerformanceMetricsCard";
 import CustomerIssueInsightsCard from "@/components/customer360/CustomerIssueInsightsCard";
 import CustomerRiskIndicatorsCard from "@/components/customer360/CustomerRiskIndicatorsCard";
-import CustomerOperationalLoadCard from "@/components/customer360/CustomerOperationalLoadCard"; // New import
+import CustomerOperationalLoadCard from "@/components/customer360/CustomerOperationalLoadCard";
+import CustomerConversationActivityCard from "@/components/customer360/CustomerConversationActivityCard"; // New import
 import TicketDetailModal from "@/components/TicketDetailModal"; // Import TicketDetailModal
 
 const Customer360 = () => {
@@ -189,16 +190,15 @@ const Customer360 = () => {
                 <CustomerOperationalLoadCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
-              {/* Placeholder for other sections */}
+              {/* 6️⃣ Conversation Depth & Activity */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  Conversation Depth & Activity
+                  <MessageSquare className="h-6 w-6 mr-3 text-blue-600" /> Conversation Depth & Activity
                 </h2>
-                <Card className="h-48 flex items-center justify-center text-muted-foreground">
-                  <CardContent>Placeholder for Conversation Density, Customer Responsiveness, Agent Responsiveness</CardContent>
-                </Card>
+                <CustomerConversationActivityCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
+              {/* Placeholder for Historical Behaviour */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
                   Historical Behaviour
