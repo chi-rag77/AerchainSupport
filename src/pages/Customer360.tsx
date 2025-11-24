@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Users, Loader2, LayoutDashboard, Handshake } from "lucide-react";
+import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare } from "lucide-react"; // Added MessageSquare
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,8 @@ import { toast } from 'sonner';
 // New components for Customer 360
 import CustomerOverviewCard from "@/components/customer360/CustomerOverviewCard";
 import CustomerHealthScore from "@/components/customer360/CustomerHealthScore";
-import CustomerPerformanceMetricsCard from "@/components/customer360/CustomerPerformanceMetricsCard"; // New import
+import CustomerPerformanceMetricsCard from "@/components/customer360/CustomerPerformanceMetricsCard";
+import CustomerIssueInsightsCard from "@/components/customer360/CustomerIssueInsightsCard"; // New import
 
 const Customer360 = () => {
   const { session } = useSupabase();
@@ -149,16 +150,15 @@ const Customer360 = () => {
                 <CustomerPerformanceMetricsCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
-              {/* Placeholder for other sections */}
+              {/* 3️⃣ Issue & Category Insights */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  Issue & Category Insights
+                  <MessageSquare className="h-6 w-6 mr-3 text-green-600" /> Issue & Category Insights
                 </h2>
-                <Card className="h-48 flex items-center justify-center text-muted-foreground">
-                  <CardContent>Placeholder for Ticket Type Breakdown, Top 5 Issue Drivers, Issue Severity Mix</CardContent>
-                </Card>
+                <CustomerIssueInsightsCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
+              {/* Placeholder for other sections */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
                   Risk Indicators
