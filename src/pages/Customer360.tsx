@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare, AlertTriangle } from "lucide-react"; // Added AlertTriangle
+import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare, AlertTriangle, TrendingUp } from "lucide-react"; // Added AlertTriangle, TrendingUp
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +17,8 @@ import CustomerOverviewCard from "@/components/customer360/CustomerOverviewCard"
 import CustomerHealthScore from "@/components/customer360/CustomerHealthScore";
 import CustomerPerformanceMetricsCard from "@/components/customer360/CustomerPerformanceMetricsCard";
 import CustomerIssueInsightsCard from "@/components/customer360/CustomerIssueInsightsCard";
-import CustomerRiskIndicatorsCard from "@/components/customer360/CustomerRiskIndicatorsCard"; // New import
+import CustomerRiskIndicatorsCard from "@/components/customer360/CustomerRiskIndicatorsCard";
+import CustomerOperationalLoadCard from "@/components/customer360/CustomerOperationalLoadCard"; // New import
 import TicketDetailModal from "@/components/TicketDetailModal"; // Import TicketDetailModal
 
 const Customer360 = () => {
@@ -180,16 +181,15 @@ const Customer360 = () => {
                 <CustomerRiskIndicatorsCard customerName={selectedCustomer} tickets={customerTickets} onViewTicketDetails={handleViewTicketDetails} />
               </section>
 
-              {/* Placeholder for other sections */}
+              {/* 5️⃣ Operational Load & Efficiency */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
-                  Operational Load & Efficiency
+                  <TrendingUp className="h-6 w-6 mr-3 text-purple-600" /> Operational Load & Efficiency
                 </h2>
-                <Card className="h-48 flex items-center justify-center text-muted-foreground">
-                  <CardContent>Placeholder for Ticket Handoffs Count, Status Transition Map, Interaction Load</CardContent>
-                </Card>
+                <CustomerOperationalLoadCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 
+              {/* Placeholder for other sections */}
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
                   Conversation Depth & Activity
