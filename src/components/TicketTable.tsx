@@ -116,7 +116,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
   };
 
   return (
-    <div className="rounded-lg overflow-hidden shadow-md w-full bg-white dark:bg-gray-800">
+    <div className="rounded-lg shadow-md w-full bg-white dark:bg-gray-800"> {/* Removed overflow-hidden */}
       <Table>
         <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700"> {/* Sticky header with light grey background */}
           <TableRow>

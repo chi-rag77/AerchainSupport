@@ -265,10 +265,10 @@ const TicketsPage = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-4 overflow-hidden"> {/* Removed h-screen and flex-row */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
+    <div className="flex-1 flex flex-col overflow-hidden"> {/* Removed p-4 */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full px-4"> {/* Added px-4 */}
         {/* Header Section */}
-        <div className="p-6 pb-3 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="pt-6 pb-3 border-b border-gray-200 dark:border-gray-700 shadow-sm"> {/* Adjusted padding */}
           <div className="flex justify-between items-center mb-2">
             <hgroup>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -305,7 +305,7 @@ const TicketsPage = () => {
         </div>
 
         {/* Metrics Overview Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 p-4 pb-2"> {/* Reduced gap-3 to gap-2, p-6 pb-3 to p-4 pb-2 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 py-4 pb-2"> {/* Adjusted padding */}
           <DashboardMetricCard
             title="Total Tickets"
             value={metrics.totalTickets}
@@ -344,8 +344,8 @@ const TicketsPage = () => {
         </div>
 
         {/* Search & Filters Bar */}
-        <div className="p-4 pt-2 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner"> {/* Reduced p-6 pt-3 to p-4 pt-2 */}
-          <div className="flex flex-wrap gap-2 w-full items-center"> {/* Reduced gap-3 to gap-2 */}
+        <div className="py-4 pt-2 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner"> {/* Adjusted padding */}
+          <div className="flex flex-wrap gap-2 w-full items-center">
             <div className="relative flex-grow min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
@@ -442,27 +442,31 @@ const TicketsPage = () => {
           </div>
         </div>
 
-        <div className="flex-grow overflow-y-auto p-4"> {/* Reduced p-6 to p-4 */}
-          <FilterNotification
-            filteredCount={filteredTickets.length}
-            totalCount={(freshdeskTickets || []).length || 0}
-            searchTerm={searchTerm}
-            filterStatus={filterStatus}
-            filterPriority={filterPriority}
-            filterAssignee={filterAssignee}
-            filterCompany={filterCompany}
-            filterType={filterType}
-            filterDependency={filterDependency}
-            className="mb-2" // Reduced mb-4 to mb-2
-          />
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-              <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
-              <p className="text-lg font-medium">Loading tickets...</p>
+        <div className="flex-grow py-4"> {/* Adjusted padding, removed overflow-y-auto */}
+          <div className="h-full flex flex-col"> {/* New container for filter notification and scrollable table */}
+            <FilterNotification
+              filteredCount={filteredTickets.length}
+              totalCount={(freshdeskTickets || []).length || 0}
+              searchTerm={searchTerm}
+              filterStatus={filterStatus}
+              filterPriority={filterPriority}
+              filterAssignee={filterAssignee}
+              filterCompany={filterCompany}
+              filterType={filterType}
+              filterDependency={filterDependency}
+              className="mb-2"
+            />
+            <div className="relative flex-grow overflow-y-auto"> {/* New scrollable area for the table */}
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+                  <p className="text-lg font-medium">Loading tickets...</p>
+                </div>
+              ) : (
+                <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
+              )}
             </div>
-          ) : (
-            <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
-          )}
+          </div>
         </div>
 
         {totalPages > 1 && (
