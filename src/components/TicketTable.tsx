@@ -116,9 +116,9 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
   };
 
   return (
-    <div className="rounded-lg shadow-md w-full bg-white dark:bg-gray-800"> {/* Removed overflow-hidden */}
+    <div className="rounded-lg shadow-md w-full bg-white dark:bg-gray-800 h-full overflow-y-auto"> {/* Added h-full and overflow-y-auto here */}
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700"> {/* Sticky header with light grey background */}
+        <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
           <TableRow>
             <TableHead className="w-[120px] py-3 whitespace-nowrap">Ticket ID</TableHead>
             <TableHead className="py-3 whitespace-nowrap">Title</TableHead>
@@ -128,7 +128,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
             <TableHead className="py-3 whitespace-nowrap">Status</TableHead>
             <TableHead className="py-3 whitespace-nowrap">Priority</TableHead>
             <TableHead className="py-3 whitespace-nowrap">Assignee</TableHead>
-            <TableHead className="py-3 text-right whitespace-nowrap">Ageing</TableHead> {/* New Ageing column */}
+            <TableHead className="py-3 text-right whitespace-nowrap">Ageing</TableHead>
             <TableHead className="py-3 text-right whitespace-nowrap">Created</TableHead>
             <TableHead className="py-3 text-right whitespace-nowrap">Updated</TableHead>
           </TableRow>
@@ -211,7 +211,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={11} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3"> {/* Updated colspan */}
+              <TableCell colSpan={11} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3">
                 No tickets found.
               </TableCell>
             </TableRow>
