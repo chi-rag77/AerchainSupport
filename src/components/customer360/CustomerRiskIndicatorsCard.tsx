@@ -16,6 +16,9 @@ interface CustomerRiskIndicatorsCardProps {
 }
 
 const CustomerRiskIndicatorsCard = ({ customerName, tickets, onViewTicketDetails }: CustomerRiskIndicatorsCardProps) => {
+  // Define 'now' at the component level using useMemo for stability across renders
+  const now = useMemo(() => new Date(), []);
+
   const riskMetrics = useMemo(() => {
     if (!tickets || tickets.length === 0) {
       return {
@@ -25,7 +28,6 @@ const CustomerRiskIndicatorsCard = ({ customerName, tickets, onViewTicketDetails
       };
     }
 
-    const now = new Date();
     const openTickets = tickets.filter(t => t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed');
 
     const overdueTicketsCount = openTickets.filter(t => t.due_by && isPast(parseISO(t.due_by!))).length;
@@ -41,7 +43,7 @@ const CustomerRiskIndicatorsCard = ({ customerName, tickets, onViewTicketDetails
       longOpenTicketsCount,
       oldestOpenTickets,
     };
-  }, [tickets]);
+  }, [tickets, now]); // Add 'now' to the dependency array
 
   return (
     <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full">
