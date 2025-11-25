@@ -9,7 +9,7 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket, ConversationMessage } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox, Clock } from "lucide-react"; // Added Clock
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox, Clock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -436,15 +436,9 @@ const TicketsPage = () => {
               </SheetContent>
             </Sheet>
 
-            <Button variant="ghost" size="icon" onClick={handleSyncTickets} disabled={isFetching}>
-              {isFetching ? (
-                <RefreshCw className="h-5 w-5 animate-spin text-primary" />
-              ) : (
-                <RefreshCw className="h-5 w-5 text-muted-foreground" />
-              )}
-            </Button>
-            <Button onClick={handleCreateIntake} className="flex items-center gap-2 bg-primary text-primary-foreground">
-              <PlusCircle className="h-5 w-5" /> Create Intake
+            {/* Removed the old sync button here */}
+            <Button onClick={handleSyncTickets} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+              <RefreshCw className="h-5 w-5" /> Sync Tickets
             </Button>
           </div>
         </div>
