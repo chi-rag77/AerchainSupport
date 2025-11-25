@@ -67,3 +67,13 @@ export type Insight = {
   customerName?: string;
   ticketCount?: number;
 };
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  message: string;
+  type: 'info' | 'warning' | 'critical' | 'success';
+  read: boolean;
+  created_at: string;
+  link?: string; // Optional link to a specific page/resource
+};
