@@ -457,7 +457,7 @@ const TicketsPage = () => {
             className="mb-2"
           />
           {/* This div will now be the scrollable container for the table */}
-          <div className="flex-grow overflow-y-auto"> 
+          <div className="flex-grow relative"> 
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
