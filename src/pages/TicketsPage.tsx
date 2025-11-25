@@ -456,8 +456,8 @@ const TicketsPage = () => {
             filterDependency={filterDependency}
             className="mb-2"
           />
-          {/* The div below now just takes available space, TicketTable handles its own scrolling */}
-          <div className="relative flex-grow"> 
+          {/* Scrollable wrapper for the table */}
+          <div className="relative flex-grow overflow-y-auto h-[calc(100vh - 322px)]"> 
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
