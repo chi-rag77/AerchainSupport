@@ -120,15 +120,6 @@ const TicketsPage = () => {
 
     let currentTickets: Ticket[] = freshdeskTickets;
 
-    // Removed the 'myPendingApproval' filtering logic as the tab is being removed.
-    // if (activeTab === "myPendingApproval" && user?.email) {
-    //   currentTickets = currentTickets.filter(ticket =>
-    //     ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()) &&
-    //     ticket.status.toLowerCase() !== 'resolved' &&
-    //     ticket.status.toLowerCase() !== 'closed'
-    //   );
-    // }
-
     return currentTickets.filter(ticket => {
       const matchesSearch = searchTerm === "" ||
         ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -285,10 +276,10 @@ const TicketsPage = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-background">
-      <Card className="flex flex-col h-full p-0 overflow-hidden border-none shadow-xl">
+    <div className="flex-1 flex flex-col bg-background"> {/* Removed p-6 and overflow-y-auto */}
+      <Card className="flex flex-col h-full p-6 overflow-hidden border-none shadow-xl"> {/* Added p-6 here */}
         {/* Header Section */}
-        <div className="p-6 pb-4 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
+        <div className="pb-4 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm -mx-6 px-6"> {/* Adjusted padding/margin */}
           <div className="flex justify-between items-center">
             <div className="flex flex-col items-start">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Support & Ticketing Queue</h1>
@@ -300,7 +291,7 @@ const TicketsPage = () => {
         </div>
 
         {/* Summary Metrics */}
-        <section className="p-6 pb-4">
+        <section className="pt-6 pb-4 -mx-6 px-6"> {/* Adjusted padding/margin */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <DashboardMetricCard
               title="Total Tickets"
@@ -333,11 +324,11 @@ const TicketsPage = () => {
           </div>
         </section>
 
-        <Separator className="mx-6" />
+        <Separator className="mx-0" /> {/* Removed mx-6, now relative to Card padding */}
 
         {/* Main content area for filter notification and scrollable table */}
-        <div className="flex-grow p-6 pt-4 flex flex-col">
-          <div className="flex flex-row items-center justify-between gap-4 mb-4"> {/* Updated to flex row */}
+        <div className="flex-grow pt-4 flex flex-col"> {/* Removed p-6, kept pt-4, added flex-col */}
+          <div className="flex flex-row items-center justify-between gap-4 mb-4">
             <FilterNotification
               filteredCount={filteredTickets.length}
               totalCount={(freshdeskTickets || []).length || 0}
@@ -348,9 +339,9 @@ const TicketsPage = () => {
               filterCompany={selectedCompanies.length > 0 ? selectedCompanies.join(', ') : "All"}
               filterType={selectedTypes.length > 0 ? selectedTypes.join(', ') : "All"}
               filterDependency={selectedDependencies.length > 0 ? selectedDependencies.join(', ') : "All"}
-              className="" // Removed mb-4 from here
+              className=""
             />
-            <div className="flex items-center gap-3"> {/* Container for buttons */}
+            <div className="flex items-center gap-3">
               <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
                 <SheetTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2 bg-card">
@@ -436,7 +427,7 @@ const TicketsPage = () => {
               </Button>
             </div>
           </div>
-          <div className="flex-grow overflow-y-auto rounded-lg border border-border shadow-md max-h-[calc(100vh - 350px)]"> 
+          <div className="flex-grow overflow-y-auto rounded-lg border border-border shadow-md"> {/* Removed max-h */}
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
@@ -449,7 +440,7 @@ const TicketsPage = () => {
         </div>
 
         {totalPages > 1 && (
-          <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-3 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl">
+          <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-3 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl -mx-6 px-6"> {/* Adjusted padding/margin */}
             <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2">
               <PaginationItem>
                 <PaginationPrevious
