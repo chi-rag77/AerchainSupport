@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import QueueSummaryCard from "@/components/QueueSummaryCard"; // Changed from DashboardMetricCard
+import DashboardMetricCard from "@/components/DashboardMetricCard"; // Changed from QueueSummaryCard
 import { Ticket, ConversationMessage } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox } from "lucide-react"; // Added ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,8 +28,8 @@ import { exportCsvTemplate } from '@/utils/export';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { MultiSelect } from "@/components/MultiSelect";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Added Tabs components
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet"; // Added Sheet components
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -45,16 +45,15 @@ const TicketsPage = () => {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("all"); // New state for tabs
-  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false); // New state for filter sheet
-  const [showSearchInput, setShowSearchInput] = useState(false); // State to toggle search input visibility
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  const [showSearchInput, setShowSearchInput] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const ticketsPerPage = 25;
 
   const queryClient = useQueryClient();
 
-  // Fetch tickets from Supabase database
   const { data: freshdeskTickets, isLoading, error, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["freshdeskTickets"],
     queryFn: async () => {
@@ -91,7 +90,6 @@ const TicketsPage = () => {
   };
 
   const handleCreateIntake = () => {
-    // Placeholder for creating a new intake/ticket
     toast.info("Functionality to create a new intake/ticket will be implemented here!");
   };
 
@@ -114,7 +112,7 @@ const TicketsPage = () => {
     setSelectedTypes([]);
     setSelectedDependencies([]);
     setCurrentPage(1);
-    setIsFilterSheetOpen(false); // Close sheet after clearing
+    setIsFilterSheetOpen(false);
   };
 
   const filteredTickets = useMemo(() => {
@@ -122,10 +120,7 @@ const TicketsPage = () => {
 
     let currentTickets: Ticket[] = freshdeskTickets;
 
-    // Apply tab filter
     if (activeTab === "myPendingApproval" && user?.email) {
-      // This is a placeholder. Real "pending approval" would require specific ticket statuses or custom fields.
-      // For now, let's filter by tickets assigned to the user and not yet resolved/closed.
       currentTickets = currentTickets.filter(ticket =>
         ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()) &&
         ticket.status.toLowerCase() !== 'resolved' &&
@@ -155,38 +150,25 @@ const TicketsPage = () => {
   const metrics = useMemo(() => {
     if (!freshdeskTickets) {
       return {
-        totalTickets: 0,
-        openTickets: 0,
-        bugsReceived: 0,
-        resolvedClosedTickets: 0,
-        highPriorityTickets: 0,
-        draftTickets: 0, // New metric
-        awaitingActions: 0, // New metric
-        activeReleased: 0, // New metric
+        totalTicketsOverall: 0,
+        totalActiveTickets: 0,
+        openTicketsSpecific: 0,
+        bugsReceivedOverall: 0,
       };
     }
 
-    const totalTickets = freshdeskTickets.length;
-    const openTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
-    const bugsReceived = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
-    const resolvedClosedTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed').length;
-    const highPriorityTickets = freshdeskTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
-
-    // Placeholder metrics for the new summary cards
-    const draftTickets = freshdeskTickets.filter(t => t.status.toLowerCase().includes('draft')).length; // Assuming a 'draft' status
-    const awaitingActions = freshdeskTickets.filter(t => t.status.toLowerCase().includes('pending') || t.status.toLowerCase().includes('waiting')).length;
-    const activeReleased = freshdeskTickets.filter(t => t.status.toLowerCase().includes('open') || t.status.toLowerCase().includes('on tech') || t.status.toLowerCase().includes('on product')).length;
-
+    const totalTicketsOverall = freshdeskTickets.length;
+    const totalActiveTickets = freshdeskTickets.filter(t =>
+      t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed'
+    ).length;
+    const openTicketsSpecific = freshdeskTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
+    const bugsReceivedOverall = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
 
     return {
-      totalTickets,
-      openTickets,
-      bugsReceived,
-      resolvedClosedTickets,
-      highPriorityTickets,
-      draftTickets,
-      awaitingActions,
-      activeReleased,
+      totalTicketsOverall,
+      totalActiveTickets,
+      openTicketsSpecific,
+      bugsReceivedOverall,
     };
   }, [freshdeskTickets]);
 
@@ -319,33 +301,33 @@ const TicketsPage = () => {
         {/* Summary Metrics */}
         <section className="p-6 pb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <QueueSummaryCard
-              title="Draft"
-              value={metrics.draftTickets}
-              icon={Settings} // Changed icon to Settings
-              description="Tickets currently in draft status."
-              colorClass="bg-gray-50 dark:bg-gray-700"
-            />
-            <QueueSummaryCard
-              title="Awaiting Actions"
-              value={metrics.awaitingActions}
-              icon={Hourglass}
-              description="Tickets waiting for an action from agents or customers."
-              colorClass="bg-yellow-50 dark:bg-yellow-950/30"
-            />
-            <QueueSummaryCard
-              title="Active/Released"
-              value={metrics.activeReleased}
-              icon={CheckCircle}
-              description="Tickets that are currently active or have been released."
-              colorClass="bg-blue-50 dark:bg-blue-950/30"
-            />
-            <QueueSummaryCard
+            <DashboardMetricCard
               title="Total Tickets"
-              value={metrics.totalTickets}
-              icon={Inbox} // Changed icon to Inbox
-              description="All tickets in the system."
-              colorClass="bg-purple-50 dark:bg-purple-950/30"
+              value={metrics.totalTicketsOverall}
+              icon={TicketIcon}
+              trend={12}
+              description="The total number of support tickets in the system."
+            />
+            <DashboardMetricCard
+              title="Total Open Tickets"
+              value={metrics.totalActiveTickets}
+              icon={Hourglass}
+              trend={5}
+              description="Total number of active tickets across all time, regardless of date filter."
+            />
+            <DashboardMetricCard
+              title="Open Tickets"
+              value={metrics.openTicketsSpecific}
+              icon={Clock}
+              trend={5}
+              description="Tickets that are currently in 'Open (Being Processed)' status."
+            />
+            <DashboardMetricCard
+              title="Bugs Received"
+              value={metrics.bugsReceivedOverall}
+              icon={Bug}
+              trend={8}
+              description="Number of tickets categorized as 'Bug' in the system."
             />
           </div>
         </section>
@@ -481,7 +463,6 @@ const TicketsPage = () => {
             filterDependency={selectedDependencies.length > 0 ? selectedDependencies.join(', ') : "All"}
             className="mb-4"
           />
-          {/* This div will now be the scrollable container for the table */}
           <div className="flex-grow overflow-y-auto rounded-lg border border-border shadow-md"> 
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
