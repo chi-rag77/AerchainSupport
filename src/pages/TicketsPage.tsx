@@ -9,7 +9,7 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket, ConversationMessage } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download } from "lucide-react";
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,9 @@ import {
 import FilterNotification from "@/components/FilterNotification";
 import { toast } from 'sonner';
 import { exportCsvTemplate } from '@/utils/export';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { MultiSelect } from "@/components/MultiSelect";
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -36,10 +39,10 @@ const TicketsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [filterPriority, setFilterPriority] = useState<string>("All");
-  const [filterAssignee, setFilterAssignee] = useState<string>("All");
-  const [filterCompany, setFilterCompany] = useState<string>("All");
-  const [filterType, setFilterType] = useState<string>("All");
-  const [filterDependency, setFilterDependency] = useState<string>("All");
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const ticketsPerPage = 25;
@@ -103,6 +106,17 @@ const TicketsPage = () => {
     setSelectedTicket(null);
   };
 
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setFilterStatus("All");
+    setFilterPriority("All");
+    setSelectedAssignees([]);
+    setSelectedCompanies([]);
+    setSelectedTypes([]);
+    setSelectedDependencies([]);
+    setCurrentPage(1);
+  };
+
   const filteredTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
 
@@ -117,15 +131,15 @@ const TicketsPage = () => {
 
       const matchesStatus = filterStatus === "All" || ticket.status.toLowerCase().includes(filterStatus.toLowerCase());
       const matchesPriority = filterPriority === "All" || ticket.priority.toLowerCase() === filterPriority.toLowerCase();
-      const matchesAssignee = filterAssignee === "All" || (ticket.assignee && ticket.assignee.toLowerCase() === filterAssignee.toLowerCase());
-      const matchesCompany = filterCompany === "All" || (ticket.cf_company && ticket.cf_company.toLowerCase() === filterCompany.toLowerCase());
-      const matchesType = filterType === "All" || (ticket.type && ticket.type.toLowerCase() === filterType.toLowerCase());
-      const matchesDependency = filterDependency === "All" || (ticket.cf_dependency && ticket.cf_dependency.toLowerCase() === filterDependency.toLowerCase());
+      const matchesAssignee = selectedAssignees.length === 0 || (ticket.assignee && selectedAssignees.includes(ticket.assignee));
+      const matchesCompany = selectedCompanies.length === 0 || (ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
+      const matchesType = selectedTypes.length === 0 || (ticket.type && selectedTypes.includes(ticket.type));
+      const matchesDependency = selectedDependencies.length === 0 || (ticket.cf_dependency && selectedDependencies.includes(ticket.cf_dependency));
 
 
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesCompany && matchesType && matchesDependency;
     });
-  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, filterAssignee, filterCompany, filterType, filterDependency]);
+  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, selectedAssignees, selectedCompanies, selectedTypes, selectedDependencies]);
 
   const metrics = useMemo(() => {
     if (!freshdeskTickets) {
@@ -206,7 +220,7 @@ const TicketsPage = () => {
         assignees.add(ticket.assignee);
       }
     });
-    return ["All", "Unassigned", ...Array.from(assignees).sort()];
+    return Array.from(assignees).sort();
   }, [freshdeskTickets]);
 
   const uniqueStatuses = useMemo(() => {
@@ -232,7 +246,7 @@ const TicketsPage = () => {
         companies.add(ticket.cf_company);
       }
     });
-    return ["All", ...Array.from(companies).sort()];
+    return Array.from(companies).sort();
   }, [freshdeskTickets]);
 
   const uniqueTypes = useMemo(() => {
@@ -242,7 +256,7 @@ const TicketsPage = () => {
         types.add(ticket.type);
       }
     });
-    return ["All", ...Array.from(types).sort()];
+    return Array.from(types).sort();
   }, [freshdeskTickets]);
 
   const uniqueDependencies = useMemo(() => {
@@ -252,7 +266,7 @@ const TicketsPage = () => {
         dependencies.add(ticket.cf_dependency);
       }
     });
-    return ["All", ...Array.from(dependencies).sort()];
+    return Array.from(dependencies).sort();
   }, [freshdeskTickets]);
 
   if (error) {
@@ -265,16 +279,17 @@ const TicketsPage = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full px-4">
+    <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-background">
+      <Card className="flex flex-col h-full p-0 overflow-hidden border-none shadow-xl">
         {/* Header Section */}
-        <div className="pt-6 pb-3 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex justify-between items-center mb-2">
-            <hgroup>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Support & Ticketing
-              </h1>
-            </hgroup>
+        <div className="p-8 pb-6 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col items-start">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Support & Ticketing Queue</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Manage and track customer support tickets efficiently.
+              </p>
+            </div>
             <div className="flex gap-3">
               <Button
                 onClick={handleDownloadTemplate}
@@ -299,64 +314,67 @@ const TicketsPage = () => {
               </Button>
             </div>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Manage and track customer support tickets
-          </p>
+          <Separator />
         </div>
 
         {/* Metrics Overview Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 py-4 pb-2">
-          <DashboardMetricCard
-            title="Total Tickets"
-            value={metrics.totalTickets}
-            icon={TicketIcon}
-            trend={12}
-            description="All tickets in the system"
-          />
-          <DashboardMetricCard
-            title="Open Tickets"
-            value={metrics.openTickets}
-            icon={Hourglass}
-            trend={-5}
-            description="Currently being processed"
-          />
-          <DashboardMetricCard
-            title="Bugs Received"
-            value={metrics.bugsReceived}
-            icon={Bug}
-            trend={8}
-            description="Tickets categorized as bugs"
-          />
-          <DashboardMetricCard
-            title="Resolved/Closed"
-            value={metrics.resolvedClosedTickets}
-            icon={CheckCircle}
-            trend={15}
-            description="Successfully handled"
-          />
-          <DashboardMetricCard
-            title="High Priority"
-            value={metrics.highPriorityTickets}
-            icon={XCircle}
-            trend={-2}
-            description="Requiring immediate attention"
-          />
-        </div>
+        <section className="p-8 pb-4">
+          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+            <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <DashboardMetricCard
+              title="Total Tickets"
+              value={metrics.totalTickets}
+              icon={TicketIcon}
+              trend={12}
+              description="All tickets in the system"
+            />
+            <DashboardMetricCard
+              title="Open Tickets"
+              value={metrics.openTickets}
+              icon={Hourglass}
+              trend={-5}
+              description="Currently being processed"
+            />
+            <DashboardMetricCard
+              title="Bugs Received"
+              value={metrics.bugsReceived}
+              icon={Bug}
+              trend={8}
+              description="Tickets categorized as bugs"
+            />
+            <DashboardMetricCard
+              title="Resolved/Closed"
+              value={metrics.resolvedClosedTickets}
+              icon={CheckCircle}
+              trend={15}
+              description="Successfully handled"
+            />
+            <DashboardMetricCard
+              title="High Priority"
+              value={metrics.highPriorityTickets}
+              icon={AlertCircle} // Changed icon to AlertCircle for high priority
+              trend={-2}
+              description="Requiring immediate attention"
+            />
+          </div>
+        </section>
 
         {/* Search & Filters Bar */}
-        <div className="py-4 pt-2 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
-          <div className="flex flex-wrap gap-2 w-full items-center">
+        <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
+          <div className="flex flex-wrap gap-3 w-full items-center">
             <div className="relative flex-grow min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search by Ticket ID, Title, or Assignee..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-full"
+                className="pl-9 w-full bg-card"
               />
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[150px] group">
+              <SelectTrigger className="w-[150px] group bg-card">
                 <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                 <span className="text-sm font-medium">Status:</span>
                 <SelectValue placeholder="All" />
@@ -370,7 +388,7 @@ const TicketsPage = () => {
               </SelectContent>
             </Select>
             <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger className="w-[150px] group">
+              <SelectTrigger className="w-[150px] group bg-card">
                 <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
                 <span className="text-sm font-medium">Priority:</span>
                 <SelectValue placeholder="All" />
@@ -383,81 +401,60 @@ const TicketsPage = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filterAssignee} onValueChange={setFilterAssignee}>
-              <SelectTrigger className="w-[150px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <span className="text-sm font-medium">Assignee:</span>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueAssignees.map(assignee => (
-                  <SelectItem key={assignee} value={assignee}>
-                    {assignee}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterCompany} onValueChange={setFilterCompany}>
-              <SelectTrigger className="w-[150px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <span className="text-sm font-medium">Company:</span>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueCompanies.map(company => (
-                  <SelectItem key={company} value={company}>
-                    {company}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[150px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <span className="text-sm font-medium">Type:</span>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueTypes.map(type => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterDependency} onValueChange={setFilterDependency}>
-              <SelectTrigger className="w-[150px] group">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <span className="text-sm font-medium">Dependency:</span>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueDependencies.map(dependency => (
-                  <SelectItem key={dependency} value={dependency}>
-                    {dependency}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelect
+              options={uniqueAssignees.map(assignee => ({ value: assignee, label: assignee }))}
+              selected={selectedAssignees}
+              onSelectedChange={setSelectedAssignees}
+              placeholder="Filter by Assignee"
+              className="w-[180px] bg-card"
+            />
+            <MultiSelect
+              options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+              selected={selectedCompanies}
+              onSelectedChange={setSelectedCompanies}
+              placeholder="Filter by Company"
+              className="w-[180px] bg-card"
+            />
+            <MultiSelect
+              options={uniqueTypes.map(type => ({ value: type, label: type }))}
+              selected={selectedTypes}
+              onSelectedChange={setSelectedTypes}
+              placeholder="Filter by Type"
+              className="w-[150px] bg-card"
+            />
+            <MultiSelect
+              options={uniqueDependencies.map(dependency => ({ value: dependency, label: dependency }))}
+              selected={selectedDependencies}
+              onSelectedChange={setSelectedDependencies}
+              placeholder="Filter by Dependency"
+              className="w-[180px] bg-card"
+            />
+            <Button
+              variant="outline"
+              onClick={handleClearFilters}
+              className="flex items-center gap-1 bg-card"
+            >
+              <Eraser className="h-4 w-4" /> Clear Filters
+            </Button>
           </div>
         </div>
 
         {/* Main content area for filter notification and scrollable table */}
-        <div className="flex-grow py-4 flex flex-col">
+        <div className="flex-grow p-8 pt-4 flex flex-col">
           <FilterNotification
             filteredCount={filteredTickets.length}
             totalCount={(freshdeskTickets || []).length || 0}
             searchTerm={searchTerm}
             filterStatus={filterStatus}
             filterPriority={filterPriority}
-            filterAssignee={filterAssignee}
-            filterCompany={filterCompany}
-            filterType={filterType}
-            filterDependency={filterDependency}
-            className="mb-2"
+            filterAssignee={selectedAssignees.length > 0 ? selectedAssignees.join(', ') : "All"}
+            filterCompany={selectedCompanies.length > 0 ? selectedCompanies.join(', ') : "All"}
+            filterType={selectedTypes.length > 0 ? selectedTypes.join(', ') : "All"}
+            filterDependency={selectedDependencies.length > 0 ? selectedDependencies.join(', ') : "All"}
+            className="mb-4"
           />
           {/* This div will now be the scrollable container for the table */}
-          <div className="flex-grow overflow-y-auto"> 
+          <div className="flex-grow overflow-y-auto rounded-lg border border-border shadow-md"> 
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
@@ -518,7 +515,7 @@ const TicketsPage = () => {
             ticket={selectedTicket}
           />
         )}
-      </div>
+      </Card>
     </div>
   );
 };

@@ -13,7 +13,8 @@ import { Ticket } from '@/types';
 import { format, formatDistanceToNowStrict, differenceInDays } from 'date-fns'; // Import differenceInDays
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle, Hourglass, Laptop, AlertCircle, XCircle, Clock, Users, Shield, MessageSquare } from 'lucide-react';
+import { CheckCircle, Hourglass, Laptop, AlertCircle, XCircle, Clock, Users, Shield, MessageSquare, Tag } from 'lucide-react'; // Added Tag icon
+import { Badge } from "@/components/ui/badge"; // Import Badge component
 
 interface TicketTableProps {
   tickets: Ticket[];
@@ -116,21 +117,21 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
   };
 
   return (
-    <div className="rounded-lg shadow-md w-full bg-white dark:bg-gray-800 h-full scroll-smooth"> {/* Removed overflow-y-auto and max-h-[600px] */}
-      <Table className="min-w-full"> {/* Added min-w-full */}
+    <div className="w-full h-full"> {/* Removed rounded-lg shadow-md bg-white dark:bg-gray-800 scroll-smooth */}
+      <Table className="min-w-full">
         <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
           <TableRow>
-            <TableHead className="w-[120px] py-3 whitespace-nowrap">Ticket ID</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Title</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Company</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Type</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Dependency</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Status</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Priority</TableHead>
-            <TableHead className="py-3 whitespace-nowrap">Assignee</TableHead>
-            <TableHead className="py-3 text-right whitespace-nowrap">Ageing</TableHead>
-            <TableHead className="py-3 text-right whitespace-nowrap">Created</TableHead>
-            <TableHead className="py-3 text-right whitespace-nowrap">Updated</TableHead>
+            <TableHead className="w-[100px] py-2 whitespace-nowrap">Ticket ID</TableHead>
+            <TableHead className="py-2 whitespace-nowrap">Title</TableHead>
+            <TableHead className="py-2 whitespace-nowrap">Company</TableHead>
+            <TableHead className="py-2 whitespace-nowrap">Type</TableHead>
+            <TableHead className="py-2 whitespace-nowrap">Dependency</TableHead>
+            <TableHead className="py-2 whitespace-nowrap">Status</TableHead>
+            <TableHead className="py-2 whitespace-nowrap">Priority</TableHead>
+            <TableHead className="py-2 whitespace-nowrap">Assignee</TableHead>
+            <TableHead className="py-2 text-right whitespace-nowrap">Ageing</TableHead>
+            <TableHead className="py-2 text-right whitespace-nowrap">Created</TableHead>
+            <TableHead className="py-2 text-right whitespace-nowrap">Updated</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -144,30 +145,34 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
                   ${ticket.status.toLowerCase() === 'escalated' ? 'bg-red-50/50 dark:bg-red-950/30' : ''}
                 `}
               >
-                <TableCell className="font-medium py-3">{ticket.id}</TableCell>
-                <TableCell className="py-3">{ticket.subject}</TableCell>
-                <TableCell className="py-3">{ticket.cf_company || 'N/A'}</TableCell>
-                <TableCell className="py-3">{ticket.type || 'N/A'}</TableCell>
-                <TableCell className="py-3">{ticket.cf_dependency || 'N/A'}</TableCell>
-                <TableCell className="py-3">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getStatusBadgeClasses(ticket.status)}`}>
+                <TableCell className="font-medium py-2">{ticket.id}</TableCell>
+                <TableCell className="py-2">{ticket.subject}</TableCell>
+                <TableCell className="py-2">{ticket.cf_company || 'N/A'}</TableCell>
+                <TableCell className="py-2">
+                  <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 text-xs">
+                    <Tag className="h-3 w-3" /> {ticket.type || 'N/A'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="py-2">{ticket.cf_dependency || 'N/A'}</TableCell>
+                <TableCell className="py-2">
+                  <Badge className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getStatusBadgeClasses(ticket.status)}`}>
                     {getStatusIcon(ticket.status)}
                     {ticket.status === 'Pending (Awaiting your Reply)' ? 'In Progress' : ticket.status}
-                  </span>
+                  </Badge>
                 </TableCell>
-                <TableCell className="py-3">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getPriorityBadgeClasses(ticket.priority)}`}>
+                <TableCell className="py-2">
+                  <Badge className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getPriorityBadgeClasses(ticket.priority)}`}>
                     {getPriorityIcon(ticket.priority)}
                     {ticket.priority}
-                  </span>
+                  </Badge>
                 </TableCell>
-                <TableCell className="py-3">
+                <TableCell className="py-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="flex items-center">
                         {ticket.assignee && ticket.assignee !== "Unassigned" ? (
                           <>
-                            <Avatar className="h-7 w-7 mr-2 border border-gray-200 dark:border-gray-600 shadow-sm">
+                            <Avatar className="h-6 w-6 mr-2 border border-gray-200 dark:border-gray-600 shadow-sm">
                               <AvatarFallback className="text-xs bg-gray-200 dark:bg-gray-700">
                                 {ticket.assignee.split(' ').map(n => n[0]).join('')}
                               </AvatarFallback>
@@ -184,10 +189,10 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
-                <TableCell className="py-3 text-right font-semibold">
+                <TableCell className="py-2 text-right font-semibold">
                   {calculateAgeing(ticket)} days
                 </TableCell>
-                <TableCell className="py-3 text-right">
+                <TableCell className="py-2 text-right text-xs text-muted-foreground">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span>{format(new Date(ticket.created_at), 'dd MMM · hh:mm a')}</span>
@@ -197,7 +202,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
-                <TableCell className="py-3 text-right">
+                <TableCell className="py-2 text-right text-xs text-muted-foreground">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span>{format(new Date(ticket.updated_at), 'dd MMM · hh:mm a')}</span>
