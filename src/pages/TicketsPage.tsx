@@ -436,7 +436,7 @@ const TicketsPage = () => {
               </Button>
             </div>
           </div>
-          <div className="flex-grow overflow-y-auto rounded-lg border border-border shadow-md"> 
+          <div className="flex-grow overflow-y-auto rounded-lg border border-border shadow-md max-h-[calc(100vh - 350px)]"> 
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />

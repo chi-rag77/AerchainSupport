@@ -125,7 +125,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
   );
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full"> {/* Removed h-full here */}
       <Table className="min-w-full">
         <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
           <TableRow>
