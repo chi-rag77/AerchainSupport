@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import DashboardMetricCard from "@/components/DashboardMetricCard"; // Changed from QueueSummaryCard
+import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket, ConversationMessage } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox } from "lucide-react";
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox, Clock } from "lucide-react"; // Added Clock
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
