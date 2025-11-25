@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,39 @@ import Logo from './Logo';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import NavPill from './NavPill';
+import NotificationsSheet from './NotificationsSheet'; // Import the new component
+import { useQuery, UseQueryOptions } from '@tanstack/react-query'; // Import useQuery
+
+const fetchUserNotifications = async (userId: string | undefined): Promise<Notification[]> => {
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from('user_notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("Error fetching user notifications:", error);
+    throw error;
+  }
+  return data || [];
+};
 
 const TopNavigation = () => {
   const { session } = useSupabase();
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const location = useLocation();
+  const [isNotificationsSheetOpen, setIsNotificationsSheetOpen] = useState(false);
+
+  const { data: notifications = [] } = useQuery<Notification[], Error>({
+    queryKey: ["userNotifications", user?.id],
+    queryFn: () => fetchUserNotifications(user?.id),
+    enabled: !!user?.id,
+    refetchInterval: 30000, // Refetch every 30 seconds to get new notifications
+  } as UseQueryOptions<Notification[], Error>);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -28,7 +55,7 @@ const TopNavigation = () => {
     { icon: Home, label: "Home", path: "/" },
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: BarChart2, label: "Insights", path: "/analytics" },
-    { icon: Users, label: "Customer 360", path: "/customer360" }, // Re-added Customer 360 item
+    { icon: Users, label: "Customer 360", path: "/customer360" },
   ];
 
   return (
@@ -49,8 +76,14 @@ const TopNavigation = () => {
 
         {/* Right Section: Notifications and User Profile */}
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full relative" onClick={() => setIsNotificationsSheetOpen(true)}>
             <Bell className="h-5 w-5 text-muted-foreground" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+            )}
           </Button>
 
           <DropdownMenu>
@@ -93,6 +126,12 @@ const TopNavigation = () => {
           </DropdownMenu>
         </div>
       </div>
+      <NotificationsSheet
+        isOpen={isNotificationsSheetOpen}
+        onClose={() => setIsNotificationsSheetOpen(false)}
+        notifications={notifications}
+        unreadCount={unreadCount}
+      />
     </nav>
   );
 };

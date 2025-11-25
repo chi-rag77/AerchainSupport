@@ -99,12 +99,11 @@ serve(async (req) => {
       });
     }
 
-    const { action } = requestBody;
+    const { action, user_id: client_user_id } = requestBody; // Extract user_id from request body
 
     switch (action) {
       case 'syncTickets': {
         const today = new Date();
-        // Fetch tickets updated in the last 24 hours for daily sync
         const twentyFourHoursAgo = new Date(today.getTime() - 24 * 60 * 60 * 1000);
         const updatedSince = twentyFourHoursAgo.toISOString();
 
@@ -118,6 +117,7 @@ serve(async (req) => {
         let page = 1;
         let hasMore = true;
         const ticketsToUpsert: any[] = [];
+        const notificationsToInsert: any[] = [];
 
         while (hasMore) {
           const url = `https://${freshdeskDomain}.freshdesk.com/api/v2/tickets?include=requester,stats,company,description&updated_since=${encodeURIComponent(updatedSince)}&page=${page}&per_page=100`;
@@ -141,41 +141,84 @@ serve(async (req) => {
           }
 
           for (const ticket of tickets) {
-            const requesterEmail = ticket.requester?.email || "unknown@freshdesk.com"; // Robust fallback
-            const priorityString = PRIORITY_MAP[ticket.priority] || `Unknown (${ticket.priority || 'N/A'})`; // Robust fallback
-            const statusString = STATUS_MAP[ticket.status] || `Unknown (${ticket.status || 'N/A'})`; // Robust fallback
+            const requesterEmail = ticket.requester?.email || "unknown@freshdesk.com";
+            const priorityString = PRIORITY_MAP[ticket.priority] || `Unknown (${ticket.priority || 'N/A'})`;
+            const statusString = STATUS_MAP[ticket.status] || `Unknown (${ticket.status || 'N/A'})`;
+            const assigneeName = await getAgentName(ticket.responder_id, freshdeskApiKey, freshdeskDomain);
 
-            // Log the requester_email before adding to the upsert array
-            console.log(`[DEBUG] Ticket ID: ${ticket.id}, Requester Email: ${requesterEmail}`);
-
-            ticketsToUpsert.push({
-              freshdesk_id: ticket.id?.toString() || `unknown-${Date.now()}`, // Robust fallback for ID
-              subject: ticket.subject || "No Subject Provided", // Robust fallback
+            const newTicketData = {
+              freshdesk_id: ticket.id?.toString() || `unknown-${Date.now()}`,
+              subject: ticket.subject || "No Subject Provided",
               priority: priorityString,
               status: statusString,
-              type: ticket.type || null, // Nullable
+              type: ticket.type || null,
               requester_email: requesterEmail,
-              created_at: ticket.created_at || new Date().toISOString(), // Robust fallback
-              updated_at: ticket.updated_at || new Date().toISOString(), // Robust fallback
-              due_by: ticket.due_by || null, // Nullable
-              fr_due_by: ticket.fr_due_by || null, // Nullable
-              description_text: ticket.description_text || null, // Nullable
-              description_html: ticket.description_html || null, // Nullable
-              assignee: await getAgentName(ticket.responder_id, freshdeskApiKey, freshdeskDomain),
-              cf_company: ticket.custom_fields?.cf_company || null, // Nullable
-              cf_country: ticket.custom_fields?.cf_country || null, // Nullable
-              cf_module: ticket.custom_fields?.cf_module || null, // Nullable
-              cf_dependency: ticket.custom_fields?.cf_dependency || null, // Nullable
-              cf_recurrence: ticket.custom_fields?.cf_recurrence || null, // Nullable
-              custom_fields: ticket.custom_fields || {} // Robust fallback
-            });
+              created_at: ticket.created_at || new Date().toISOString(),
+              updated_at: ticket.updated_at || new Date().toISOString(),
+              due_by: ticket.due_by || null,
+              fr_due_by: ticket.fr_due_by || null,
+              description_text: ticket.description_text || null,
+              description_html: ticket.description_html || null,
+              assignee: assigneeName,
+              cf_company: ticket.custom_fields?.cf_company || null,
+              cf_country: ticket.custom_fields?.cf_country || null,
+              cf_module: ticket.custom_fields?.cf_module || null,
+              cf_dependency: ticket.custom_fields?.cf_dependency || null,
+              cf_recurrence: ticket.custom_fields?.cf_recurrence || null,
+              custom_fields: ticket.custom_fields || {}
+            };
+            ticketsToUpsert.push(newTicketData);
+
+            // Check if this is a new ticket or a critical update for notification
+            const { data: existingTicket, error: fetchExistingError } = await supabase
+              .from('freshdesk_tickets')
+              .select('status, priority')
+              .eq('freshdesk_id', newTicketData.freshdesk_id)
+              .single();
+
+            if (fetchExistingError && fetchExistingError.code !== 'PGRST116') { // PGRST116 means "no rows found"
+              console.error(`Error fetching existing ticket ${newTicketData.freshdesk_id}:`, fetchExistingError);
+            }
+
+            if (!existingTicket) {
+              // New ticket created
+              if (client_user_id) {
+                notificationsToInsert.push({
+                  user_id: client_user_id,
+                  message: `New ticket #${newTicketData.freshdesk_id} created: ${newTicketData.subject}`,
+                  type: 'info',
+                  link: `/tickets?search=${newTicketData.freshdesk_id}`,
+                });
+              }
+            } else {
+              // Existing ticket updated - check for critical changes
+              if (existingTicket.status !== newTicketData.status && (newTicketData.status === 'Urgent' || newTicketData.status === 'Escalated')) {
+                if (client_user_id) {
+                  notificationsToInsert.push({
+                    user_id: client_user_id,
+                    message: `Ticket #${newTicketData.freshdesk_id} status changed to ${newTicketData.status}: ${newTicketData.subject}`,
+                    type: 'critical',
+                    link: `/tickets?search=${newTicketData.freshdesk_id}`,
+                  });
+                }
+              } else if (existingTicket.priority !== newTicketData.priority && newTicketData.priority === 'Urgent') {
+                if (client_user_id) {
+                  notificationsToInsert.push({
+                    user_id: client_user_id,
+                    message: `Ticket #${newTicketData.freshdesk_id} priority changed to ${newTicketData.priority}: ${newTicketData.subject}`,
+                    type: 'critical',
+                    link: `/tickets?search=${newTicketData.freshdesk_id}`,
+                  });
+                }
+              }
+            }
           }
           page++;
           await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay to respect rate limits
         }
 
         // Upsert tickets into Supabase
-        const { data: upsertedData, error: upsertError } = await supabase.from('freshdesk_tickets').upsert(ticketsToUpsert, { onConflict: 'freshdesk_id' }); // Use freshdesk_id for conflict resolution
+        const { data: upsertedData, error: upsertError } = await supabase.from('freshdesk_tickets').upsert(ticketsToUpsert, { onConflict: 'freshdesk_id' });
 
         if (upsertError) {
           console.error('Supabase Upsert Error:', upsertError);
@@ -183,6 +226,16 @@ serve(async (req) => {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
+        }
+
+        // Insert notifications
+        if (notificationsToInsert.length > 0) {
+          const { error: notificationError } = await supabase.from('user_notifications').insert(notificationsToInsert);
+          if (notificationError) {
+            console.error('Supabase Notification Insert Error:', notificationError);
+          } else {
+            console.log(`Inserted ${notificationsToInsert.length} notifications.`);
+          }
         }
 
         return new Response(JSON.stringify({ message: `Successfully synced ${ticketsToUpsert.length} tickets.`, upsertedData }), {

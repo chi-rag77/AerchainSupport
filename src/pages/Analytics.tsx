@@ -61,7 +61,7 @@ const Analytics = () => {
     try {
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
         method: 'POST',
-        body: { action: 'syncTickets' },
+        body: { action: 'syncTickets', user_id: user?.id }, // Pass user.id here
       });
 
       if (error) {

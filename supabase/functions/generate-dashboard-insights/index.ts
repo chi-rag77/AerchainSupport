@@ -67,6 +67,17 @@ serve(async (req) => {
       },
     });
 
+    // Get the user ID from the JWT in the Authorization header
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('Error getting user from JWT:', userError);
+      return new Response(JSON.stringify({ error: 'Unauthorized: Could not get user from token.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const current_user_id = user.id;
+
     const { data: tickets, error: fetchError } = await supabase
       .from('freshdesk_tickets')
       .select('freshdesk_id, subject, status, updated_at, created_at, cf_company')
@@ -81,6 +92,7 @@ serve(async (req) => {
     }
 
     const insights: Insight[] = [];
+    const notificationsToInsert: any[] = [];
     const now = new Date();
 
     // --- Stalled Tickets Logic ---
@@ -101,17 +113,29 @@ serve(async (req) => {
       const companyName = ticket.cf_company || 'Unknown Company';
 
       if (activeStatuses.includes(ticket.status.toLowerCase()) && daysSinceUpdate >= stalledThresholdDays) {
+        const severity = daysSinceUpdate >= 5 ? 'critical' : 'warning';
+        const message = `Ticket ${ticket.freshdesk_id} for ${companyName} has been stalled '${ticket.status}' for ${daysSinceUpdate} days.`;
         insights.push({
           id: `stalled-${ticket.freshdesk_id}`,
           type: 'stalledOnTech',
-          message: `Ticket ${ticket.freshdesk_id} for ${companyName} has been stalled '${ticket.status}' for ${daysSinceUpdate} days.`,
-          severity: daysSinceUpdate >= 5 ? 'critical' : 'warning',
+          message: message,
+          severity: severity,
           icon: 'Clock',
           ticketId: ticket.freshdesk_id,
           companyName: companyName,
           ticketStatus: ticket.status,
           daysStalled: daysSinceUpdate,
         });
+
+        // Create notification for critical/warning stalled tickets
+        if (severity === 'critical' || severity === 'warning') {
+          notificationsToInsert.push({
+            user_id: current_user_id,
+            message: message,
+            type: severity,
+            link: `/tickets?search=${ticket.freshdesk_id}`,
+          });
+        }
       }
     });
 
@@ -131,17 +155,39 @@ serve(async (req) => {
 
     customerTicketCounts.forEach((count, companyName) => {
       if (count >= highVolumeThreshold) {
+        const severity = count >= 10 ? 'critical' : 'warning';
+        const message = `${companyName} has opened ${count} new tickets in the last 24 hours. Consider proactive outreach.`;
         insights.push({
           id: `high-volume-${companyName.replace(/\s/g, '-')}`,
           type: 'highVolumeCustomer',
-          message: `${companyName} has opened ${count} new tickets in the last 24 hours. Consider proactive outreach.`,
-          severity: count >= 10 ? 'critical' : 'warning',
+          message: message,
+          severity: severity,
           icon: 'Users',
           customerName: companyName,
           ticketCount: count,
         });
+
+        // Create notification for critical/warning high volume customer insights
+        if (severity === 'critical' || severity === 'warning') {
+          notificationsToInsert.push({
+            user_id: current_user_id,
+            message: message,
+            type: severity,
+            link: `/customer360?customer=${encodeURIComponent(companyName)}`,
+          });
+        }
       }
     });
+
+    // Insert notifications
+    if (notificationsToInsert.length > 0) {
+      const { error: notificationError } = await supabase.from('user_notifications').insert(notificationsToInsert);
+      if (notificationError) {
+        console.error('Supabase Notification Insert Error:', notificationError);
+      } else {
+        console.log(`Inserted ${notificationsToInsert.length} notifications from insights.`);
+      }
+    }
 
     return new Response(JSON.stringify(insights), {
       status: 200,
