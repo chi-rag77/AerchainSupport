@@ -125,7 +125,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
   );
 
   return (
-    <div className="relative w-full max-h-[calc(100vh - 400px)] overflow-y-auto"> {/* Added max-h and overflow-y-auto here */}
+    <div className="relative w-full max-h-[calc(100vh - 570px)] overflow-y-auto"> {/* Adjusted max-h and added overflow-y-auto */}
       <Table className="min-w-full">
         <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
           <TableRow>
