@@ -45,7 +45,7 @@ const TicketsPage = () => {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<string>("all"); // Default to "all"
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
 
@@ -120,13 +120,14 @@ const TicketsPage = () => {
 
     let currentTickets: Ticket[] = freshdeskTickets;
 
-    if (activeTab === "myPendingApproval" && user?.email) {
-      currentTickets = currentTickets.filter(ticket =>
-        ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()) &&
-        ticket.status.toLowerCase() !== 'resolved' &&
-        ticket.status.toLowerCase() !== 'closed'
-      );
-    }
+    // Removed the 'myPendingApproval' filtering logic as the tab is being removed.
+    // if (activeTab === "myPendingApproval" && user?.email) {
+    //   currentTickets = currentTickets.filter(ticket =>
+    //     ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()) &&
+    //     ticket.status.toLowerCase() !== 'resolved' &&
+    //     ticket.status.toLowerCase() !== 'closed'
+    //   );
+    // }
 
     return currentTickets.filter(ticket => {
       const matchesSearch = searchTerm === "" ||
@@ -339,7 +340,7 @@ const TicketsPage = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow-0">
             <TabsList className="bg-card">
               <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="myPendingApproval">My Pending Approval</TabsTrigger>
+              {/* Removed "My Pending Approval" tab */}
             </TabsList>
           </Tabs>
 
@@ -436,7 +437,6 @@ const TicketsPage = () => {
               </SheetContent>
             </Sheet>
 
-            {/* Removed the old sync button here */}
             <Button onClick={handleSyncTickets} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
               <RefreshCw className="h-5 w-5" /> Sync Tickets
             </Button>
