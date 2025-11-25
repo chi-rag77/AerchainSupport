@@ -285,33 +285,10 @@ const TicketsPage = () => {
         <div className="p-8 pb-6 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <div className="flex flex-col items-start">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Support & Ticketing Queue</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                Manage and track customer support tickets efficiently.
-              </p>
+              {/* Removed h1 and p tags */}
             </div>
             <div className="flex gap-3">
-              <Button
-                onClick={handleDownloadTemplate}
-                className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
-                variant="outline"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download CSV Template
-              </Button>
-              <Button
-                onClick={handleSyncTickets}
-                disabled={isFetching}
-                className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
-              >
-                {isFetching ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                Sync Latest Tickets
-                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
-              </Button>
+              {/* Removed Download CSV Template and Sync Latest Tickets buttons */}
             </div>
           </div>
           <Separator />
