@@ -38,7 +38,10 @@ const TicketsPage = () => {
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string>("all"); // Default to "all"
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
-  const [showSearchInput, setShowSearchInput] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20); // Default to 20 items per page
 
   const queryClient = useQueryClient();
 
@@ -99,9 +102,10 @@ const TicketsPage = () => {
     setSelectedTypes([]);
     setSelectedDependencies([]);
     setIsFilterSheetOpen(false);
+    setCurrentPage(1); // Reset pagination on clear filters
   };
 
-  const filteredTickets = useMemo(() => {
+  const allFilteredTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
 
     let currentTickets: Ticket[] = freshdeskTickets;
@@ -124,6 +128,16 @@ const TicketsPage = () => {
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesCompany && matchesType && matchesDependency;
     });
   }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, selectedAssignees, selectedCompanies, selectedTypes, selectedDependencies, activeTab, user?.email, fullName]);
+
+  // Pagination calculations
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTicketsForTable = allFilteredTickets.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(allFilteredTickets.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
 
   const metrics = useMemo(() => {
     if (!freshdeskTickets) {
@@ -220,13 +234,114 @@ const TicketsPage = () => {
       <Card className="flex flex-col h-full p-0 overflow-hidden border-none shadow-xl">
         {/* Header Section */}
         <div className="p-6 pb-4 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <div className="flex flex-col items-start">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Support & Ticketing Queue</h1>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Manage and track customer support tickets efficiently.
               </p>
             </div>
+            <div className="flex items-center gap-3">
+              <Button onClick={handleCreateIntake} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white">
+                <PlusCircle className="h-5 w-5" /> Create New Ticket
+              </Button>
+              <Button onClick={handleSyncTickets} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                <RefreshCw className="h-5 w-5" /> Sync Tickets
+              </Button>
+            </div>
+          </div>
+          {/* Search Input */}
+          <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
+            <Search className="h-5 w-5 text-gray-500" />
+            <Input
+              type="text"
+              placeholder="Search tickets by subject, ID, requester, or assignee..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page on search
+              }}
+              className="flex-grow bg-card"
+            />
+            <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2 bg-card">
+                  <ListFilter className="h-5 w-5" /> Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+                <SheetHeader>
+                  <SheetTitle className="text-2xl font-bold">Filter Tickets</SheetTitle>
+                  <SheetDescription>
+                    Apply filters to narrow down the ticket list.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="flex-grow overflow-y-auto py-4 space-y-4">
+                  <Select value={filterStatus} onValueChange={(value) => {setFilterStatus(value); setCurrentPage(1);}}>
+                    <SelectTrigger className="w-full bg-card">
+                      <Filter className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm font-medium">Status:</span>
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueStatuses.map(status => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterPriority} onValueChange={(value) => {setFilterPriority(value); setCurrentPage(1);}}>
+                    <SelectTrigger className="w-full bg-card">
+                      <Filter className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm font-medium">Priority:</span>
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniquePriorities.map(priority => (
+                        <SelectItem key={priority} value={priority}>
+                          {priority}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <MultiSelect
+                    options={uniqueAssignees.map(assignee => ({ value: assignee, label: assignee }))}
+                    selected={selectedAssignees}
+                    onSelectedChange={(values) => {setSelectedAssignees(values); setCurrentPage(1);}}
+                    placeholder="Filter by Assignee"
+                    className="w-full bg-card"
+                  />
+                  <MultiSelect
+                    options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+                    selected={selectedCompanies}
+                    onSelectedChange={(values) => {setSelectedCompanies(values); setCurrentPage(1);}}
+                    placeholder="Filter by Company"
+                    className="w-full bg-card"
+                  />
+                  <MultiSelect
+                    options={uniqueTypes.map(type => ({ value: type, label: type }))}
+                    selected={selectedTypes}
+                    onSelectedChange={(values) => {setSelectedTypes(values); setCurrentPage(1);}}
+                    placeholder="Filter by Type"
+                    className="w-full bg-card"
+                  />
+                  <MultiSelect
+                    options={uniqueDependencies.map(dependency => ({ value: dependency, label: dependency }))}
+                    selected={selectedDependencies}
+                    onSelectedChange={(values) => {setSelectedDependencies(values); setCurrentPage(1);}}
+                    placeholder="Filter by Dependency"
+                    className="w-full bg-card"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-4 border-t border-border">
+                  <Button variant="outline" onClick={handleClearFilters}>
+                    <Eraser className="h-4 w-4 mr-2" /> Clear Filters
+                  </Button>
+                  <Button onClick={() => setIsFilterSheetOpen(false)}>Apply</Button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
@@ -270,7 +385,7 @@ const TicketsPage = () => {
         <div className="flex-grow p-6 pt-4 flex flex-col">
           <div className="flex flex-row items-center justify-between gap-4 mb-4">
             <FilterNotification
-              filteredCount={filteredTickets.length}
+              filteredCount={allFilteredTickets.length}
               totalCount={(freshdeskTickets || []).length || 0}
               searchTerm={searchTerm}
               filterStatus={filterStatus}
@@ -281,91 +396,6 @@ const TicketsPage = () => {
               filterDependency={selectedDependencies.length > 0 ? selectedDependencies.join(', ') : "All"}
               className=""
             />
-            <div className="flex items-center gap-3">
-              <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2 bg-card">
-                    <ListFilter className="h-5 w-5" /> Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
-                  <SheetHeader>
-                    <SheetTitle className="text-2xl font-bold">Filter Tickets</SheetTitle>
-                    <SheetDescription>
-                      Apply filters to narrow down the ticket list.
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="flex-grow overflow-y-auto py-4 space-y-4">
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                      <SelectTrigger className="w-full bg-card">
-                        <Filter className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm font-medium">Status:</span>
-                        <SelectValue placeholder="All" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {uniqueStatuses.map(status => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={filterPriority} onValueChange={setFilterPriority}>
-                      <SelectTrigger className="w-full bg-card">
-                        <Filter className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-sm font-medium">Priority:</span>
-                        <SelectValue placeholder="All" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {uniquePriorities.map(priority => (
-                          <SelectItem key={priority} value={priority}>
-                            {priority}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <MultiSelect
-                      options={uniqueAssignees.map(assignee => ({ value: assignee, label: assignee }))}
-                      selected={selectedAssignees}
-                      onSelectedChange={setSelectedAssignees}
-                      placeholder="Filter by Assignee"
-                      className="w-full bg-card"
-                    />
-                    <MultiSelect
-                      options={uniqueCompanies.map(company => ({ value: company, label: company }))}
-                      selected={selectedCompanies}
-                      onSelectedChange={setSelectedCompanies}
-                      placeholder="Filter by Company"
-                      className="w-full bg-card"
-                    />
-                    <MultiSelect
-                      options={uniqueTypes.map(type => ({ value: type, label: type }))}
-                      selected={selectedTypes}
-                      onSelectedChange={setSelectedTypes}
-                      placeholder="Filter by Type"
-                      className="w-full bg-card"
-                    />
-                    <MultiSelect
-                      options={uniqueDependencies.map(dependency => ({ value: dependency, label: dependency }))}
-                      selected={selectedDependencies}
-                      onSelectedChange={setSelectedDependencies}
-                      placeholder="Filter by Dependency"
-                      className="w-full bg-card"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2 pt-4 border-t border-border">
-                    <Button variant="outline" onClick={handleClearFilters}>
-                      <Eraser className="h-4 w-4 mr-2" /> Clear Filters
-                    </Button>
-                    <Button onClick={() => setIsFilterSheetOpen(false)}>Apply</Button>
-                  </div>
-                </SheetContent>
-              </Sheet>
-
-              <Button onClick={handleSyncTickets} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                <RefreshCw className="h-5 w-5" /> Sync Tickets
-              </Button>
-            </div>
           </div>
           <div className="flex-grow rounded-lg border border-border shadow-md">
             {isLoading ? (
@@ -374,7 +404,13 @@ const TicketsPage = () => {
                 <p className="text-lg font-medium">Loading tickets...</p>
               </div>
             ) : (
-              <TicketTable tickets={filteredTickets} onRowClick={handleRowClick} />
+              <TicketTable 
+                tickets={currentTicketsForTable} 
+                onRowClick={handleRowClick} 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
             )}
           </div>
         </div>
