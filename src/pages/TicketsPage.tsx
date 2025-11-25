@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import DashboardMetricCard from "@/components/DashboardMetricCard";
+import QueueSummaryCard from "@/components/QueueSummaryCard"; // Changed from DashboardMetricCard
 import { Ticket, ConversationMessage } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser } from "lucide-react";
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown } from "lucide-react"; // Added ListFilter, PlusCircle, ArrowUpDown
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,8 @@ import { exportCsvTemplate } from '@/utils/export';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { MultiSelect } from "@/components/MultiSelect";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Added Tabs components
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet"; // Added Sheet components
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -43,6 +45,9 @@ const TicketsPage = () => {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("all"); // New state for tabs
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false); // New state for filter sheet
+  const [showSearchInput, setShowSearchInput] = useState(false); // State to toggle search input visibility
 
   const [currentPage, setCurrentPage] = useState(1);
   const ticketsPerPage = 25;
@@ -85,15 +90,9 @@ const TicketsPage = () => {
     }
   };
 
-  const handleDownloadTemplate = () => {
-    const headers = [
-      "freshdesk_id", "subject", "priority", "status", "type", "requester_email",
-      "created_at", "updated_at", "due_by", "fr_due_by", "description_text",
-      "description_html", "assignee", "cf_company", "cf_country", "cf_module",
-      "cf_dependency", "cf_recurrence", "custom_fields"
-    ];
-    exportCsvTemplate(headers, "freshdesk_tickets_template");
-    toast.info("CSV template downloaded. Fill it with your historical data and upload to Supabase.");
+  const handleCreateIntake = () => {
+    // Placeholder for creating a new intake/ticket
+    toast.info("Functionality to create a new intake/ticket will be implemented here!");
   };
 
   const handleRowClick = (ticket: Ticket) => {
@@ -115,12 +114,24 @@ const TicketsPage = () => {
     setSelectedTypes([]);
     setSelectedDependencies([]);
     setCurrentPage(1);
+    setIsFilterSheetOpen(false); // Close sheet after clearing
   };
 
   const filteredTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
 
     let currentTickets: Ticket[] = freshdeskTickets;
+
+    // Apply tab filter
+    if (activeTab === "myPendingApproval" && user?.email) {
+      // This is a placeholder. Real "pending approval" would require specific ticket statuses or custom fields.
+      // For now, let's filter by tickets assigned to the user and not yet resolved/closed.
+      currentTickets = currentTickets.filter(ticket =>
+        ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()) &&
+        ticket.status.toLowerCase() !== 'resolved' &&
+        ticket.status.toLowerCase() !== 'closed'
+      );
+    }
 
     return currentTickets.filter(ticket => {
       const matchesSearch = searchTerm === "" ||
@@ -139,7 +150,7 @@ const TicketsPage = () => {
 
       return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesCompany && matchesType && matchesDependency;
     });
-  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, selectedAssignees, selectedCompanies, selectedTypes, selectedDependencies]);
+  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, selectedAssignees, selectedCompanies, selectedTypes, selectedDependencies, activeTab, user?.email, fullName]);
 
   const metrics = useMemo(() => {
     if (!freshdeskTickets) {
@@ -149,6 +160,9 @@ const TicketsPage = () => {
         bugsReceived: 0,
         resolvedClosedTickets: 0,
         highPriorityTickets: 0,
+        draftTickets: 0, // New metric
+        awaitingActions: 0, // New metric
+        activeReleased: 0, // New metric
       };
     }
 
@@ -158,12 +172,21 @@ const TicketsPage = () => {
     const resolvedClosedTickets = freshdeskTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed').length;
     const highPriorityTickets = freshdeskTickets.filter(t => t.priority.toLowerCase() === 'high' || t.priority.toLowerCase() === 'urgent').length;
 
+    // Placeholder metrics for the new summary cards
+    const draftTickets = freshdeskTickets.filter(t => t.status.toLowerCase().includes('draft')).length; // Assuming a 'draft' status
+    const awaitingActions = freshdeskTickets.filter(t => t.status.toLowerCase().includes('pending') || t.status.toLowerCase().includes('waiting')).length;
+    const activeReleased = freshdeskTickets.filter(t => t.status.toLowerCase().includes('open') || t.status.toLowerCase().includes('on tech') || t.status.toLowerCase().includes('on product')).length;
+
+
     return {
       totalTickets,
       openTickets,
       bugsReceived,
       resolvedClosedTickets,
       highPriorityTickets,
+      draftTickets,
+      awaitingActions,
+      activeReleased,
     };
   }, [freshdeskTickets]);
 
@@ -282,165 +305,170 @@ const TicketsPage = () => {
     <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-background">
       <Card className="flex flex-col h-full p-0 overflow-hidden border-none shadow-xl">
         {/* Header Section */}
-        <div className="p-8 pb-6 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
-          <div className="flex justify-between items-center mb-4">
+        <div className="p-6 pb-4 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
+          <div className="flex justify-between items-center">
             <div className="flex flex-col items-start">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Support & Ticketing Queue</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Manage and track customer support tickets efficiently.
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button
-                onClick={handleDownloadTemplate}
-                className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
-                variant="outline"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download CSV Template
-              </Button>
-              <Button
-                onClick={handleSyncTickets}
-                disabled={isFetching}
-                className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
-              >
-                {isFetching ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                Sync Latest Tickets
-                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
-              </Button>
-            </div>
           </div>
-          <Separator />
         </div>
 
-        {/* Metrics Overview Section */}
-        <section className="p-8 pb-4">
-          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
-            <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <DashboardMetricCard
+        {/* Summary Metrics */}
+        <section className="p-6 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <QueueSummaryCard
+              title="Draft"
+              value={metrics.draftTickets}
+              icon={Bug}
+              description="Tickets currently in draft status."
+              colorClass="bg-gray-50 dark:bg-gray-700"
+            />
+            <QueueSummaryCard
+              title="Awaiting Actions"
+              value={metrics.awaitingActions}
+              icon={Hourglass}
+              description="Tickets waiting for an action from agents or customers."
+              colorClass="bg-yellow-50 dark:bg-yellow-950/30"
+            />
+            <QueueSummaryCard
+              title="Active/Released"
+              value={metrics.activeReleased}
+              icon={CheckCircle}
+              description="Tickets that are currently active or have been released."
+              colorClass="bg-blue-50 dark:bg-blue-950/30"
+            />
+            <QueueSummaryCard
               title="Total Tickets"
               value={metrics.totalTickets}
               icon={TicketIcon}
-              trend={12}
-              description="All tickets in the system"
-            />
-            <DashboardMetricCard
-              title="Open Tickets"
-              value={metrics.openTickets}
-              icon={Hourglass}
-              trend={-5}
-              description="Currently being processed"
-            />
-            <DashboardMetricCard
-              title="Bugs Received"
-              value={metrics.bugsReceived}
-              icon={Bug}
-              trend={8}
-              description="Tickets categorized as bugs"
-            />
-            <DashboardMetricCard
-              title="Resolved/Closed"
-              value={metrics.resolvedClosedTickets}
-              icon={CheckCircle}
-              trend={15}
-              description="Successfully handled"
-            />
-            <DashboardMetricCard
-              title="High Priority"
-              value={metrics.highPriorityTickets}
-              icon={AlertCircle} // Changed icon to AlertCircle for high priority
-              trend={-2}
-              description="Requiring immediate attention"
+              description="All tickets in the system."
+              colorClass="bg-purple-50 dark:bg-purple-950/30"
             />
           </div>
         </section>
 
-        {/* Search & Filters Bar */}
-        <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
-          <div className="flex flex-wrap gap-3 w-full items-center">
-            <div className="relative flex-grow min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+        <Separator className="mx-6" />
+
+        {/* Control Bar (Tabs, Filters, Search, Actions) */}
+        <div className="p-6 pt-4 flex flex-wrap items-center justify-between gap-3 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow-0">
+            <TabsList className="bg-card">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="myPendingApproval">My Pending Approval</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="flex items-center gap-3 flex-grow justify-end">
+            {showSearchInput && (
               <Input
-                placeholder="Search by Ticket ID, Title, or Assignee..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-full bg-card"
+                className="w-[200px] bg-card transition-all duration-300"
               />
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[150px] group bg-card">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <span className="text-sm font-medium">Status:</span>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueStatuses.map(status => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger className="w-[150px] group bg-card">
-                <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" />
-                <span className="text-sm font-medium">Priority:</span>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniquePriorities.map(priority => (
-                  <SelectItem key={priority} value={priority}>
-                    {priority}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <MultiSelect
-              options={uniqueAssignees.map(assignee => ({ value: assignee, label: assignee }))}
-              selected={selectedAssignees}
-              onSelectedChange={setSelectedAssignees}
-              placeholder="Filter by Assignee"
-              className="w-[180px] bg-card"
-            />
-            <MultiSelect
-              options={uniqueCompanies.map(company => ({ value: company, label: company }))}
-              selected={selectedCompanies}
-              onSelectedChange={setSelectedCompanies}
-              placeholder="Filter by Company"
-              className="w-[180px] bg-card"
-            />
-            <MultiSelect
-              options={uniqueTypes.map(type => ({ value: type, label: type }))}
-              selected={selectedTypes}
-              onSelectedChange={setSelectedTypes}
-              placeholder="Filter by Type"
-              className="w-[150px] bg-card"
-            />
-            <MultiSelect
-              options={uniqueDependencies.map(dependency => ({ value: dependency, label: dependency }))}
-              selected={selectedDependencies}
-              onSelectedChange={setSelectedDependencies}
-              placeholder="Filter by Dependency"
-              className="w-[180px] bg-card"
-            />
-            <Button
-              variant="outline"
-              onClick={handleClearFilters}
-              className="flex items-center gap-1 bg-card"
-            >
-              <Eraser className="h-4 w-4" /> Clear Filters
+            )}
+            <Button variant="ghost" size="icon" onClick={() => setShowSearchInput(!showSearchInput)}>
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </Button>
+
+            <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2 bg-card">
+                  <ListFilter className="h-5 w-5" /> Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+                <SheetHeader>
+                  <SheetTitle className="text-2xl font-bold">Filter Tickets</SheetTitle>
+                  <SheetDescription>
+                    Apply filters to narrow down the ticket list.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="flex-grow overflow-y-auto py-4 space-y-4">
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-full bg-card">
+                      <Filter className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm font-medium">Status:</span>
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueStatuses.map(status => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterPriority} onValueChange={setFilterPriority}>
+                    <SelectTrigger className="w-full bg-card">
+                      <Filter className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm font-medium">Priority:</span>
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniquePriorities.map(priority => (
+                        <SelectItem key={priority} value={priority}>
+                          {priority}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <MultiSelect
+                    options={uniqueAssignees.map(assignee => ({ value: assignee, label: assignee }))}
+                    selected={selectedAssignees}
+                    onSelectedChange={setSelectedAssignees}
+                    placeholder="Filter by Assignee"
+                    className="w-full bg-card"
+                  />
+                  <MultiSelect
+                    options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+                    selected={selectedCompanies}
+                    onSelectedChange={setSelectedCompanies}
+                    placeholder="Filter by Company"
+                    className="w-full bg-card"
+                  />
+                  <MultiSelect
+                    options={uniqueTypes.map(type => ({ value: type, label: type }))}
+                    selected={selectedTypes}
+                    onSelectedChange={setSelectedTypes}
+                    placeholder="Filter by Type"
+                    className="w-full bg-card"
+                  />
+                  <MultiSelect
+                    options={uniqueDependencies.map(dependency => ({ value: dependency, label: dependency }))}
+                    selected={selectedDependencies}
+                    onSelectedChange={setSelectedDependencies}
+                    placeholder="Filter by Dependency"
+                    className="w-full bg-card"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-4 border-t border-border">
+                  <Button variant="outline" onClick={handleClearFilters}>
+                    <Eraser className="h-4 w-4 mr-2" /> Clear Filters
+                  </Button>
+                  <Button onClick={() => setIsFilterSheetOpen(false)}>Apply</Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <Button variant="ghost" size="icon" onClick={handleSyncTickets} disabled={isFetching}>
+              {isFetching ? (
+                <RefreshCw className="h-5 w-5 animate-spin text-primary" />
+              ) : (
+                <RefreshCw className="h-5 w-5 text-muted-foreground" />
+              )}
+            </Button>
+            <Button onClick={handleCreateIntake} className="flex items-center gap-2 bg-primary text-primary-foreground">
+              <PlusCircle className="h-5 w-5" /> Create Intake
             </Button>
           </div>
         </div>
 
         {/* Main content area for filter notification and scrollable table */}
-        <div className="flex-grow p-8 pt-4 flex flex-col">
+        <div className="flex-grow p-6 pt-4 flex flex-col">
           <FilterNotification
             filteredCount={filteredTickets.length}
             totalCount={(freshdeskTickets || []).length || 0}
