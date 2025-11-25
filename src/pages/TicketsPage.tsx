@@ -317,50 +317,6 @@ const TicketsPage = () => {
           <Separator />
         </div>
 
-        {/* Metrics Overview Section */}
-        <section className="p-8 pb-4">
-          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
-            <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <DashboardMetricCard
-              title="Total Tickets"
-              value={metrics.totalTickets}
-              icon={TicketIcon}
-              trend={12}
-              description="All tickets in the system"
-            />
-            <DashboardMetricCard
-              title="Open Tickets"
-              value={metrics.openTickets}
-              icon={Hourglass}
-              trend={-5}
-              description="Currently being processed"
-            />
-            <DashboardMetricCard
-              title="Bugs Received"
-              value={metrics.bugsReceived}
-              icon={Bug}
-              trend={8}
-              description="Tickets categorized as bugs"
-            />
-            <DashboardMetricCard
-              title="Resolved/Closed"
-              value={metrics.resolvedClosedTickets}
-              icon={CheckCircle}
-              trend={15}
-              description="Successfully handled"
-            />
-            <DashboardMetricCard
-              title="High Priority"
-              value={metrics.highPriorityTickets}
-              icon={AlertCircle} // Changed icon to AlertCircle for high priority
-              trend={-2}
-              description="Requiring immediate attention"
-            />
-          </div>
-        </section>
-
         {/* Search & Filters Bar */}
         <div className="p-8 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
           <div className="flex flex-wrap gap-3 w-full items-center">
