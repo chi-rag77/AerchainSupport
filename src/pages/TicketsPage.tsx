@@ -13,15 +13,6 @@ import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourg
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis,
-} from "@/components/ui/pagination";
 import FilterNotification from "@/components/FilterNotification";
 import { toast } from 'sonner';
 import { exportCsvTemplate } from '@/utils/export';
@@ -48,9 +39,6 @@ const TicketsPage = () => {
   const [activeTab, setActiveTab] = useState<string>("all"); // Default to "all"
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const ticketsPerPage = 25;
 
   const queryClient = useQueryClient();
 
@@ -83,7 +71,6 @@ const TicketsPage = () => {
 
       toast.success("Tickets synced successfully!", { id: "sync-tickets" });
       queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] });
-      setCurrentPage(1);
     } catch (err: any) {
       toast.error(`Failed to sync tickets: ${err.message}`, { id: "sync-tickets" });
     }
@@ -111,7 +98,6 @@ const TicketsPage = () => {
     setSelectedCompanies([]);
     setSelectedTypes([]);
     setSelectedDependencies([]);
-    setCurrentPage(1);
     setIsFilterSheetOpen(false);
   };
 
@@ -119,15 +105,6 @@ const TicketsPage = () => {
     if (!freshdeskTickets) return [];
 
     let currentTickets: Ticket[] = freshdeskTickets;
-
-    // Removed the 'myPendingApproval' filtering logic as the tab is being removed.
-    // if (activeTab === "myPendingApproval" && user?.email) {
-    //   currentTickets = currentTickets.filter(ticket =>
-    //     ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()) &&
-    //     ticket.status.toLowerCase() !== 'resolved' &&
-    //     ticket.status.toLowerCase() !== 'closed'
-    //   );
-    // }
 
     return currentTickets.filter(ticket => {
       const matchesSearch = searchTerm === "" ||
@@ -172,52 +149,6 @@ const TicketsPage = () => {
       bugsReceivedOverall,
     };
   }, [freshdeskTickets]);
-
-  const indexOfLastTicket = currentPage * ticketsPerPage;
-  const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
-  const currentTickets = filteredTickets.slice(indexOfFirstTicket, indexOfLastTicket);
-  const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
-
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  const getPageNumbers = (currentPage: number, totalPages: number, maxPageNumbersToShow: number = 5) => {
-    const pageNumbers: (number | 'ellipsis')[] = [];
-    const half = Math.floor(maxPageNumbersToShow / 2);
-
-    let startPage = Math.max(1, currentPage - half);
-    let endPage = Math.min(totalPages, currentPage + half);
-
-    if (endPage - startPage + 1 < maxPageNumbersToShow) {
-      if (startPage === 1) {
-        endPage = Math.min(totalPages, startPage + maxPageNumbersToShow - 1);
-      } else if (endPage === totalPages) {
-        startPage = Math.max(1, totalPages - maxPageNumbersToShow + 1);
-      }
-    }
-
-    if (startPage > 1) {
-      pageNumbers.push(1);
-      if (startPage > 2) {
-        pageNumbers.push('ellipsis');
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        pageNumbers.push('ellipsis');
-      }
-      pageNumbers.push(totalPages);
-    }
-
-    return pageNumbers;
-  };
-
-  const displayedPageNumbers = getPageNumbers(currentPage, totalPages);
-
 
   const uniqueAssignees = useMemo(() => {
     const assignees = new Set<string>();
@@ -337,7 +268,7 @@ const TicketsPage = () => {
 
         {/* Main content area for filter notification and scrollable table */}
         <div className="flex-grow p-6 pt-4 flex flex-col">
-          <div className="flex flex-row items-center justify-between gap-4 mb-4"> {/* Updated to flex row */}
+          <div className="flex flex-row items-center justify-between gap-4 mb-4">
             <FilterNotification
               filteredCount={filteredTickets.length}
               totalCount={(freshdeskTickets || []).length || 0}
@@ -348,9 +279,9 @@ const TicketsPage = () => {
               filterCompany={selectedCompanies.length > 0 ? selectedCompanies.join(', ') : "All"}
               filterType={selectedTypes.length > 0 ? selectedTypes.join(', ') : "All"}
               filterDependency={selectedDependencies.length > 0 ? selectedDependencies.join(', ') : "All"}
-              className="" // Removed mb-4 from here
+              className=""
             />
-            <div className="flex items-center gap-3"> {/* Container for buttons */}
+            <div className="flex items-center gap-3">
               <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
                 <SheetTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2 bg-card">
@@ -436,59 +367,17 @@ const TicketsPage = () => {
               </Button>
             </div>
           </div>
-          <div className="flex-grow overflow-y-auto rounded-lg border border-border shadow-md max-h-[calc(100vh - 350px)]"> 
+          <div className="flex-grow rounded-lg border border-border shadow-md">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
                 <p className="text-lg font-medium">Loading tickets...</p>
               </div>
             ) : (
-              <TicketTable tickets={currentTickets} onRowClick={handleRowClick} />
+              <TicketTable tickets={filteredTickets} onRowClick={handleRowClick} />
             )}
           </div>
         </div>
-
-        {totalPages > 1 && (
-          <Pagination className="mt-auto sticky bottom-0 z-10 bg-white dark:bg-gray-800 py-3 shadow-[0_-4px_6px_-1px_rgb(0_0_0/0.1),0_-2px_4px_-2px_rgb(0_0_0/0.1)] rounded-b-xl">
-            <PaginationContent className="rounded-lg shadow-md bg-white dark:bg-gray-800 p-2">
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
-                  aria-disabled={currentPage === 1}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                </PaginationPrevious>
-              </PaginationItem>
-              {displayedPageNumbers.map((pageNumber, index) => (
-                pageNumber === 'ellipsis' ? (
-                  <PaginationItem key={`ellipsis-${index}`}>
-                    <PaginationEllipsis />
-                  </PaginationItem>
-                ) : (
-                  <PaginationItem key={pageNumber}>
-                    <PaginationLink
-                      onClick={() => paginate(pageNumber as number)}
-                      isActive={currentPage === pageNumber}
-                      className={currentPage === pageNumber ? "bg-primary text-primary-foreground rounded-full" : "rounded-full"}
-                    >
-                      {pageNumber}
-                    </PaginationLink>
-                  </PaginationItem>
-                )
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)}
-                  aria-disabled={currentPage === totalPages}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                >
-                  Next <ChevronRight className="h-4 w-4 ml-1" />
-                </PaginationNext>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        )}
         
         {selectedTicket && (
           <TicketDetailModal
