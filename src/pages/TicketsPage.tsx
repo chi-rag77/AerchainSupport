@@ -79,10 +79,6 @@ const TicketsPage = () => {
     }
   };
 
-  const handleCreateIntake = () => {
-    toast.info("Functionality to create a new intake/ticket will be implemented here!");
-  };
-
   const handleRowClick = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setIsModalOpen(true);
@@ -242,9 +238,7 @@ const TicketsPage = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button onClick={handleCreateIntake} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white">
-                <PlusCircle className="h-5 w-5" /> Create New Ticket
-              </Button>
+              {/* Removed Create New Ticket Button */}
               <Button onClick={handleSyncTickets} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
                 <RefreshCw className="h-5 w-5" /> Sync Tickets
               </Button>
