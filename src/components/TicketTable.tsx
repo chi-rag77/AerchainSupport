@@ -116,7 +116,7 @@ const TicketTable = ({ tickets, onRowClick }: TicketTableProps) => {
   };
 
   return (
-    <div className="rounded-lg shadow-md w-full bg-white dark:bg-gray-800 h-full overflow-y-auto"> {/* Added h-full and overflow-y-auto here */}
+    <div className="rounded-lg shadow-md w-full bg-white dark:bg-gray-800 h-full overflow-y-auto max-h-[600px] scroll-smooth"> {/* Added max-h-[600px] and scroll-smooth */}
       <Table>
         <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
           <TableRow>
