@@ -378,7 +378,7 @@ const TicketsPage = () => {
             )}
           </div>
         </div>
-
+        
         {selectedTicket && (
           <TicketDetailModal
             isOpen={isModalOpen}
