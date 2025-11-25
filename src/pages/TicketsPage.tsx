@@ -9,7 +9,7 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import QueueSummaryCard from "@/components/QueueSummaryCard"; // Changed from DashboardMetricCard
 import { Ticket, ConversationMessage } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown } from "lucide-react"; // Added ListFilter, PlusCircle, ArrowUpDown
+import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox } from "lucide-react"; // Added ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -322,7 +322,7 @@ const TicketsPage = () => {
             <QueueSummaryCard
               title="Draft"
               value={metrics.draftTickets}
-              icon={Bug}
+              icon={Settings} // Changed icon to Settings
               description="Tickets currently in draft status."
               colorClass="bg-gray-50 dark:bg-gray-700"
             />
@@ -343,7 +343,7 @@ const TicketsPage = () => {
             <QueueSummaryCard
               title="Total Tickets"
               value={metrics.totalTickets}
-              icon={TicketIcon}
+              icon={Inbox} // Changed icon to Inbox
               description="All tickets in the system."
               colorClass="bg-purple-50 dark:bg-purple-950/30"
             />
