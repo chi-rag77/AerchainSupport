@@ -9,11 +9,14 @@ import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket, ConversationMessage } from "@/types";
-import { Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox, Clock } from "lucide-react";
+import {
+  Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox, Clock,
+  SlidersHorizontal, Zap, User, CalendarX, Flag, Users, Building2, Tag, GitFork, CalendarDays, Trash2 // New icons
+} from "lucide-react"; // Updated imports for new icons
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import FilterNotification from "@/components/FilterNotification";
+// import FilterNotification from "@/components/FilterNotification"; // Removed
 import { toast } from 'sonner';
 import { exportCsvTemplate } from '@/utils/export';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +24,12 @@ import { Separator } from "@/components/ui/separator";
 import { MultiSelect } from "@/components/MultiSelect";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"; // New Accordion imports
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Popover for Calendar
+import { Calendar } from "@/components/ui/calendar"; // Calendar for date range
+import { DateRange } from "react-day-picker"; // DateRange type
+import { format, parseISO, isPast, isWithinInterval, addDays } from 'date-fns'; // Date-fns for date logic
+import { Badge } from "@/components/ui/badge"; // Badge for active filters
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -38,6 +47,15 @@ const TicketsPage = () => {
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string>("all"); // Default to "all"
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  
+  // New state for quick filters
+  const [filterMyTickets, setFilterMyTickets] = useState(false);
+  const [filterHighPriority, setFilterHighPriority] = useState(false);
+  const [filterSLABreached, setFilterSLABreached] = useState(false); // New quick filter
+
+  // New state for date range filtering
+  const [dateField, setDateField] = useState<'created_at' | 'updated_at'>('created_at');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,6 +115,11 @@ const TicketsPage = () => {
     setSelectedCompanies([]);
     setSelectedTypes([]);
     setSelectedDependencies([]);
+    setFilterMyTickets(false); // Clear new quick filters
+    setFilterHighPriority(false); // Clear new quick filters
+    setFilterSLABreached(false); // Clear new quick filters
+    setDateField('created_at'); // Clear new date filters
+    setDateRange(undefined); // Clear new date filters
     setIsFilterSheetOpen(false);
     setCurrentPage(1); // Reset pagination on clear filters
   };
@@ -106,24 +129,63 @@ const TicketsPage = () => {
 
     let currentTickets: Ticket[] = freshdeskTickets;
 
-    return currentTickets.filter(ticket => {
+    // Apply quick filters first
+    if (filterMyTickets && user?.email) {
+      currentTickets = currentTickets.filter(ticket => ticket.requester_email === user.email || ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()));
+    }
+    if (filterHighPriority) {
+      currentTickets = currentTickets.filter(ticket => ticket.priority.toLowerCase() === 'high' || ticket.priority.toLowerCase() === 'urgent');
+    }
+    if (filterSLABreached) {
+      currentTickets = currentTickets.filter(ticket => {
+        if (ticket.due_by) {
+          const dueDate = parseISO(ticket.due_by);
+          const now = new Date();
+          const statusLower = ticket.status.toLowerCase();
+          return isPast(dueDate) && statusLower !== 'resolved' && statusLower !== 'closed';
+        }
+        return false;
+      });
+    }
+
+    // Apply search term
+    currentTickets = currentTickets.filter(ticket => {
       const matchesSearch = searchTerm === "" ||
         ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
         ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    });
 
+    // Apply dropdown/multiselect filters
+    currentTickets = currentTickets.filter(ticket => {
       const matchesStatus = filterStatus === "All" || ticket.status.toLowerCase().includes(filterStatus.toLowerCase());
       const matchesPriority = filterPriority === "All" || ticket.priority.toLowerCase() === filterPriority.toLowerCase();
       const matchesAssignee = selectedAssignees.length === 0 || (ticket.assignee && selectedAssignees.includes(ticket.assignee));
       const matchesCompany = selectedCompanies.length === 0 || (ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
       const matchesType = selectedTypes.length === 0 || (ticket.type && selectedTypes.includes(ticket.type));
       const matchesDependency = selectedDependencies.length === 0 || (ticket.cf_dependency && selectedDependencies.includes(ticket.cf_dependency));
-
-
-      return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesCompany && matchesType && matchesDependency;
+      return matchesStatus && matchesPriority && matchesAssignee && matchesCompany && matchesType && matchesDependency;
     });
-  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, selectedAssignees, selectedCompanies, selectedTypes, selectedDependencies, activeTab, user?.email, fullName]);
+
+    // Apply date range filter
+    if (dateRange?.from) {
+      currentTickets = currentTickets.filter(ticket => {
+        const dateToCheck = dateField === 'created_at' ? parseISO(ticket.created_at) : parseISO(ticket.updated_at);
+        const start = dateRange.from;
+        const end = dateRange.to || start; // If only 'from' is selected, use it as both start and end
+
+        // Ensure start and end are at the beginning/end of the day for accurate filtering
+        const effectiveStart = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
+        const effectiveEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999);
+
+        return isWithinInterval(dateToCheck, { start: effectiveStart, end: effectiveEnd });
+      });
+    }
+
+    return currentTickets;
+  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, selectedAssignees, selectedCompanies, selectedTypes, selectedDependencies, filterMyTickets, filterHighPriority, filterSLABreached, dateField, dateRange, user?.email, fullName]);
 
   // Pagination calculations
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -216,6 +278,24 @@ const TicketsPage = () => {
     return Array.from(dependencies).sort();
   }, [freshdeskTickets]);
 
+  // Calculate active filter count for display
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (filterStatus !== "All") count++;
+    if (filterPriority !== "All") count++;
+    if (selectedAssignees.length > 0) count++;
+    if (selectedCompanies.length > 0) count++;
+    if (selectedTypes.length > 0) count++;
+    if (selectedDependencies.length > 0) count++;
+    if (filterMyTickets) count++;
+    if (filterHighPriority) count++;
+    if (filterSLABreached) count++;
+    if (dateRange?.from) count++;
+    return count;
+  }, [searchTerm, filterStatus, filterPriority, selectedAssignees, selectedCompanies, selectedTypes, selectedDependencies, filterMyTickets, filterHighPriority, filterSLABreached, dateRange]);
+
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
@@ -238,7 +318,6 @@ const TicketsPage = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Removed Create New Ticket Button */}
               <Button onClick={handleSyncTickets} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
                 <RefreshCw className="h-5 w-5" /> Sync Tickets
               </Button>
@@ -259,80 +338,272 @@ const TicketsPage = () => {
             />
             <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2 bg-card">
+                <Button variant="outline" className="flex items-center gap-2 bg-card relative">
                   <ListFilter className="h-5 w-5" /> Filters
+                  {activeFilterCount > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 rounded-full bg-primary text-primary-foreground text-xs">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
-                <SheetHeader>
-                  <SheetTitle className="text-2xl font-bold">Filter Tickets</SheetTitle>
+                <SheetHeader className="pb-4">
+                  <SheetTitle className="text-2xl font-bold flex items-center gap-2">
+                    <SlidersHorizontal className="h-6 w-6 text-primary" /> Advanced Ticket Filters
+                  </SheetTitle>
                   <SheetDescription>
-                    Apply filters to narrow down the ticket list.
+                    Refine your ticket view with powerful filtering options.
                   </SheetDescription>
                 </SheetHeader>
-                <div className="flex-grow overflow-y-auto py-4 space-y-4">
-                  <Select value={filterStatus} onValueChange={(value) => {setFilterStatus(value); setCurrentPage(1);}}>
-                    <SelectTrigger className="w-full bg-card">
-                      <Filter className="h-4 w-4 mr-2 text-gray-500" />
-                      <span className="text-sm font-medium">Status:</span>
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {uniqueStatuses.map(status => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterPriority} onValueChange={(value) => {setFilterPriority(value); setCurrentPage(1);}}>
-                    <SelectTrigger className="w-full bg-card">
-                      <Filter className="h-4 w-4 mr-2 text-gray-500" />
-                      <span className="text-sm font-medium">Priority:</span>
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {uniquePriorities.map(priority => (
-                        <SelectItem key={priority} value={priority}>
-                          {priority}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <MultiSelect
-                    options={uniqueAssignees.map(assignee => ({ value: assignee, label: assignee }))}
-                    selected={selectedAssignees}
-                    onSelectedChange={(values) => {setSelectedAssignees(values); setCurrentPage(1);}}
-                    placeholder="Filter by Assignee"
-                    className="w-full bg-card"
-                  />
-                  <MultiSelect
-                    options={uniqueCompanies.map(company => ({ value: company, label: company }))}
-                    selected={selectedCompanies}
-                    onSelectedChange={(values) => {setSelectedCompanies(values); setCurrentPage(1);}}
-                    placeholder="Filter by Company"
-                    className="w-full bg-card"
-                  />
-                  <MultiSelect
-                    options={uniqueTypes.map(type => ({ value: type, label: type }))}
-                    selected={selectedTypes}
-                    onSelectedChange={(values) => {setSelectedTypes(values); setCurrentPage(1);}}
-                    placeholder="Filter by Type"
-                    className="w-full bg-card"
-                  />
-                  <MultiSelect
-                    options={uniqueDependencies.map(dependency => ({ value: dependency, label: dependency }))}
-                    selected={selectedDependencies}
-                    onSelectedChange={(values) => {setSelectedDependencies(values); setCurrentPage(1);}}
-                    placeholder="Filter by Dependency"
-                    className="w-full bg-card"
-                  />
-                </div>
-                <div className="flex justify-end gap-2 pt-4 border-t border-border">
-                  <Button variant="outline" onClick={handleClearFilters}>
-                    <Eraser className="h-4 w-4 mr-2" /> Clear Filters
+
+                {/* Active Filters Display */}
+                {activeFilterCount > 0 && (
+                  <div className="p-4 bg-blue-50/20 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
+                    <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">Active Filters ({activeFilterCount}):</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {searchTerm && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Search: "{searchTerm}"
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setSearchTerm("")} />
+                        </Badge>
+                      )}
+                      {filterStatus !== "All" && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Status: {filterStatus}
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setFilterStatus("All")} />
+                        </Badge>
+                      )}
+                      {filterPriority !== "All" && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Priority: {filterPriority}
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setFilterPriority("All")} />
+                        </Badge>
+                      )}
+                      {selectedAssignees.length > 0 && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Assignees: {selectedAssignees.join(', ')}
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setSelectedAssignees([])} />
+                        </Badge>
+                      )}
+                      {selectedCompanies.length > 0 && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Companies: {selectedCompanies.join(', ')}
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setSelectedCompanies([])} />
+                        </Badge>
+                      )}
+                      {selectedTypes.length > 0 && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Types: {selectedTypes.join(', ')}
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setSelectedTypes([])} />
+                        </Badge>
+                      )}
+                      {selectedDependencies.length > 0 && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Dependencies: {selectedDependencies.join(', ')}
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setSelectedDependencies([])} />
+                        </Badge>
+                      )}
+                      {filterMyTickets && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          My Tickets
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setFilterMyTickets(false)} />
+                        </Badge>
+                      )}
+                      {filterHighPriority && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          High Priority
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setFilterHighPriority(false)} />
+                        </Badge>
+                      )}
+                      {filterSLABreached && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          SLA Breached
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setFilterSLABreached(false)} />
+                        </Badge>
+                      )}
+                      {dateRange?.from && (
+                        <Badge variant="secondary" className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          {dateField === 'created_at' ? 'Created' : 'Updated'}: {format(dateRange.from, "MMM dd")}
+                          {dateRange.to && ` - ${format(dateRange.to, "MMM dd")}`}
+                          <XCircle className="ml-1 h-3 w-3 cursor-pointer text-blue-600 dark:text-blue-300" onClick={() => setDateRange(undefined)} />
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <ScrollArea className="flex-grow pr-4 -mr-4"> {/* Use ScrollArea for filter content */}
+                  <Accordion type="multiple" className="w-full space-y-4">
+                    {/* Quick Filters */}
+                    <AccordionItem value="item-1" className="border-b border-border">
+                      <AccordionTrigger className="flex items-center gap-2 text-base font-semibold text-foreground hover:no-underline">
+                        <Zap className="h-5 w-5 text-yellow-500" /> Quick Filters
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-4 pb-2 space-y-3">
+                        <Button
+                          variant={filterMyTickets ? "secondary" : "outline"}
+                          onClick={() => {setFilterMyTickets(!filterMyTickets); setCurrentPage(1);}}
+                          className="w-full justify-start flex items-center gap-2 bg-card"
+                        >
+                          <User className="h-4 w-4" /> My Tickets
+                        </Button>
+                        <Button
+                          variant={filterHighPriority ? "secondary" : "outline"}
+                          onClick={() => {setFilterHighPriority(!filterHighPriority); setCurrentPage(1);}}
+                          className="w-full justify-start flex items-center gap-2 bg-card"
+                        >
+                          <AlertCircle className="h-4 w-4" /> High Priority
+                        </Button>
+                        <Button
+                          variant={filterSLABreached ? "secondary" : "outline"}
+                          onClick={() => {setFilterSLABreached(!filterSLABreached); setCurrentPage(1);}}
+                          className="w-full justify-start flex items-center gap-2 bg-card"
+                        >
+                          <CalendarX className="h-4 w-4" /> SLA Breached
+                        </Button>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Core Filters */}
+                    <AccordionItem value="item-2" className="border-b border-border">
+                      <AccordionTrigger className="flex items-center gap-2 text-base font-semibold text-foreground hover:no-underline">
+                        <Filter className="h-5 w-5 text-blue-500" /> Core Filters
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-4 pb-2 space-y-4">
+                        <Select value={filterStatus} onValueChange={(value) => {setFilterStatus(value); setCurrentPage(1);}}>
+                          <SelectTrigger className="w-full bg-card">
+                            <ListFilter className="h-4 w-4 mr-2 text-gray-500" />
+                            <span className="text-sm font-medium">Status:</span>
+                            <SelectValue placeholder="All" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {uniqueStatuses.map(status => (
+                              <SelectItem key={status} value={status}>
+                                {status}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={filterPriority} onValueChange={(value) => {setFilterPriority(value); setCurrentPage(1);}}>
+                          <SelectTrigger className="w-full bg-card">
+                            <Flag className="h-4 w-4 mr-2 text-gray-500" />
+                            <span className="text-sm font-medium">Priority:</span>
+                            <SelectValue placeholder="All" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {uniquePriorities.map(priority => (
+                              <SelectItem key={priority} value={priority}>
+                                {priority}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <MultiSelect
+                          options={uniqueAssignees.map(assignee => ({ value: assignee, label: assignee }))}
+                          selected={selectedAssignees}
+                          onSelectedChange={(values) => {setSelectedAssignees(values); setCurrentPage(1);}}
+                          placeholder="Filter by Assignee"
+                          icon={Users} // Pass icon prop
+                          className="w-full bg-card"
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Categorization Filters */}
+                    <AccordionItem value="item-3" className="border-b border-border">
+                      <AccordionTrigger className="flex items-center gap-2 text-base font-semibold text-foreground hover:no-underline">
+                        <Tag className="h-5 w-5 text-green-500" /> Categorization
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-4 pb-2 space-y-4">
+                        <MultiSelect
+                          options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+                          selected={selectedCompanies}
+                          onSelectedChange={(values) => {setSelectedCompanies(values); setCurrentPage(1);}}
+                          placeholder="Filter by Company"
+                          icon={Building2} // Pass icon prop
+                          className="w-full bg-card"
+                        />
+                        <MultiSelect
+                          options={uniqueTypes.map(type => ({ value: type, label: type }))}
+                          selected={selectedTypes}
+                          onSelectedChange={(values) => {setSelectedTypes(values); setCurrentPage(1);}}
+                          placeholder="Filter by Type"
+                          icon={TicketIcon} // Pass icon prop
+                          className="w-full bg-card"
+                        />
+                        <MultiSelect
+                          options={uniqueDependencies.map(dependency => ({ value: dependency, label: dependency }))}
+                          selected={selectedDependencies}
+                          onSelectedChange={(values) => {setSelectedDependencies(values); setCurrentPage(1);}}
+                          placeholder="Filter by Dependency"
+                          icon={GitFork} // Pass icon prop
+                          className="w-full bg-card"
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Date & Time Filters */}
+                    <AccordionItem value="item-4" className="border-b border-border">
+                      <AccordionTrigger className="flex items-center gap-2 text-base font-semibold text-foreground hover:no-underline">
+                        <CalendarDays className="h-5 w-5 text-purple-500" /> Date & Time
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-4 pb-2 space-y-4">
+                        <Select value={dateField} onValueChange={(value: 'created_at' | 'updated_at') => {setDateField(value); setCurrentPage(1);}}>
+                          <SelectTrigger className="w-full bg-card">
+                            <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                            <span className="text-sm font-medium">Date Field:</span>
+                            <SelectValue placeholder="Created At" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="created_at">Created At</SelectItem>
+                            <SelectItem value="updated_at">Updated At</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className="w-full justify-start text-left font-normal bg-card"
+                            >
+                              <CalendarDays className="mr-2 h-4 w-4" />
+                              {dateRange?.from ? (
+                                dateRange.to ? (
+                                  `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
+                                ) : (
+                                  format(dateRange.from, "LLL dd, y")
+                                )
+                              ) : (
+                                <span>Pick a date range</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              initialFocus
+                              mode="range"
+                              defaultMonth={dateRange?.from}
+                              selected={dateRange}
+                              onSelect={(range) => {
+                                setDateRange(range);
+                                setCurrentPage(1);
+                              }}
+                              numberOfMonths={2}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </ScrollArea>
+
+                <div className="flex justify-between gap-2 pt-4 border-t border-border">
+                  <Button variant="outline" onClick={handleClearFilters} className="flex items-center gap-2">
+                    <Trash2 className="h-4 w-4" /> Clear All
                   </Button>
-                  <Button onClick={() => setIsFilterSheetOpen(false)}>Apply</Button>
+                  <Button onClick={() => setIsFilterSheetOpen(false)} className="flex items-center gap-2 bg-primary text-primary-foreground">
+                    <CheckCircle className="h-4 w-4" /> Apply Filters
+                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
@@ -377,20 +648,7 @@ const TicketsPage = () => {
 
         {/* Main content area for filter notification and scrollable table */}
         <div className="flex-grow p-6 pt-4 flex flex-col">
-          <div className="flex flex-row items-center justify-between gap-4 mb-4">
-            <FilterNotification
-              filteredCount={allFilteredTickets.length}
-              totalCount={(freshdeskTickets || []).length || 0}
-              searchTerm={searchTerm}
-              filterStatus={filterStatus}
-              filterPriority={filterPriority}
-              filterAssignee={selectedAssignees.length > 0 ? selectedAssignees.join(', ') : "All"}
-              filterCompany={selectedCompanies.length > 0 ? selectedCompanies.join(', ') : "All"}
-              filterType={selectedTypes.length > 0 ? selectedTypes.join(', ') : "All"}
-              filterDependency={selectedDependencies.length > 0 ? selectedDependencies.join(', ') : "All"}
-              className=""
-            />
-          </div>
+          {/* Removed FilterNotification component */}
           <div className="flex-grow rounded-lg border border-border shadow-md">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
