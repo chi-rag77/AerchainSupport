@@ -11,12 +11,11 @@ import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket, ConversationMessage } from "@/types";
 import {
   Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox, Clock,
-  SlidersHorizontal, Zap, User, CalendarX, Flag, Users, Building2, Tag, GitFork, CalendarDays, Trash2 // New icons
-} from "lucide-react"; // Updated imports for new icons
+  SlidersHorizontal, Zap, User, CalendarX, Flag, Users, Building2, Tag, GitFork, CalendarDays, Trash2
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-// import FilterNotification from "@/components/FilterNotification"; // Removed
 import { toast } from 'sonner';
 import { exportCsvTemplate } from '@/utils/export';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,12 +23,13 @@ import { Separator } from "@/components/ui/separator";
 import { MultiSelect } from "@/components/MultiSelect";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"; // New Accordion imports
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Popover for Calendar
-import { Calendar } from "@/components/ui/calendar"; // Calendar for date range
-import { DateRange } from "react-day-picker"; // DateRange type
-import { format, parseISO, isPast, isWithinInterval, addDays } from 'date-fns'; // Date-fns for date logic
-import { Badge } from "@/components/ui/badge"; // Badge for active filters
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { DateRange } from "react-day-picker";
+import { format, parseISO, isPast, isWithinInterval, addDays } from 'date-fns';
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area"; // Corrected: Added missing import for ScrollArea
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -45,21 +45,18 @@ const TicketsPage = () => {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("all"); // Default to "all"
+  const [activeTab, setActiveTab] = useState<string>("all");
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   
-  // New state for quick filters
   const [filterMyTickets, setFilterMyTickets] = useState(false);
   const [filterHighPriority, setFilterHighPriority] = useState(false);
-  const [filterSLABreached, setFilterSLABreached] = useState(false); // New quick filter
+  const [filterSLABreached, setFilterSLABreached] = useState(false);
 
-  // New state for date range filtering
   const [dateField, setDateField] = useState<'created_at' | 'updated_at'>('created_at');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20); // Default to 20 items per page
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const queryClient = useQueryClient();
 
@@ -83,7 +80,7 @@ const TicketsPage = () => {
     try {
       const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
         method: 'POST',
-        body: { action: 'syncTickets', user_id: user?.id }, // Pass user.id here
+        body: { action: 'syncTickets', user_id: user?.id },
       });
 
       if (error) {
@@ -115,13 +112,13 @@ const TicketsPage = () => {
     setSelectedCompanies([]);
     setSelectedTypes([]);
     setSelectedDependencies([]);
-    setFilterMyTickets(false); // Clear new quick filters
-    setFilterHighPriority(false); // Clear new quick filters
-    setFilterSLABreached(false); // Clear new quick filters
-    setDateField('created_at'); // Clear new date filters
-    setDateRange(undefined); // Clear new date filters
+    setFilterMyTickets(false);
+    setFilterHighPriority(false);
+    setFilterSLABreached(false);
+    setDateField('created_at');
+    setDateRange(undefined);
     setIsFilterSheetOpen(false);
-    setCurrentPage(1); // Reset pagination on clear filters
+    setCurrentPage(1);
   };
 
   const allFilteredTickets = useMemo(() => {
@@ -129,7 +126,6 @@ const TicketsPage = () => {
 
     let currentTickets: Ticket[] = freshdeskTickets;
 
-    // Apply quick filters first
     if (filterMyTickets && user?.email) {
       currentTickets = currentTickets.filter(ticket => ticket.requester_email === user.email || ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()));
     }
@@ -148,7 +144,6 @@ const TicketsPage = () => {
       });
     }
 
-    // Apply search term
     currentTickets = currentTickets.filter(ticket => {
       const matchesSearch = searchTerm === "" ||
         ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -158,7 +153,6 @@ const TicketsPage = () => {
       return matchesSearch;
     });
 
-    // Apply dropdown/multiselect filters
     currentTickets = currentTickets.filter(ticket => {
       const matchesStatus = filterStatus === "All" || ticket.status.toLowerCase().includes(filterStatus.toLowerCase());
       const matchesPriority = filterPriority === "All" || ticket.priority.toLowerCase() === filterPriority.toLowerCase();
@@ -169,14 +163,12 @@ const TicketsPage = () => {
       return matchesStatus && matchesPriority && matchesAssignee && matchesCompany && matchesType && matchesDependency;
     });
 
-    // Apply date range filter
     if (dateRange?.from) {
       currentTickets = currentTickets.filter(ticket => {
         const dateToCheck = dateField === 'created_at' ? parseISO(ticket.created_at) : parseISO(ticket.updated_at);
         const start = dateRange.from;
-        const end = dateRange.to || start; // If only 'from' is selected, use it as both start and end
+        const end = dateRange.to || start;
 
-        // Ensure start and end are at the beginning/end of the day for accurate filtering
         const effectiveStart = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
         const effectiveEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999);
 
@@ -187,7 +179,6 @@ const TicketsPage = () => {
     return currentTickets;
   }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, selectedAssignees, selectedCompanies, selectedTypes, selectedDependencies, filterMyTickets, filterHighPriority, filterSLABreached, dateField, dateRange, user?.email, fullName]);
 
-  // Pagination calculations
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentTicketsForTable = allFilteredTickets.slice(indexOfFirstItem, indexOfLastItem);
@@ -278,7 +269,6 @@ const TicketsPage = () => {
     return Array.from(dependencies).sort();
   }, [freshdeskTickets]);
 
-  // Calculate active filter count for display
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (searchTerm) count++;
@@ -332,7 +322,7 @@ const TicketsPage = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page on search
+                setCurrentPage(1);
               }}
               className="flex-grow bg-card"
             />
@@ -433,7 +423,7 @@ const TicketsPage = () => {
                   </div>
                 )}
 
-                <ScrollArea className="flex-grow pr-4 -mr-4"> {/* Use ScrollArea for filter content */}
+                <ScrollArea className="flex-grow pr-4 -mr-4">
                   <Accordion type="multiple" className="w-full space-y-4">
                     {/* Quick Filters */}
                     <AccordionItem value="item-1" className="border-b border-border">
@@ -504,7 +494,7 @@ const TicketsPage = () => {
                           selected={selectedAssignees}
                           onSelectedChange={(values) => {setSelectedAssignees(values); setCurrentPage(1);}}
                           placeholder="Filter by Assignee"
-                          icon={Users} // Pass icon prop
+                          icon={Users}
                           className="w-full bg-card"
                         />
                       </AccordionContent>
@@ -521,7 +511,7 @@ const TicketsPage = () => {
                           selected={selectedCompanies}
                           onSelectedChange={(values) => {setSelectedCompanies(values); setCurrentPage(1);}}
                           placeholder="Filter by Company"
-                          icon={Building2} // Pass icon prop
+                          icon={Building2}
                           className="w-full bg-card"
                         />
                         <MultiSelect
@@ -529,7 +519,7 @@ const TicketsPage = () => {
                           selected={selectedTypes}
                           onSelectedChange={(values) => {setSelectedTypes(values); setCurrentPage(1);}}
                           placeholder="Filter by Type"
-                          icon={TicketIcon} // Pass icon prop
+                          icon={TicketIcon}
                           className="w-full bg-card"
                         />
                         <MultiSelect
@@ -537,7 +527,7 @@ const TicketsPage = () => {
                           selected={selectedDependencies}
                           onSelectedChange={(values) => {setSelectedDependencies(values); setCurrentPage(1);}}
                           placeholder="Filter by Dependency"
-                          icon={GitFork} // Pass icon prop
+                          icon={GitFork}
                           className="w-full bg-card"
                         />
                       </AccordionContent>
@@ -648,7 +638,6 @@ const TicketsPage = () => {
 
         {/* Main content area for filter notification and scrollable table */}
         <div className="flex-grow p-6 pt-4 flex flex-col">
-          {/* Removed FilterNotification component */}
           <div className="flex-grow rounded-lg border border-border shadow-md">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
