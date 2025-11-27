@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare, AlertTriangle, TrendingUp, History, BarChart2, Gauge } from "lucide-react"; // Added Gauge icon
+import { Users, Loader2, LayoutDashboard, Handshake, MessageSquare, AlertTriangle, TrendingUp, History, BarChart2, Gauge, Brain } from "lucide-react"; // Added Brain icon
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,11 +23,39 @@ import CustomerOperationalLoadCard from "@/components/customer360/CustomerOperat
 import CustomerConversationActivityCard from "@/components/customer360/CustomerConversationActivityCard";
 import CustomerHistoricalBehaviourCard from "@/components/customer360/CustomerHistoricalBehaviourCard";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import CustomerAISummaryCard from "@/components/customer360/CustomerAISummaryCard"; // New import
+
+const fetchCustomerAISummary = async (customerName: string, ticketsData: any[], authToken: string | undefined): Promise<string> => {
+  if (!customerName || !ticketsData || ticketsData.length === 0 || !authToken) {
+    return "No tickets available for summary or authentication missing.";
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('summarize-customer-tickets', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: { customerName, ticketsData },
+    });
+
+    if (error) {
+      console.error("Error fetching AI summary from Edge Function:", error);
+      throw error;
+    }
+    return data.summary as string;
+  } catch (err: any) {
+    console.error("Failed to fetch AI summary:", err.message);
+    throw new Error(`Failed to generate AI summary: ${err.message}`);
+  }
+};
 
 const Customer360 = () => {
   const { session } = useSupabase();
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const authToken = session?.access_token;
 
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [isTicketDetailModalOpen, setIsTicketDetailModalOpen] = useState(false);
@@ -68,6 +96,34 @@ const Customer360 = () => {
     if (!allTickets || !selectedCustomer) return [];
     return allTickets.filter(ticket => ticket.cf_company === selectedCustomer);
   }, [allTickets, selectedCustomer]);
+
+  // Prepare simplified ticket data for AI summary
+  const simplifiedCustomerTicketsData = useMemo(() => {
+    if (!customerTickets || customerTickets.length === 0) return [];
+    return customerTickets.map(ticket => ({
+      id: ticket.id,
+      subject: ticket.subject,
+      status: ticket.status,
+      priority: ticket.priority,
+      type: ticket.type,
+      created_at: ticket.created_at,
+      updated_at: ticket.updated_at,
+      assignee: ticket.assignee,
+      cf_company: ticket.cf_company,
+      cf_module: ticket.cf_module,
+      cf_dependency: ticket.cf_dependency,
+      cf_recurrence: ticket.cf_recurrence,
+    }));
+  }, [customerTickets]);
+
+  // Fetch AI Summary
+  const { data: aiCustomerSummary, isLoading: isAISummaryLoading, error: aiSummaryError } = useQuery<string, Error>({
+    queryKey: ["customerAISummary", selectedCustomer, simplifiedCustomerTicketsData],
+    queryFn: () => fetchCustomerAISummary(selectedCustomer!, simplifiedCustomerTicketsData, authToken),
+    enabled: !!selectedCustomer && simplifiedCustomerTicketsData.length > 0 && !!authToken,
+    staleTime: 5 * 60 * 1000, // Summary can be stale for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+  } as UseQueryOptions<string, Error>);
 
   const handleViewTicketDetails = (ticket: Ticket) => {
     setSelectedTicketForModal(ticket);
@@ -149,6 +205,13 @@ const Customer360 = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <CustomerOverviewCard customerName={selectedCustomer} tickets={customerTickets} />
                   <CustomerHealthScore customerName={selectedCustomer} tickets={customerTickets} />
+                  {/* AI Summary Card - spans two columns on large screens */}
+                  <CustomerAISummaryCard
+                    customerName={selectedCustomer}
+                    summary={aiCustomerSummary}
+                    isLoading={isAISummaryLoading}
+                    error={aiSummaryError}
+                  />
                 </div>
               </section>
 
