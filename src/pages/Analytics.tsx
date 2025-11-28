@@ -36,7 +36,7 @@ import AgentPerformanceChart from "@/components/AgentPerformanceChart";
 // New chart components
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import CustomerEngagementTrendChart from "@/components/CustomerEngagementTrendChart";
-
+import DashboardMetricCard from "@/components/DashboardMetricCard"; // Added missing import
 
 const Analytics = () => {
   const { session } = useSupabase();
