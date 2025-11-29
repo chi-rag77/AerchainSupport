@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2 } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag } from "lucide-react"; // Added Flag icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,6 +75,7 @@ const Index = () => {
   const [filterSLABreached, setFilterSLABreached] = useState(false);
   const [selectedCustomerForChart, setSelectedCustomerForChart] = useState<string>("All");
   const [selectedCustomersForBreakdown, setSelectedCustomersForBreakdown] = useState<string[]>([]);
+  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]); // New state for priority multi-select
   const [assigneeChartMode, setAssigneeChartMode] = useState<'count' | 'percentage'>('count');
   const [customerBreakdownView, setCustomerBreakdownView] = useState<'cards' | 'table'>('cards');
   const [isMyOpenTicketsModalOpen, setIsMyOpenTicketsModalOpen] = useState(false);
@@ -96,18 +97,6 @@ const Index = () => {
     },
   } as UseQueryOptions<Ticket[], Error>);
 
-  const { data: dashboardInsights } = useQuery<Insight[], Error>({
-    queryKey: ["dashboardInsights", authToken],
-    queryFn: () => fetchDashboardInsights(authToken),
-    enabled: !!authToken,
-    onSuccess: () => {
-      toast.success("Insights loaded successfully!");
-    },
-    onError: (err) => {
-      toast.error(`Failed to load insights: ${err.message}`);
-    },
-  } as UseQueryOptions<Insight[], Error>);
-
   const uniqueCompanies = useMemo(() => {
     const companies = new Set<string>();
     (freshdeskTickets || []).forEach(ticket => {
@@ -116,6 +105,14 @@ const Index = () => {
       }
     });
     return Array.from(companies).sort();
+  }, [freshdeskTickets]);
+
+  const uniquePriorities = useMemo(() => {
+    const priorities = new Set<string>();
+    (freshdeskTickets || []).forEach(ticket => {
+      priorities.add(ticket.priority);
+    });
+    return Array.from(priorities).sort();
   }, [freshdeskTickets]);
 
   const isInitialLoadRef = React.useRef(true);
@@ -230,6 +227,20 @@ const Index = () => {
     if (filterHighPriority) {
       currentTickets = currentTickets.filter(ticket => ticket.priority.toLowerCase() === 'high' || ticket.priority.toLowerCase() === 'urgent');
     }
+    if (filterSLABreached) {
+      currentTickets = currentTickets.filter(ticket => {
+        if (ticket.due_by) {
+          const dueDate = parseISO(ticket.due_by);
+          const now = new Date();
+          const statusLower = ticket.status.toLowerCase();
+          return isPast(dueDate) && statusLower !== 'resolved' && statusLower !== 'closed';
+        }
+        return false;
+      });
+    }
+    if (selectedPriorities.length > 0) {
+      currentTickets = currentTickets.filter(ticket => selectedPriorities.includes(ticket.priority));
+    }
 
     if (searchTerm) {
       currentTickets = currentTickets.filter(ticket =>
@@ -241,7 +252,7 @@ const Index = () => {
     }
 
     return currentTickets;
-  }, [freshdeskTickets, effectiveStartDate, effectiveEndDate, filterMyTickets, filterHighPriority, searchTerm, fullName, userEmail]);
+  }, [freshdeskTickets, effectiveStartDate, effectiveEndDate, filterMyTickets, filterHighPriority, filterSLABreached, selectedPriorities, searchTerm, fullName, userEmail]);
 
   const allOpenTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
@@ -263,6 +274,8 @@ const Index = () => {
         resolvedThisPeriod: 0,
         bugsReceived: 0,
         totalOpenTicketsOverall: 0,
+        averageResolutionTime: "N/A",
+        slaAdherenceRate: "N/A",
       };
     }
 
@@ -277,12 +290,38 @@ const Index = () => {
 
     const totalOpenTicketsOverall = (freshdeskTickets || []).filter(t => t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed').length;
 
+    // Calculate Average Resolution Time
+    const resolvedTicketsForAvgTime = filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed');
+    let averageResolutionTime: string = "N/A";
+    if (resolvedTicketsForAvgTime.length > 0) {
+      const totalDays = resolvedTicketsForAvgTime.reduce((sum, t) => {
+        const created = new Date(t.created_at);
+        const updated = new Date(t.updated_at);
+        return sum + differenceInDays(updated, created);
+      }, 0);
+      averageResolutionTime = (totalDays / resolvedTicketsForAvgTime.length).toFixed(1) + " days";
+    }
+
+    // Calculate SLA Adherence Rate
+    const slaApplicableTickets = filteredDashboardTickets.filter(t => t.due_by);
+    let slaAdherenceRate: string = "N/A";
+    if (slaApplicableTickets.length > 0) {
+      const metSlaCount = slaApplicableTickets.filter(t => {
+        const updated = new Date(t.updated_at);
+        const due = new Date(t.due_by!);
+        return updated <= due;
+      }).length;
+      slaAdherenceRate = ((metSlaCount / slaApplicableTickets.length) * 100).toFixed(1) + "%";
+    }
+
     return {
       totalTickets,
       openTickets,
       resolvedThisPeriod,
       bugsReceived,
       totalOpenTicketsOverall,
+      averageResolutionTime,
+      slaAdherenceRate,
     };
   }, [filteredDashboardTickets, freshdeskTickets, effectiveStartDate, effectiveEndDate]);
 
@@ -506,6 +545,16 @@ const Index = () => {
               </PopoverContent>
             </Popover>
 
+            {/* Priority Multi-Select */}
+            <MultiSelect
+              options={uniquePriorities.map(priority => ({ value: priority, label: priority }))}
+              selected={selectedPriorities}
+              onSelectedChange={setSelectedPriorities}
+              placeholder="Filter by Priority"
+              className="w-[180px] bg-card"
+              icon={Flag}
+            />
+
             {/* Quick Filter Chips */}
             <Button
               variant={filterMyTickets ? "secondary" : "outline"}
@@ -589,7 +638,7 @@ const Index = () => {
               <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                 <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6"> {/* Adjusted grid for 6-8 cards */}
                 <DashboardMetricCard
                   title="Total Tickets"
                   value={metrics.totalTickets}
@@ -624,6 +673,20 @@ const Index = () => {
                   icon={Bug}
                   trend={8}
                   description="Number of tickets categorized as 'Bug' in the selected period."
+                />
+                <DashboardMetricCard
+                  title="Avg. Resolution Time"
+                  value={metrics.averageResolutionTime}
+                  icon={Clock}
+                  trend={-3} // Negative trend is good for time
+                  description="Average time taken to resolve tickets in the selected period."
+                />
+                <DashboardMetricCard
+                  title="SLA Adherence Rate"
+                  value={metrics.slaAdherenceRate}
+                  icon={ShieldAlert}
+                  trend={2}
+                  description="Percentage of tickets that met their Service Level Agreement (SLA) in the selected period."
                 />
               </div>
             </section>
@@ -688,7 +751,7 @@ const Index = () => {
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="h-96 p-6 bg-card border border-border shadow-sm">
-                  <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Tickets Over Time</CardTitle>
+                  <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Volume Trend (Created vs Resolved)</CardTitle>
                   <CardContent className="h-[calc(100%-40px)] p-0">
                     <TicketsOverTimeChart tickets={freshdeskTickets || []} startDate={effectiveStartDate} endDate={effectiveEndDate} />
                   </CardContent>
