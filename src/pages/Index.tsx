@@ -97,6 +97,13 @@ const Index = () => {
     },
   } as UseQueryOptions<Ticket[], Error>);
 
+  const { data: dashboardInsights = [] } = useQuery<Insight[], Error>({
+    queryKey: ["dashboardInsights", authToken],
+    queryFn: () => fetchDashboardInsights(authToken),
+    enabled: !!authToken,
+    refetchInterval: 60000, // Refetch every 60 seconds
+  } as UseQueryOptions<Insight[], Error>);
+
   const uniqueCompanies = useMemo(() => {
     const companies = new Set<string>();
     (freshdeskTickets || []).forEach(ticket => {
