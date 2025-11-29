@@ -15,7 +15,7 @@ import {
   Activity, // New: For engagement
   GitFork, // New: For handoff analysis
   Sparkles, // New: For quality score
-  ArrowUpRight, ArrowDownRight, TicketIcon, Hourglass, CheckCircle // Added CheckCircle
+  ArrowUpRight, ArrowDownRight, TicketIcon, Hourglass, CheckCircle, AlertCircle // Added AlertCircle
 } from "lucide-react"; // Updated imports for new icons
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
