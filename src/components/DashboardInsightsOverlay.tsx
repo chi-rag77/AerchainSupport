@@ -213,7 +213,7 @@ const DashboardInsightsOverlay = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
+      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0"> {/* Increased width to sm:max-w-lg */}
         <SheetHeader className="p-6 pb-4 bg-background border-b border-border shadow-sm">
           <SheetTitle className="text-2xl font-bold flex items-center gap-2">
             <SlidersHorizontal className="h-6 w-6 text-primary" /> Dashboard Insights
@@ -494,7 +494,7 @@ const DashboardInsightsOverlay = ({
           </Card>
 
           {/* Assignment Changes Feed (Placeholder) */}
-          <Card className="shadow-sm">
+          <Card className="shadow-sm min-h-[150px]"> {/* Added min-h-[150px] */}
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold flex items-center gap-2 text-purple-600 dark:text-purple-400">
                 <GitFork className="h-4 w-4" /> Assignment Changes Feed
@@ -512,7 +512,7 @@ const DashboardInsightsOverlay = ({
           </Card>
 
           {/* Customer Escalation Map (Kept as is, but adjusted styling for consistency) */}
-          <Card className="shadow-sm">
+          <Card className="shadow-sm min-h-[150px]"> {/* Added min-h-[150px] */}
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold flex items-center gap-2 text-purple-600 dark:text-purple-400">
                 <Users className="h-4 w-4" /> Customer Escalation Map
