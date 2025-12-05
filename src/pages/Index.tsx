@@ -26,13 +26,16 @@ import VolumeSlaTrendChart from "@/components/VolumeSlaTrendChart";
 import TicketBreakdownChart from "@/components/TicketBreakdownChart";
 import AgingBucketsChart from "@/components/AgingBucketsChart";
 import TopRiskTicketsTable from "@/components/TopRiskTicketsTable";
-import CompanyHealthTable from "@/components/CompanyHealthTable";
+import CompanyHealthTable from "@/components/Company/HealthTable";
 import TeamLoadTable from "@/components/TeamLoadTable";
 import DashboardRightPanel from "@/components/DashboardRightPanel";
 import FilteredTicketsModal from "@/components/FilteredTicketsModal";
 import { MultiSelect } from "@/components/MultiSelect";
 import MyOpenTicketsModal from "@/components/MyOpenTicketsModal";
 import InsightsSheet from "@/components/InsightsSheet";
+import PriorityDistributionChart from "@/components/PriorityDistributionChart"; // Added missing import
+import AssigneeLoadChart from "@/components/AssigneeLoadChart"; // Added missing import
+import TicketDetailModal from "@/components/TicketDetailModal"; // Added missing import
 
 const fetchDashboardInsights = async (token: string | undefined): Promise<Insight[]> => {
   if (!token) return [];
@@ -447,93 +450,92 @@ const Index = () => {
   }
 
   return (
-    <TooltipProvider>
-      <div className="flex-1 flex overflow-hidden bg-background">
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-          <Card className="flex flex-col h-full p-0 overflow-hidden border-none shadow-xl">
-            {/* Header Section */}
-            <div className="p-8 pb-6 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex flex-col items-start">
-                  <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2">
-                    Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
-                  </p>
-                  <div className="flex items-center space-x-4">
-                    <LayoutDashboard className="h-8 w-8 text-primary" />
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Global Executive Overview</h1>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                    Insights for: <span className="font-semibold">{dateRangeDisplay}</span>
-                  </p>
-                </div>
+    <div className="flex-1 flex overflow-hidden bg-background">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+        <Card className="flex flex-col h-full p-0 overflow-hidden border-none shadow-xl">
+          {/* Header Section */}
+          <div className="p-8 pb-6 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col items-start">
+                <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2">
+                  Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
+                </p>
                 <div className="flex items-center space-x-4">
-                  <Button
-                    onClick={handleSyncTickets}
-                    disabled={isFetching}
-                    className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
-                  >
-                    {isFetching ? (
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                    )}
-                    Sync Tickets
-                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
-                  </Button>
+                  <LayoutDashboard className="h-8 w-8 text-primary" />
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Global Executive Overview</h1>
                 </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  Insights for: <span className="font-semibold">{dateRangeDisplay}</span>
+                </p>
               </div>
-
-              {/* Filter Bar */}
-              <div className="flex flex-wrap gap-4 items-center p-6 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
-                {/* Date Range */}
-                <Select
-                  value={typeof activeDateFilter === 'string' ? activeDateFilter : "custom"}
-                  onValueChange={(value) => {
-                    if (value === "custom") {
-                      setActiveDateFilter({ from: undefined, to: undefined });
-                    } else {
-                      setActiveDateFilter(value);
-                    }
-                  }}
+              <div className="flex items-center space-x-4">
+                <Button
+                  onClick={handleSyncTickets}
+                  disabled={isFetching}
+                  className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
                 >
-                  <SelectTrigger className="w-[180px] bg-card">
-                    <CalendarDays className="h-4 w-4 mr-2 text-gray-500" />
-                    <SelectValue placeholder="Select Date Range">
-                      {dateRangeDisplay}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="last7days">Last 7 Days</SelectItem>
-                    <SelectItem value="last30days">Last 30 Days</SelectItem>
-                    <SelectItem value="last90days">Last 90 Days</SelectItem>
-                    <SelectItem value="alltime">All Time</SelectItem>
-                    <SelectItem value="custom">Custom Range</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {isFetching ? (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Sync Tickets
+                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
+                </Button>
+              </div>
+            </div>
 
-                {/* Custom Date Picker Popover */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className="w-[200px] justify-start text-left font-normal bg-card"
-                      style={{ display: typeof activeDateFilter !== 'string' || (typeof activeDateFilter === 'string' && activeDateFilter === 'custom') ? 'flex' : 'none' }}
-                    >
-                      <CalendarDays className="mr-2 h-4 w-4" />
-                      {effectiveStartDate && effectiveEndDate
-                        ? `${format(effectiveStartDate, "PPP")} - ${format(effectiveEndDate, "PPP")}`
-                        : <span>Pick a custom range</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      initialFocus
-                      mode="range"
-                      defaultMonth={effectiveStartDate || new Date()}
-                      selected={typeof activeDateFilter !== 'string' ? activeDateFilter : undefined}
-                      onSelect={(range) => {
+            {/* Filter Bar */}
+            <div className="flex flex-wrap gap-4 items-center p-6 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
+              {/* Date Range */}
+              <Select
+                value={typeof activeDateFilter === 'string' ? activeDateFilter : "custom"}
+                onValueChange={(value) => {
+                  if (value === "custom") {
+                    setActiveDateFilter({ from: undefined, to: undefined });
+                  } else {
+                    setActiveDateFilter(value);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-[180px] bg-card">
+                  <CalendarDays className="h-4 w-4 mr-2 text-gray-500" />
+                  <SelectValue placeholder="Select Date Range">
+                    {dateRangeDisplay}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="last7days">Last 7 Days</SelectItem>
+                  <SelectItem value="last30days">Last 30 Days</SelectItem>
+                  <SelectItem value="last90days">Last 90 Days</SelectItem>
+                  <SelectItem value="alltime">All Time</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Custom Date Picker Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className="w-[200px] justify-start text-left font-normal bg-card"
+                    style={{ display: typeof activeDateFilter !== 'string' || (typeof activeDateFilter === 'string' && activeDateFilter === 'custom') ? 'flex' : 'none' }}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {effectiveStartDate && effectiveEndDate
+                      ? `${format(effectiveStartDate, "PPP")} - ${format(effectiveEndDate, "PPP")}`
+                      : <span>Pick a custom range</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={effectiveStartDate || new Date()}
+                    selected={typeof activeDateFilter !== 'string' ? activeDateFilter : undefined}
+                    onSelect={(range) => {
                         if (range?.from) {
                           setActiveDateFilter({
                             from: range.from,
@@ -855,7 +857,7 @@ const Index = () => {
           ticket={selectedTicketForDetail}
         />
       )}
-    </TooltipProvider>
+    </div>
   );
 };
 
