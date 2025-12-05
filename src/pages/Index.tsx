@@ -825,12 +825,14 @@ const Index = () => {
         </div>
 
         {/* Right Side Panel */}
-        <DashboardRightPanel
-          tickets={freshdeskTickets || []}
-          onViewTicketDetails={handleViewTicketDetails}
-          selectedCompanyForMap={selectedCompanies.length === 1 ? selectedCompanies[0] : undefined}
-          onOpenFilteredTicketsModal={handleKPIDrilldown} // Pass the drilldown handler
-        />
+        <div className="w-full lg:w-80 flex-shrink-0 sticky top-0 h-screen overflow-y-auto border-l border-border shadow-lg">
+          <DashboardRightPanel
+            tickets={freshdeskTickets || []}
+            onViewTicketDetails={handleViewTicketDetails}
+            selectedCompanyForMap={selectedCompanies.length === 1 ? selectedCompanies[0] : undefined}
+            onOpenFilteredTicketsModal={handleKPIDrilldown} // Pass the drilldown handler
+          />
+        </div>
       </div>
 
       <FilteredTicketsModal
