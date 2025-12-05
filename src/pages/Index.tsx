@@ -26,16 +26,16 @@ import VolumeSlaTrendChart from "@/components/VolumeSlaTrendChart";
 import TicketBreakdownChart from "@/components/TicketBreakdownChart";
 import AgingBucketsChart from "@/components/AgingBucketsChart";
 import TopRiskTicketsTable from "@/components/TopRiskTicketsTable";
-import CompanyHealthTable from "@/components/Company/HealthTable";
+import CompanyHealthTable from "@/components/CompanyHealthTable"; // Corrected import path
 import TeamLoadTable from "@/components/TeamLoadTable";
 import DashboardRightPanel from "@/components/DashboardRightPanel";
 import FilteredTicketsModal from "@/components/FilteredTicketsModal";
 import { MultiSelect } from "@/components/MultiSelect";
 import MyOpenTicketsModal from "@/components/MyOpenTicketsModal";
 import InsightsSheet from "@/components/InsightsSheet";
-import PriorityDistributionChart from "@/components/PriorityDistributionChart"; // Added missing import
-import AssigneeLoadChart from "@/components/AssigneeLoadChart"; // Added missing import
-import TicketDetailModal from "@/components/TicketDetailModal"; // Added missing import
+import PriorityDistributionChart from "@/components/PriorityDistributionChart";
+import AssigneeLoadChart from "@/components/AssigneeLoadChart";
+import TicketDetailModal from "@/components/TicketDetailModal";
 
 const fetchDashboardInsights = async (token: string | undefined): Promise<Insight[]> => {
   if (!token) return [];
