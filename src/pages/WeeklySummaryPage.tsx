@@ -38,6 +38,11 @@ const WeeklySummaryPage = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
+  // Calculate startOfWeek and endOfWeek here so they are accessible in JSX
+  const now = new Date();
+  const endOfWeek = subDays(now, 1); // Yesterday
+  const startOfWeek = subDays(endOfWeek, 6); // 7 days including yesterday
+
   const { data: allTickets, isLoading, error, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["allFreshdeskTicketsForWeeklySummary"],
     queryFn: async () => {
@@ -71,10 +76,6 @@ const WeeklySummaryPage = () => {
 
   const weeklySummaryData: WeeklySupportSummaryData | null = useMemo(() => {
     if (!allTickets || !selectedCustomer) return null;
-
-    const now = new Date();
-    const endOfWeek = subDays(now, 1); // Yesterday
-    const startOfWeek = subDays(endOfWeek, 6); // 7 days including yesterday
 
     const customerTickets = allTickets.filter(ticket => ticket.cf_company === selectedCustomer);
 
@@ -118,7 +119,7 @@ const WeeklySummaryPage = () => {
         taskChange: { count: taskChangeTickets.length, percentage: calculatePercentage(taskChangeTickets.length, totalTicketsForMix) },
       },
     };
-  }, [allTickets, selectedCustomer]);
+  }, [allTickets, selectedCustomer, startOfWeek, endOfWeek]); // Added startOfWeek, endOfWeek to dependencies
 
   const handleSyncTickets = async () => {
     toast.loading("Syncing latest tickets from Freshdesk...", { id: "sync-tickets-weekly-summary" });
