@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react'; // Added useMemo
 import {
   Table,
   TableBody,
@@ -161,7 +161,7 @@ const TopRiskTicketsTable = ({ tickets, onRowClick }: TopRiskTicketsTableProps) 
               <TableHead className="py-2 whitespace-nowrap">Subject</TableHead>
               <TableHead className="py-2 whitespace-nowrap">Company</TableHead>
               <TableHead className="py-2 whitespace-nowrap">Priority</TableHead>
-              <TableHead className="py-2 whitespace-nowrap">Status</TableHead>
+              <TableHead className className="py-2 whitespace-nowrap">Status</TableHead>
               <TableHead className="py-2 text-right whitespace-nowrap">Age</TableHead>
               <TableHead className="py-2 text-right whitespace-nowrap">SLA Due</TableHead>
               <TableHead className="py-2 whitespace-nowrap">Assignee</TableHead>

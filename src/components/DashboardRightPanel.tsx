@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo } from 'react'; // Added useMemo
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
-import { AlertTriangle, Clock, Repeat, Users, MessageSquare, ArrowRight, Lightbulb, BellRing, TrendingUp, CalendarX, Tag } from 'lucide-react';
+import { AlertTriangle, Clock, Repeat, Users, MessageSquare, ArrowRight, Lightbulb, BellRing, TrendingUp, CalendarX, Tag, Info } from 'lucide-react'; // Added Info
 import { cn } from '@/lib/utils';
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { format, differenceInHours, parseISO, isPast } from 'date-fns';
+import { format, differenceInHours, parseISO, isPast, subDays } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DashboardRightPanelProps {
