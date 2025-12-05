@@ -82,7 +82,7 @@ const TicketDetailModal = ({
         if (syncError) {
           console.error("Error during full ticket sync:", syncError);
           toast.error(`Failed to sync tickets: ${syncError.message}. Please try again.`, { id: "sync-parent-ticket" });
-          setFetchError("Parent ticket not found and failed to sync. Please try syncing tickets manually.");
+          setFetchError("Parent ticket not found and failed to sync. Please ensure the ticket exists in Freshdesk and try syncing again.");
           setIsLoadingMessages(false);
           return;
         } else {
@@ -121,7 +121,14 @@ const TicketDetailModal = ({
 
         if (syncError) {
           console.error("Error syncing conversations from Freshdesk:", syncError);
-          setFetchError(`Failed to sync conversations: ${syncError.message}`);
+          // Display the full error message from the Edge Function
+          let errorMessage = `Failed to sync conversations: ${syncError.message}`;
+          if (syncError.message.includes("Freshdesk API error: 401") || syncError.message.includes("Freshdesk API key or domain not set")) {
+            errorMessage += ". Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are correctly set as Supabase secrets for the 'fetch-ticket-conversations' Edge Function.";
+          } else if (syncError.message.includes("non-2xx status code")) {
+            errorMessage += ". This often indicates an issue with the Freshdesk API or its credentials. Please check your Supabase secrets (FRESHDESK_API_KEY, FRESHDESK_DOMAIN).";
+          }
+          setFetchError(errorMessage);
         } else {
           console.log("Successfully synced conversations:", data);
         }
@@ -137,7 +144,7 @@ const TicketDetailModal = ({
 
       if (fetchMessagesError) {
         console.error("Error fetching conversation messages from Supabase:", fetchMessagesError);
-        setFetchError(`Failed to load conversation messages: ${fetchMessagesError.message}`);
+        setFetchError(`Failed to load conversation messages from Supabase: ${fetchMessagesError.message}`);
       } else {
         setConversationMessages(messagesData || []);
       }

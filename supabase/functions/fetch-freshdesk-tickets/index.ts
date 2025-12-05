@@ -126,11 +126,11 @@ serve(async (req) => {
           if (!response.ok) {
             const errorText = await response.text();
             console.error(`Freshdesk API Error (Code: ${response.status}): ${errorText}`);
-            if (response.status === 429) {
-              console.warn("Rate limit hit. Stopping sync.");
-            }
-            hasMore = false;
-            break;
+            // Return the specific error response directly
+            return new Response(JSON.stringify({ error: `Freshdesk API error: ${response.status} - ${errorText}` }), {
+              status: response.status, // Use the actual status from Freshdesk
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
           }
 
           const tickets = await response.json();

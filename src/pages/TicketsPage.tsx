@@ -84,13 +84,19 @@ const TicketsPage = () => {
       });
 
       if (error) {
-        throw error;
+        let errorMessage = `Failed to sync tickets: ${error.message}`;
+        if (error.message.includes("Freshdesk API error: 401") || error.message.includes("Freshdesk API key or domain not set")) {
+          errorMessage += ". Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are correctly set as Supabase secrets for the 'fetch-freshdesk-tickets' Edge Function.";
+        } else if (error.message.includes("non-2xx status code")) {
+          errorMessage += ". This often indicates an issue with the Freshdesk API or its credentials. Please check your Supabase secrets (FRESHDESK_API_KEY, FRESHDESK_DOMAIN).";
+        }
+        throw new Error(errorMessage); // Re-throw to be caught by the outer catch
       }
 
       toast.success("Tickets synced successfully!", { id: "sync-tickets" });
       queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] });
     } catch (err: any) {
-      toast.error(`Failed to sync tickets: ${err.message}`, { id: "sync-tickets" });
+      toast.error(err.message, { id: "sync-tickets" }); // Display the enhanced error message
     }
   };
 

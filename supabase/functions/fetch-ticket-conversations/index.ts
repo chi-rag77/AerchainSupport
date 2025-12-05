@@ -73,7 +73,11 @@ serve(async (req) => {
       if (!freshdeskResponse.ok) {
         const errorText = await freshdeskResponse.text();
         console.error(`[fetch-ticket-conversations] Freshdesk API error fetching conversations (page ${page}): ${freshdeskResponse.status} - ${errorText}`);
-        throw new Error(`Freshdesk API error: ${freshdeskResponse.status} - ${errorText}`);
+        // Return the specific error response directly
+        return new Response(JSON.stringify({ error: `Freshdesk API error: ${freshdeskResponse.status} - ${errorText}` }), {
+          status: freshdeskResponse.status, // Use the actual status from Freshdesk
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       const conversationsPage = await freshdeskResponse.json();
