@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +28,6 @@ import AgingBucketsChart from "@/components/AgingBucketsChart";
 import TopRiskTicketsTable from "@/components/TopRiskTicketsTable";
 import CompanyHealthTable from "@/components/CompanyHealthTable";
 import TeamLoadTable from "@/components/TeamLoadTable";
-import DashboardRightPanel from "@/components/DashboardRightPanel";
 import FilteredTicketsModal from "@/components/FilteredTicketsModal";
 import { MultiSelect } from "@/components/MultiSelect";
 import MyOpenTicketsModal from "@/components/MyOpenTicketsModal";
@@ -36,6 +35,7 @@ import InsightsSheet from "@/components/InsightsSheet";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import DashboardInsightsOverlay from "@/components/DashboardInsightsOverlay"; // New import
 
 const fetchDashboardInsights = async (token: string | undefined): Promise<Insight[]> => {
   if (!token) return [];
@@ -90,6 +90,7 @@ const Index = () => {
 
   const [isMyOpenTicketsModalOpen, setIsMyOpenTicketsModalOpen] = useState(false);
   const [isInsightsSheetOpen, setIsInsightsSheetOpen] = useState(false);
+  const [isDashboardInsightsOverlayOpen, setIsDashboardInsightsOverlayOpen] = useState(false); // New state for overlay
 
   const queryClient = useQueryClient();
 
@@ -472,6 +473,13 @@ const Index = () => {
                 </div>
                 <div className="flex items-center space-x-4">
                   <Button
+                    onClick={() => setIsDashboardInsightsOverlayOpen(true)} // Button to open the overlay
+                    className="h-10 px-5 text-base font-semibold relative overflow-hidden group bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    <SlidersHorizontal className="mr-2 h-4 w-4" /> View Insights
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
+                  </Button>
+                  <Button
                     onClick={handleSyncTickets}
                     disabled={isFetching}
                     className="h-10 px-5 text-base font-semibold relative overflow-hidden group"
@@ -823,16 +831,6 @@ const Index = () => {
             )}
           </Card>
         </div>
-
-        {/* Right Side Panel */}
-        <div className="w-full lg:w-80 flex-shrink-0 sticky top-0 h-screen overflow-y-auto border-l border-border shadow-lg">
-          <DashboardRightPanel
-            tickets={freshdeskTickets || []}
-            onViewTicketDetails={handleViewTicketDetails}
-            selectedCompanyForMap={selectedCompanies.length === 1 ? selectedCompanies[0] : undefined}
-            onOpenFilteredTicketsModal={handleKPIDrilldown} // Pass the drilldown handler
-          />
-        </div>
       </div>
 
       <FilteredTicketsModal
@@ -861,6 +859,14 @@ const Index = () => {
           ticket={selectedTicketForDetail}
         />
       )}
+      <DashboardInsightsOverlay
+        isOpen={isDashboardInsightsOverlayOpen}
+        onClose={() => setIsDashboardInsightsOverlayOpen(false)}
+        tickets={freshdeskTickets || []}
+        onViewTicketDetails={handleViewTicketDetails}
+        selectedCompanyForMap={selectedCompanies.length === 1 ? selectedCompanies[0] : undefined}
+        onOpenFilteredTicketsModal={handleKPIDrilldown}
+      />
     </>
   );
 };
