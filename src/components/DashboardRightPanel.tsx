@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useMemo } from 'react'; // Added useMemo
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
-import { AlertTriangle, Clock, Repeat, Users, MessageSquare, ArrowRight, Lightbulb, BellRing, TrendingUp, CalendarX, Tag, Info } from 'lucide-react'; // Added Info
+import { AlertTriangle, Clock, Repeat, Users, MessageSquare, ArrowRight, Lightbulb, BellRing, TrendingUp, CalendarX, Tag, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -15,15 +15,16 @@ interface DashboardRightPanelProps {
   tickets: Ticket[];
   onViewTicketDetails: (ticket: Ticket) => void;
   selectedCompanyForMap?: string; // For Customer Escalation Map
+  onOpenFilteredTicketsModal: (title: string, description: string, tickets: Ticket[]) => void; // New prop
 }
 
-const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForMap }: DashboardRightPanelProps) => {
+const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForMap, onOpenFilteredTicketsModal }: DashboardRightPanelProps) => {
   const now = useMemo(() => new Date(), []);
 
   // --- Escalation Radar Logic ---
   const escalationRadar = useMemo(() => {
-    const autoEscalationCandidates: Ticket[] = [];
-    const stuckTickets: Ticket[] = [];
+    const allAutoEscalationCandidates: Ticket[] = [];
+    const allStuckTickets: Ticket[] = [];
 
     const autoEscalationThresholdHours = 2; // 2 hours before due_by for Urgent tickets
     const stuckTicketNoUpdateHours = 24; // 24 hours no update
@@ -38,7 +39,7 @@ const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForM
           const dueDate = parseISO(ticket.due_by);
           const diffHours = differenceInHours(dueDate, now);
           if (diffHours <= autoEscalationThresholdHours) {
-            autoEscalationCandidates.push(ticket);
+            allAutoEscalationCandidates.push(ticket);
           }
         }
 
@@ -46,12 +47,19 @@ const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForM
         const lastUpdate = parseISO(ticket.updated_at);
         const hoursSinceLastUpdate = differenceInHours(now, lastUpdate);
         if (hoursSinceLastUpdate > stuckTicketNoUpdateHours) {
-          stuckTickets.push(ticket);
+          allStuckTickets.push(ticket);
         }
       }
     });
 
-    return { autoEscalationCandidates, stuckTickets };
+    return {
+      totalAutoEscalationCandidates: allAutoEscalationCandidates.length,
+      autoEscalationCandidates: allAutoEscalationCandidates.slice(0, 3), // Show top 3
+      allAutoEscalationCandidates, // Keep all for modal
+      totalStuckTickets: allStuckTickets.length,
+      stuckTickets: allStuckTickets.slice(0, 3), // Show top 3
+      allStuckTickets, // Keep all for modal
+    };
   }, [tickets, now]);
 
   // --- Recurrence & Patterns View Logic ---
@@ -67,10 +75,18 @@ const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForM
       entry.tickets.push(ticket);
     });
 
-    return Array.from(subjectCounts.values())
+    const allRecurringIssues = Array.from(subjectCounts.values())
       .filter(entry => entry.count > 3) // Simple threshold for recurrence
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10); // Top 10 recurring issues
+      .sort((a, b) => b.count - a.count);
+
+    // Flatten all tickets from recurring issues for the modal
+    const allTicketsFromRecurringIssues = allRecurringIssues.flatMap(issue => issue.tickets);
+
+    return {
+      totalRecurringIssues: allRecurringIssues.length,
+      recurringIssues: allRecurringIssues.slice(0, 3), // Show top 3
+      allTicketsFromRecurringIssues, // Keep all for modal
+    };
   }, [tickets]);
 
   // --- Customer Escalation Map Logic ---
@@ -166,7 +182,7 @@ const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForM
         <CardContent className="text-sm space-y-3">
           <div>
             <h4 className="font-medium flex items-center gap-1 mb-1">
-              <BellRing className="h-4 w-4 text-orange-500" /> Auto-Escalation Candidates:
+              <BellRing className="h-4 w-4 text-orange-500" /> Auto-Escalation Candidates ({escalationRadar.totalAutoEscalationCandidates}):
             </h4>
             {escalationRadar.autoEscalationCandidates.length > 0 ? (
               <ul className="space-y-1">
@@ -187,11 +203,25 @@ const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForM
             ) : (
               <p className="text-muted-foreground">None currently.</p>
             )}
+            {escalationRadar.totalAutoEscalationCandidates > escalationRadar.autoEscalationCandidates.length && (
+              <Button
+                variant="link"
+                size="sm"
+                className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400"
+                onClick={() => onOpenFilteredTicketsModal(
+                  "Auto-Escalation Candidates",
+                  "Tickets identified as potential auto-escalation candidates due to urgency and proximity to SLA breach.",
+                  escalationRadar.allAutoEscalationCandidates
+                )}
+              >
+                View All ({escalationRadar.totalAutoEscalationCandidates}) <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            )}
           </div>
           <Separator />
           <div>
             <h4 className="font-medium flex items-center gap-1 mb-1">
-              <Clock className="h-4 w-4 text-yellow-500" /> Stuck Tickets (No update &gt; 24h):
+              <Clock className="h-4 w-4 text-yellow-500" /> Stuck Tickets (No update &gt; 24h) ({escalationRadar.totalStuckTickets}):
             </h4>
             {escalationRadar.stuckTickets.length > 0 ? (
               <ul className="space-y-1">
@@ -212,6 +242,20 @@ const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForM
             ) : (
               <p className="text-muted-foreground">None currently.</p>
             )}
+            {escalationRadar.totalStuckTickets > escalationRadar.stuckTickets.length && (
+              <Button
+                variant="link"
+                size="sm"
+                className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400"
+                onClick={() => onOpenFilteredTicketsModal(
+                  "Stuck Tickets",
+                  "Tickets that have not been updated in over 24 hours, potentially indicating they are stuck.",
+                  escalationRadar.allStuckTickets
+                )}
+              >
+                View All ({escalationRadar.totalStuckTickets}) <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -220,13 +264,13 @@ const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForM
       <Card className="shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold flex items-center gap-2 text-blue-600 dark:text-blue-400">
-            <Repeat className="h-5 w-5" /> Recurring Issues
+            <Repeat className="h-5 w-5" /> Recurring Issues ({recurringIssues.totalRecurringIssues}):
           </CardTitle>
         </CardHeader>
         <CardContent className="text-sm space-y-2">
-          {recurringIssues.length > 0 ? (
+          {recurringIssues.recurringIssues.length > 0 ? (
             <ul className="space-y-2">
-              {recurringIssues.map((issue, index) => (
+              {recurringIssues.recurringIssues.map((issue, index) => (
                 <li key={index} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -240,6 +284,20 @@ const DashboardRightPanel = ({ tickets, onViewTicketDetails, selectedCompanyForM
             </ul>
           ) : (
             <p className="text-muted-foreground">No significant recurring issues detected.</p>
+          )}
+          {recurringIssues.totalRecurringIssues > recurringIssues.recurringIssues.length && (
+            <Button
+              variant="link"
+              size="sm"
+              className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400"
+              onClick={() => onOpenFilteredTicketsModal(
+                "Recurring Issues",
+                "Tickets that share similar subjects, indicating recurring problems.",
+                recurringIssues.allTicketsFromRecurringIssues
+              )}
+            >
+              View All ({recurringIssues.totalRecurringIssues}) <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
           )}
         </CardContent>
       </Card>

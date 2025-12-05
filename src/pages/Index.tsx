@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
+import { useQuery, UseQueryOptions, useQueryClient } from "@tanstack/react/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket, CustomerBreakdownRow, Insight } from "@/types";
 import { isWithinInterval, subDays, format, addDays, differenceInDays, parseISO, isPast, differenceInHours } from 'date-fns';
@@ -450,7 +450,7 @@ const Index = () => {
   }
 
   return (
-    <> {/* Added React Fragment here */}
+    <>
       <div className="flex-1 flex overflow-hidden bg-background">
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col p-6 overflow-y-auto">
@@ -829,6 +829,7 @@ const Index = () => {
           tickets={freshdeskTickets || []}
           onViewTicketDetails={handleViewTicketDetails}
           selectedCompanyForMap={selectedCompanies.length === 1 ? selectedCompanies[0] : undefined}
+          onOpenFilteredTicketsModal={handleKPIDrilldown} // Pass the drilldown handler
         />
       </div>
 
