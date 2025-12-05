@@ -548,316 +548,317 @@ const Index = () => {
                         }}
                         numberOfMonths={2}
                       />
-                    </PopoverContent>
-                  </Popover>
+                  </PopoverContent>
+                </Popover>
 
-                  {/* Company Multi-Select */}
-                  <MultiSelect
-                    options={uniqueCompanies.map(company => ({ value: company, label: company }))}
-                    selected={selectedCompanies}
-                    onSelectedChange={setSelectedCompanies}
-                    placeholder="Filter by Company"
-                    className="w-[200px] bg-card"
-                    icon={Users}
+                {/* Company Multi-Select */}
+                <MultiSelect
+                  options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+                  selected={selectedCompanies}
+                  onSelectedChange={setSelectedCompanies}
+                  placeholder="Filter by Company"
+                  className="w-[200px] bg-card"
+                  icon={Users}
+                />
+
+                {/* Country Multi-Select */}
+                <MultiSelect
+                  options={uniqueCountries.map(country => ({ value: country, label: country }))}
+                  selected={selectedCountries}
+                  onSelectedChange={setSelectedCountries}
+                  placeholder="Filter by Country"
+                  className="w-[180px] bg-card"
+                  icon={MapPin}
+                />
+
+                {/* Module Multi-Select */}
+                <MultiSelect
+                  options={uniqueModules.map(module => ({ value: module, label: module }))}
+                  selected={selectedModules}
+                  onSelectedChange={setSelectedModules}
+                  placeholder="Filter by Module"
+                  className="w-[180px] bg-card"
+                  icon={GitFork}
+                />
+
+                {/* Priority Multi-Select */}
+                <MultiSelect
+                  options={uniquePriorities.map(priority => ({ value: priority, label: priority }))}
+                  selected={selectedPriorities}
+                  onSelectedChange={setSelectedPriorities}
+                  placeholder="Filter by Priority"
+                  className="w-[180px] bg-card"
+                  icon={Flag}
+                />
+
+                {/* Status Multi-Select */}
+                <MultiSelect
+                  options={uniqueStatuses.map(status => ({ value: status, label: status }))}
+                  selected={selectedStatuses}
+                  onSelectedChange={setSelectedStatuses}
+                  placeholder="Filter by Status"
+                  className="w-[180px] bg-card"
+                  icon={Filter}
+                />
+
+                {/* Search Input */}
+                <div className="relative flex-grow">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input
+                    type="text"
+                    placeholder="Search tickets..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 pr-3 py-2 w-full bg-card"
                   />
+                </div>
 
-                  {/* Country Multi-Select */}
-                  <MultiSelect
-                    options={uniqueCountries.map(country => ({ value: country, label: country }))}
-                    selected={selectedCountries}
-                    onSelectedChange={setSelectedCountries}
-                    placeholder="Filter by Country"
-                    className="w-[180px] bg-card"
-                    icon={MapPin}
-                  />
+                {/* Saved Views Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-1 bg-card">
+                      <Bookmark className="h-4 w-4" /> Saved Views <ChevronDown className="ml-1 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>Exec Summary</DropdownMenuItem>
+                    <DropdownMenuItem>Customer Success</DropdownMenuItem>
+                    <DropdownMenuItem>Ops / Support Manager</DropdownMenuItem>
+                    <DropdownMenuItem>Save Current View</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-                  {/* Module Multi-Select */}
-                  <MultiSelect
-                    options={uniqueModules.map(module => ({ value: module, label: module }))}
-                    selected={selectedModules}
-                    onSelectedChange={setSelectedModules}
-                    placeholder="Filter by Module"
-                    className="w-[180px] bg-card"
-                    icon={GitFork}
-                  />
+                {/* Export Button */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="flex items-center gap-1 bg-primary text-primary-foreground">
+                      <Download className="h-4 w-4" /> Export <ChevronDown className="ml-1 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleExportFilteredTickets}>Filtered Results (CSV)</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportAggregatedReport}>Aggregated Report (Excel)</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
 
-                  {/* Priority Multi-Select */}
-                  <MultiSelect
-                    options={uniquePriorities.map(priority => ({ value: priority, label: priority }))}
-                    selected={selectedPriorities}
-                    onSelectedChange={setSelectedPriorities}
-                    placeholder="Filter by Priority"
-                    className="w-[180px] bg-card"
-                    icon={Flag}
-                  />
-
-                  {/* Status Multi-Select */}
-                  <MultiSelect
-                    options={uniqueStatuses.map(status => ({ value: status, label: status }))}
-                    selected={selectedStatuses}
-                    onSelectedChange={setSelectedStatuses}
-                    placeholder="Filter by Status"
-                    className="w-[180px] bg-card"
-                    icon={Filter}
-                  />
-
-                  {/* Search Input */}
-                  <div className="relative flex-grow">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                    <Input
-                      type="text"
-                      placeholder="Search tickets..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 pr-3 py-2 w-full bg-card"
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center flex-grow p-8 text-gray-500 dark:text-gray-400">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <p className="text-lg font-medium">Loading dashboard data...</p>
+              </div>
+            ) : (
+              <div className="flex-grow p-8 space-y-10 bg-gray-50 dark:bg-gray-900/50">
+                {/* Row 1: High-level KPI cards */}
+                <section>
+                  <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                    <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <DashboardMetricCard
+                      title="Total Tickets"
+                      value={metrics.totalTickets}
+                      icon={TicketIcon}
+                      description="Count of tickets created within the selected date range and filters."
+                      onClick={() => handleKPIDrilldown("Total Tickets", "All tickets created within the selected date range and filters.", filteredDashboardTickets)}
+                    />
+                    <DashboardMetricCard
+                      title="Open Tickets"
+                      value={metrics.openTickets}
+                      icon={Hourglass}
+                      description="Tickets currently in an 'Open' or active status within the selected date range."
+                      onClick={() => handleKPIDrilldown("Open Tickets", "Tickets currently in an 'Open' or active status within the selected date range.", filteredDashboardTickets.filter(t =>
+                        t.status.toLowerCase() === 'open (being processed)' ||
+                        t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+                        t.status.toLowerCase() === 'waiting on customer' ||
+                        t.status.toLowerCase() === 'on tech' ||
+                        t.status.toLowerCase() === 'on product' ||
+                        t.status.toLowerCase() === 'escalated'
+                      ))}
+                    />
+                    <DashboardMetricCard
+                      title="Resolved Tickets"
+                      value={metrics.resolvedTickets}
+                      icon={CheckCircle}
+                      description="Tickets resolved or closed within the selected date range."
+                      onClick={() => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t =>
+                        t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+                      ))}
+                    />
+                    <DashboardMetricCard
+                      title="Overdue Tickets"
+                      value={metrics.overdueTickets}
+                      icon={CalendarDays}
+                      description="Active tickets that are past their due date within the selected date range."
+                      onClick={() => handleKPIDrilldown("Overdue Tickets", "Active tickets that are past their due date within the selected date range.", filteredDashboardTickets.filter(t =>
+                        (t.status.toLowerCase() === 'open (being processed)' ||
+                         t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+                         t.status.toLowerCase() === 'waiting on customer' ||
+                         t.status.toLowerCase() === 'on tech' ||
+                         t.status.toLowerCase() === 'on product' ||
+                         t.status.toLowerCase() === 'escalated') &&
+                        t.due_by && isPast(parseISO(t.due_by))
+                      ))}
+                    />
+                    <DashboardMetricCard
+                      title="First Response SLA Met"
+                      value={metrics.firstResponseSlaMet}
+                      icon={Percent}
+                      description="Percentage of tickets where the first response was sent within the SLA. (Using 'updated_at' as proxy for first response time)."
+                      onClick={() => handleKPIDrilldown("First Response SLA Met", "Tickets that met their First Response SLA.", filteredDashboardTickets.filter(t =>
+                        t.fr_due_by && parseISO(t.updated_at) <= parseISO(t.fr_due_by)
+                      ))}
+                    />
+                    <DashboardMetricCard
+                      title="Resolution SLA Met"
+                      value={metrics.resolutionSlaMet}
+                      icon={ShieldAlert}
+                      description="Percentage of resolved tickets that met their resolution SLA. (Using 'updated_at' as proxy for resolution time)."
+                      onClick={() => handleKPIDrilldown("Resolution SLA Met", "Resolved tickets that met their Resolution SLA.", filteredDashboardTickets.filter(t =>
+                        (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
+                        t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by)
+                      ))}
+                    />
+                    <DashboardMetricCard
+                      title="Median Resolution Time"
+                      value={metrics.medianResolutionTime}
+                      icon={Clock}
+                      description="The median time taken to resolve tickets within the selected date range."
+                      onClick={() => handleKPIDrilldown("Median Resolution Time", "Resolved tickets used to calculate the median resolution time.", filteredDashboardTickets.filter(t =>
+                        t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+                      ))}
+                    />
+                    <DashboardMetricCard
+                      title="Urgent Tickets at Risk"
+                      value={metrics.urgentTicketsAtRisk}
+                      icon={AlertCircle}
+                      description="Urgent tickets that are active and within 2 hours of breaching their SLA."
+                      onClick={() => handleKPIDrilldown("Urgent Tickets at Risk", "Urgent tickets that are active and within 2 hours of breaching their SLA.", filteredDashboardTickets.filter(t => {
+                        const statusLower = t.status.toLowerCase();
+                        const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
+                        const isUrgent = t.priority.toLowerCase() === 'urgent';
+                        const isNearDue = t.due_by && differenceInHours(parseISO(t.due_by), now) <= 2;
+                        return isActive && isUrgent && isNearDue;
+                      }))}
                     />
                   </div>
+                </section>
 
-                  {/* Saved Views Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="flex items-center gap-1 bg-card">
-                        <Bookmark className="h-4 w-4" /> Saved Views <ChevronDown className="ml-1 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Exec Summary</DropdownMenuItem>
-                      <DropdownMenuItem>Customer Success</DropdownMenuItem>
-                      <DropdownMenuItem>Ops / Support Manager</DropdownMenuItem>
-                      <DropdownMenuItem>Save Current View</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <Separator className="my-10" />
 
-                  {/* Export Button */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="flex items-center gap-1 bg-primary text-primary-foreground">
-                        <Download className="h-4 w-4" /> Export <ChevronDown className="ml-1 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleExportFilteredTickets}>Filtered Results (CSV)</DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleExportAggregatedReport}>Aggregated Report (Excel)</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                {/* Row 2: Charts */}
+                <section>
+                  <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                    <BarChart2 className="h-6 w-6 text-indigo-600" /> Key Visualizations
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="h-96 p-6 bg-card border border-border shadow-sm">
+                      <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Volume & SLA Trend</CardTitle>
+                      <CardContent className="h-[calc(100%-40px)] p-0">
+                        <VolumeSlaTrendChart tickets={freshdeskTickets || []} startDate={effectiveStartDate} endDate={effectiveEndDate} />
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96 p-6 bg-card border border-border shadow-sm">
+                      <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Breakdown by Dimension</CardTitle>
+                      <CardContent className="h-[calc(100%-40px)] p-0">
+                        <TicketBreakdownChart
+                          tickets={filteredDashboardTickets || []}
+                          uniqueCompanies={uniqueCompanies}
+                          uniqueModules={uniqueModules}
+                          uniqueCountries={uniqueCountries}
+                        />
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96 p-6 bg-card border border-border shadow-sm">
+                      <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Aging Buckets (Open Tickets)</CardTitle>
+                      <CardContent className="h-[calc(100%-40px)] p-0">
+                        <AgingBucketsChart tickets={filteredDashboardTickets || []} />
+                      </CardContent>
+                    </Card>
+                    <Card className="h-96 p-6 bg-card border border-border shadow-sm">
+                      <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Priority Distribution</CardTitle>
+                      <CardContent className="h-[calc(100%-40px)] p-0">
+                        <PriorityDistributionChart tickets={filteredDashboardTickets || []} />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </section>
+
+                <Separator className="my-10" />
+
+                {/* Row 3: Tables & Risk/Escalation Panels */}
+                <section>
+                  <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                    <Table2 className="h-6 w-6 text-orange-600" /> Detailed Views & Risk Panels
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="h-[450px] p-6 bg-card border border-border shadow-sm">
+                      <CardTitle className="text-lg font-semibold mb-2 text-foreground">Top Risk Tickets</CardTitle>
+                      <CardContent className="h-[calc(100%-40px)] p-0">
+                        <TopRiskTicketsTable tickets={freshdeskTickets || []} onRowClick={handleViewTicketDetails} />
+                      </CardContent>
+                    </Card>
+                    <Card className="h-[450px] p-6 bg-card border border-border shadow-sm">
+                      <CardTitle className="text-lg font-semibold mb-2 text-foreground">Company Health View</CardTitle>
+                      <CardContent className="h-[calc(100%-40px)] p-0">
+                        <CompanyHealthTable tickets={freshdeskTickets || []} />
+                      </CardContent>
+                    </Card>
+                    <Card className="h-[450px] p-6 bg-card border border-border shadow-sm">
+                      <CardTitle className="text-lg font-semibold mb-2 text-foreground">Team Load View</CardTitle>
+                      <CardContent className="h-[calc(100%-40px)] p-0">
+                        <TeamLoadTable tickets={freshdeskTickets || []} />
+                      </CardContent>
+                    </Card>
+                    <Card className="h-[450px] p-6 bg-card border border-border shadow-sm">
+                      <CardTitle className="text-lg font-semibold mb-2 text-foreground">Assignee Load Chart</CardTitle>
+                      <CardContent className="h-[calc(100%-40px)] p-0">
+                        <AssigneeLoadChart tickets={filteredDashboardTickets || []} displayMode="count" />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </section>
               </div>
+            )}
+          </Card>
+        </div>
 
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center flex-grow p-8 text-gray-500 dark:text-gray-400">
-                  <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-                  <p className="text-lg font-medium">Loading dashboard data...</p>
-                </div>
-              ) : (
-                <div className="flex-grow p-8 space-y-10 bg-gray-50 dark:bg-gray-900/50">
-                  {/* Row 1: High-level KPI cards */}
-                  <section>
-                    <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
-                      <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      <DashboardMetricCard
-                        title="Total Tickets"
-                        value={metrics.totalTickets}
-                        icon={TicketIcon}
-                        description="Count of tickets created within the selected date range and filters."
-                        onClick={() => handleKPIDrilldown("Total Tickets", "All tickets created within the selected date range and filters.", filteredDashboardTickets)}
-                      />
-                      <DashboardMetricCard
-                        title="Open Tickets"
-                        value={metrics.openTickets}
-                        icon={Hourglass}
-                        description="Tickets currently in an 'Open' or active status within the selected date range."
-                        onClick={() => handleKPIDrilldown("Open Tickets", "Tickets currently in an 'Open' or active status within the selected date range.", filteredDashboardTickets.filter(t =>
-                          t.status.toLowerCase() === 'open (being processed)' ||
-                          t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-                          t.status.toLowerCase() === 'waiting on customer' ||
-                          t.status.toLowerCase() === 'on tech' ||
-                          t.status.toLowerCase() === 'on product' ||
-                          t.status.toLowerCase() === 'escalated'
-                        ))}
-                      />
-                      <DashboardMetricCard
-                        title="Resolved Tickets"
-                        value={metrics.resolvedTickets}
-                        icon={CheckCircle}
-                        description="Tickets resolved or closed within the selected date range."
-                        onClick={() => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t =>
-                          t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
-                        ))}
-                      />
-                      <DashboardMetricCard
-                        title="Overdue Tickets"
-                        value={metrics.overdueTickets}
-                        icon={CalendarDays}
-                        description="Active tickets that are past their due date within the selected date range."
-                        onClick={() => handleKPIDrilldown("Overdue Tickets", "Active tickets that are past their due date within the selected date range.", filteredDashboardTickets.filter(t =>
-                          (t.status.toLowerCase() === 'open (being processed)' ||
-                           t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-                           t.status.toLowerCase() === 'waiting on customer' ||
-                           t.status.toLowerCase() === 'on tech' ||
-                           t.status.toLowerCase() === 'on product' ||
-                           t.status.toLowerCase() === 'escalated') &&
-                          t.due_by && isPast(parseISO(t.due_by))
-                        ))}
-                      />
-                      <DashboardMetricCard
-                        title="First Response SLA Met"
-                        value={metrics.firstResponseSlaMet}
-                        icon={Percent}
-                        description="Percentage of tickets where the first response was sent within the SLA. (Using 'updated_at' as proxy for first response time)."
-                        onClick={() => handleKPIDrilldown("First Response SLA Met", "Tickets that met their First Response SLA.", filteredDashboardTickets.filter(t =>
-                          t.fr_due_by && parseISO(t.updated_at) <= parseISO(t.fr_due_by)
-                        ))}
-                      />
-                      <DashboardMetricCard
-                        title="Resolution SLA Met"
-                        value={metrics.resolutionSlaMet}
-                        icon={ShieldAlert}
-                        description="Percentage of resolved tickets that met their resolution SLA. (Using 'updated_at' as proxy for resolution time)."
-                        onClick={() => handleKPIDrilldown("Resolution SLA Met", "Resolved tickets that met their Resolution SLA.", filteredDashboardTickets.filter(t =>
-                          (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
-                          t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by)
-                        ))}
-                      />
-                      <DashboardMetricCard
-                        title="Median Resolution Time"
-                        value={metrics.medianResolutionTime}
-                        icon={Clock}
-                        description="The median time taken to resolve tickets within the selected date range."
-                        onClick={() => handleKPIDrilldown("Median Resolution Time", "Resolved tickets used to calculate the median resolution time.", filteredDashboardTickets.filter(t =>
-                          t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
-                        ))}
-                      />
-                      <DashboardMetricCard
-                        title="Urgent Tickets at Risk"
-                        value={metrics.urgentTicketsAtRisk}
-                        icon={AlertCircle}
-                        description="Urgent tickets that are active and within 2 hours of breaching their SLA."
-                        onClick={() => handleKPIDrilldown("Urgent Tickets at Risk", "Urgent tickets that are active and within 2 hours of breaching their SLA.", filteredDashboardTickets.filter(t => {
-                          const statusLower = t.status.toLowerCase();
-                          const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
-                          const isUrgent = t.priority.toLowerCase() === 'urgent';
-                          const isNearDue = t.due_by && differenceInHours(parseISO(t.due_by), now) <= 2;
-                          return isActive && isUrgent && isNearDue;
-                        }))}
-                      />
-                    </div>
-                  </section>
+        {/* Right Side Panel */}
+        <DashboardRightPanel
+          tickets={freshdeskTickets || []}
+          onViewTicketDetails={handleViewTicketDetails}
+          selectedCompanyForMap={selectedCompanies.length === 1 ? selectedCompanies[0] : undefined}
+        />
+      </div>
 
-                  <Separator className="my-10" />
-
-                  {/* Row 2: Charts */}
-                  <section>
-                    <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
-                      <BarChart2 className="h-6 w-6 text-indigo-600" /> Key Visualizations
-                    </h2>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <Card className="h-96 p-6 bg-card border border-border shadow-sm">
-                        <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Volume & SLA Trend</CardTitle>
-                        <CardContent className="h-[calc(100%-40px)] p-0">
-                          <VolumeSlaTrendChart tickets={freshdeskTickets || []} startDate={effectiveStartDate} endDate={effectiveEndDate} />
-                        </CardContent>
-                      </Card>
-                      <Card className="h-96 p-6 bg-card border border-border shadow-sm">
-                        <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Breakdown by Dimension</CardTitle>
-                        <CardContent className="h-[calc(100%-40px)] p-0">
-                          <TicketBreakdownChart
-                            tickets={filteredDashboardTickets || []}
-                            uniqueCompanies={uniqueCompanies}
-                            uniqueModules={uniqueModules}
-                            uniqueCountries={uniqueCountries}
-                          />
-                        </CardContent>
-                      </Card>
-                      <Card className="h-96 p-6 bg-card border border-border shadow-sm">
-                        <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Aging Buckets (Open Tickets)</CardTitle>
-                        <CardContent className="h-[calc(100%-40px)] p-0">
-                          <AgingBucketsChart tickets={filteredDashboardTickets || []} />
-                        </CardContent>
-                      </Card>
-                      <Card className="h-96 p-6 bg-card border border-border shadow-sm">
-                        <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Priority Distribution</CardTitle>
-                        <CardContent className="h-[calc(100%-40px)] p-0">
-                          <PriorityDistributionChart tickets={filteredDashboardTickets || []} />
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </section>
-
-                  <Separator className="my-10" />
-
-                  {/* Row 3: Tables & Risk/Escalation Panels */}
-                  <section>
-                    <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
-                      <Table2 className="h-6 w-6 text-orange-600" /> Detailed Views & Risk Panels
-                    </h2>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <Card className="h-[450px] p-6 bg-card border border-border shadow-sm">
-                        <CardTitle className="text-lg font-semibold mb-2 text-foreground">Top Risk Tickets</CardTitle>
-                        <CardContent className="h-[calc(100%-40px)] p-0">
-                          <TopRiskTicketsTable tickets={freshdeskTickets || []} onRowClick={handleViewTicketDetails} />
-                        </CardContent>
-                      </Card>
-                      <Card className="h-[450px] p-6 bg-card border border-border shadow-sm">
-                        <CardTitle className="text-lg font-semibold mb-2 text-foreground">Company Health View</CardTitle>
-                        <CardContent className="h-[calc(100%-40px)] p-0">
-                          <CompanyHealthTable tickets={freshdeskTickets || []} />
-                        </CardContent>
-                      </Card>
-                      <Card className="h-[450px] p-6 bg-card border border-border shadow-sm">
-                        <CardTitle className="text-lg font-semibold mb-2 text-foreground">Team Load View</CardTitle>
-                        <CardContent className="h-[calc(100%-40px)] p-0">
-                          <TeamLoadTable tickets={freshdeskTickets || []} />
-                        </CardContent>
-                      </Card>
-                      <Card className="h-[450px] p-6 bg-card border border-border shadow-sm">
-                        <CardTitle className="text-lg font-semibold mb-2 text-foreground">Assignee Load Chart</CardTitle>
-                        <CardContent className="h-[calc(100%-40px)] p-0">
-                          <AssigneeLoadChart tickets={filteredDashboardTickets || []} displayMode="count" />
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </section>
-                </div>
-              )}
-            </Card>
-          </div>
-
-          {/* Right Side Panel */}
-          <DashboardRightPanel
-            tickets={freshdeskTickets || []}
-            onViewTicketDetails={handleViewTicketDetails}
-            selectedCompanyForMap={selectedCompanies.length === 1 ? selectedCompanies[0] : undefined}
-          />
-
-          <FilteredTicketsModal
-            isOpen={isFilteredTicketsModalOpen}
-            onClose={() => setIsFilteredTicketsModalOpen(false)}
-            title={filteredModalTitle}
-            description={filteredModalDescription}
-            tickets={filteredModalTickets}
-            onViewTicketDetails={handleViewTicketDetails}
-          />
-          <MyOpenTicketsModal
-            isOpen={isMyOpenTicketsModalOpen}
-            onClose={() => setIsMyOpenTicketsModalOpen(false)}
-            tickets={allOpenTickets}
-          />
-          <InsightsSheet
-            isOpen={isInsightsSheetOpen}
-            onClose={() => setIsInsightsSheetOpen(false)}
-            insights={dashboardInsights || []}
-            uniqueCompanies={uniqueCompanies}
-          />
-          {selectedTicketForDetail && (
-            <TicketDetailModal
-              isOpen={isTicketDetailModalOpen}
-              onClose={handleCloseTicketDetailModal}
-              ticket={selectedTicketForDetail}
-            />
-          )}
-    </> // Closed React Fragment
+      <FilteredTicketsModal
+        isOpen={isFilteredTicketsModalOpen}
+        onClose={() => setIsFilteredTicketsModalOpen(false)}
+        title={filteredModalTitle}
+        description={filteredModalDescription}
+        tickets={filteredModalTickets}
+        onViewTicketDetails={handleViewTicketDetails}
+      />
+      <MyOpenTicketsModal
+        isOpen={isMyOpenTicketsModalOpen}
+        onClose={() => setIsMyOpenTicketsModalOpen(false)}
+        tickets={allOpenTickets}
+      />
+      <InsightsSheet
+        isOpen={isInsightsSheetOpen}
+        onClose={() => setIsInsightsSheetOpen(false)}
+        insights={dashboardInsights || []}
+        uniqueCompanies={uniqueCompanies}
+      />
+      {selectedTicketForDetail && (
+        <TicketDetailModal
+          isOpen={isTicketDetailModalOpen}
+          onClose={handleCloseTicketDetailModal}
+          ticket={selectedTicketForDetail}
+        />
+      )}
+    </>
   );
 };
 
