@@ -559,9 +559,9 @@ const TicketsPage = () => {
                               <CalendarDays className="mr-2 h-4 w-4" />
                               {dateRange?.from ? (
                                 dateRange.to ? (
-                                  `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
+                                  `${format(dateRange.from, "MMM dd, y")} - ${format(dateRange.to, "MMM dd, y")}`
                                 ) : (
-                                  format(dateRange.from, "LLL dd, y")
+                                  format(dateRange.from, "MMM dd, y")
                                 )
                               ) : (
                                 <span>Pick a date range</span>

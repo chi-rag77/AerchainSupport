@@ -455,7 +455,7 @@ const Analytics = () => {
                       value={filteredTickets.filter(t => t.type?.toLowerCase() === 'bug').length}
                       icon={Bug}
                       trend={8} // Placeholder trend
-                      description="Number of tickets categorized as 'Bug' in the selected period."
+                      description="Number of tickets categorized as 'Bug' in the system."
                     />
                     {/* New KPI Card: Average Resolution Time */}
                     <DashboardMetricCard
