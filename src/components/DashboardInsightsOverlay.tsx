@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Keep Card for internal use if needed, but not for main sections
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { AlertTriangle, Clock, Repeat, Users, MessageSquare, ArrowRight, Lightbulb, BellRing, TrendingUp, CalendarX, Tag, Info, Zap, User, GitFork, LayoutDashboard, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -213,8 +213,8 @@ const DashboardInsightsOverlay = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0 bg-background/80 backdrop-blur-md"> {/* Increased width and added glass effect */}
-        <SheetHeader className="p-6 pb-4 bg-background/80 backdrop-blur-sm border-b border-border shadow-sm sticky top-0 z-10">
+      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0"> {/* Increased width to sm:max-w-lg */}
+        <SheetHeader className="p-6 pb-4 bg-background border-b border-border shadow-sm">
           <SheetTitle className="text-2xl font-bold flex items-center gap-2">
             <SlidersHorizontal className="h-6 w-6 text-primary" /> Dashboard Insights
           </SheetTitle>
@@ -223,21 +223,23 @@ const DashboardInsightsOverlay = ({
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="flex-grow p-6 space-y-8"> {/* Increased padding and spacing */}
-          {/* Escalation Radar Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2 text-red-600 dark:text-red-400">
-              <AlertTriangle className="h-5 w-5" /> Escalation Radar
-            </h3>
-            <div className="space-y-3">
+        <ScrollArea className="flex-grow p-4 space-y-6">
+          {/* Escalation Radar Card */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-red-600 dark:text-red-400">
+                <AlertTriangle className="h-4 w-4" /> Escalation Radar
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
               <div>
-                <h4 className="font-medium flex items-center gap-1 mb-1 text-foreground">
-                  <BellRing className="h-4 w-4 text-orange-500" /> Auto-Escalation Candidates ({escalationRadar.totalAutoEscalationCandidates}):
+                <h4 className="font-medium flex items-center gap-1 mb-1">
+                  <BellRing className="h-3 w-3 text-orange-500" /> Auto-Escalation Candidates ({escalationRadar.totalAutoEscalationCandidates}):
                 </h4>
                 {escalationRadar.autoEscalationCandidates.length > 0 ? (
-                  <ul className="space-y-1 text-sm">
+                  <ul className="space-y-0.5">
                     {escalationRadar.autoEscalationCandidates.map(ticket => (
-                      <li key={ticket.id} className="flex justify-between items-center py-1 px-2 rounded-md bg-muted/30">
+                      <li key={ticket.id} className="flex justify-between items-center text-muted-foreground">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="truncate text-foreground">{ticket.subject}</span>
@@ -251,13 +253,13 @@ const DashboardInsightsOverlay = ({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-muted-foreground text-sm">None currently.</p>
+                  <p className="text-muted-foreground">None currently.</p>
                 )}
                 {escalationRadar.totalAutoEscalationCandidates > escalationRadar.autoEscalationCandidates.length && (
                   <Button
                     variant="link"
                     size="sm"
-                    className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400"
+                    className="mt-1 w-full justify-center text-blue-600 dark:text-blue-400"
                     onClick={() => onOpenFilteredTicketsModal(
                       "Auto-Escalation Candidates",
                       "Tickets identified as potential auto-escalation candidates due to urgency and proximity to SLA breach.",
@@ -270,13 +272,13 @@ const DashboardInsightsOverlay = ({
               </div>
               <Separator />
               <div>
-                <h4 className="font-medium flex items-center gap-1 mb-1 text-foreground">
-                  <Clock className="h-4 w-4 text-yellow-500" /> Stuck Tickets (No update &gt; 24h) ({escalationRadar.totalStuckTickets}):
+                <h4 className="font-medium flex items-center gap-1 mb-1">
+                  <Clock className="h-3 w-3 text-yellow-500" /> Stuck Tickets (No update &gt; 24h) ({escalationRadar.totalStuckTickets}):
                 </h4>
                 {escalationRadar.stuckTickets.length > 0 ? (
-                  <ul className="space-y-1 text-sm">
+                  <ul className="space-y-0.5">
                     {escalationRadar.stuckTickets.map(ticket => (
-                      <li key={ticket.id} className="flex justify-between items-center py-1 px-2 rounded-md bg-muted/30">
+                      <li key={ticket.id} className="flex justify-between items-center text-muted-foreground">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="truncate text-foreground">{ticket.subject}</span>
@@ -290,13 +292,13 @@ const DashboardInsightsOverlay = ({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-muted-foreground text-sm">None currently.</p>
+                  <p className="text-muted-foreground">None currently.</p>
                 )}
                 {escalationRadar.totalStuckTickets > escalationRadar.stuckTickets.length && (
                   <Button
                     variant="link"
                     size="sm"
-                    className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400"
+                    className="mt-1 w-full justify-center text-blue-600 dark:text-blue-400"
                     onClick={() => onOpenFilteredTicketsModal(
                       "Stuck Tickets",
                       "Tickets that have not been updated in over 24 hours, potentially indicating they are stuck.",
@@ -307,21 +309,21 @@ const DashboardInsightsOverlay = ({
                   </Button>
                 )}
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <Separator />
-
-          {/* Top SLA Breaches Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2 text-red-600 dark:text-red-400">
-              <CalendarX className="h-5 w-5" /> Top SLA Breaches ({topSlaBreaches.totalBreaches}):
-            </h3>
-            <div className="space-y-1 text-sm">
+          {/* Top SLA Breaches Card */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-red-600 dark:text-red-400">
+                <CalendarX className="h-4 w-4" /> Top SLA Breaches ({topSlaBreaches.totalBreaches}):
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
               {topSlaBreaches.breachesPreview.length > 0 ? (
-                <ul className="space-y-1">
+                <ul className="space-y-0.5">
                   {topSlaBreaches.breachesPreview.map(ticket => (
-                    <li key={ticket.id} className="flex justify-between items-center py-1 px-2 rounded-md bg-muted/30">
+                    <li key={ticket.id} className="flex justify-between items-center text-muted-foreground">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="truncate text-foreground">{ticket.subject}</span>
@@ -341,7 +343,7 @@ const DashboardInsightsOverlay = ({
                 <Button
                   variant="link"
                   size="sm"
-                  className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400"
+                  className="mt-1 w-full justify-center text-blue-600 dark:text-blue-400"
                   onClick={() => onOpenFilteredTicketsModal(
                     "Top SLA Breaches",
                     "Tickets that have breached their Service Level Agreement, sorted by the oldest breach.",
@@ -351,21 +353,21 @@ const DashboardInsightsOverlay = ({
                   View All ({topSlaBreaches.totalBreaches}) <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <Separator />
-
-          {/* Real-time Escalations Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2 text-orange-600 dark:text-orange-400">
-              <Zap className="h-5 w-5" /> Real-time Escalations ({realTimeEscalations.totalEscalations}):
-            </h3>
-            <div className="space-y-1 text-sm">
+          {/* Real-time Escalations Card */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                <Zap className="h-4 w-4" /> Real-time Escalations ({realTimeEscalations.totalEscalations}):
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
               {realTimeEscalations.escalationsPreview.length > 0 ? (
-                <ul className="space-y-1">
+                <ul className="space-y-0.5">
                   {realTimeEscalations.escalationsPreview.map(ticket => (
-                    <li key={ticket.id} className="flex justify-between items-center py-1 px-2 rounded-md bg-muted/30">
+                    <li key={ticket.id} className="flex justify-between items-center text-muted-foreground">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="truncate text-foreground">{ticket.subject}</span>
@@ -385,7 +387,7 @@ const DashboardInsightsOverlay = ({
                 <Button
                   variant="link"
                   size="sm"
-                  className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400"
+                  className="mt-1 w-full justify-center text-blue-600 dark:text-blue-400"
                   onClick={() => onOpenFilteredTicketsModal(
                     "Real-time Escalations",
                     "Tickets that have recently been escalated or marked as urgent.",
@@ -395,21 +397,21 @@ const DashboardInsightsOverlay = ({
                   View All ({realTimeEscalations.totalEscalations}) <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <Separator />
-
-          {/* Recurring Issues Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2 text-blue-600 dark:text-blue-400">
-              <Repeat className="h-5 w-5" /> Recurring Issues ({recurringIssues.totalRecurringIssues}):
-            </h3>
-            <div className="space-y-1 text-sm">
+          {/* Recurring Issues Card */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <Repeat className="h-4 w-4" /> Recurring Issues ({recurringIssues.totalRecurringIssues}):
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
               {recurringIssues.recurringIssuesPreview.length > 0 ? (
-                <ul className="space-y-1">
+                <ul className="space-y-0.5">
                   {recurringIssues.recurringIssuesPreview.map((issue, index) => (
-                    <li key={index} className="flex justify-between items-center py-1 px-2 rounded-md bg-muted/30">
+                    <li key={index} className="flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded-md">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="truncate text-foreground">{issue.tickets[0].subject}</span>
@@ -427,7 +429,7 @@ const DashboardInsightsOverlay = ({
                 <Button
                   variant="link"
                   size="sm"
-                  className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400"
+                  className="mt-1 w-full justify-center text-blue-600 dark:text-blue-400"
                   onClick={() => onOpenFilteredTicketsModal(
                     "Recurring Issues",
                     "Tickets that share similar subjects, indicating recurring problems.",
@@ -437,17 +439,17 @@ const DashboardInsightsOverlay = ({
                   View All ({recurringIssues.totalRecurringIssues}) <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <Separator />
-
-          {/* Insights Section (formerly Actionable Insights) */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2 text-green-600 dark:text-green-400">
-              <Lightbulb className="h-5 w-5" /> Insights ({insights.length}):
-            </h3>
-            <div className="space-y-1 text-sm">
+          {/* Insights Card (formerly Actionable Insights) */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-green-600 dark:text-green-400">
+                <Lightbulb className="h-4 w-4" /> Insights ({insights.length}):
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
               {insights.length > 0 ? (
                 <ul className="space-y-1">
                   {insights.slice(0, 3).map((insight, index) => ( // Show top 3 insights
@@ -476,64 +478,66 @@ const DashboardInsightsOverlay = ({
                 <Button
                   variant="link"
                   size="sm"
-                  className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400"
+                  className="mt-1 w-full justify-center text-blue-600 dark:text-blue-400"
                   onClick={() => onOpenFilteredTicketsModal(
                     "Actionable Insights",
                     "Key observations and recommendations based on your support data.",
-                    [] // Placeholder for tickets, as insights are not directly tickets
+                    // For insights, we'd need a way to convert insights back to tickets or have a generic insight modal.
+                    // For now, I'll pass an empty array or a placeholder.
+                    []
                   )}
                 >
                   View All ({insights.length}) <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               )}
-            </div>
-          </div>
-
-          <Separator />
+            </CardContent>
+          </Card>
 
           {/* Assignment Changes Feed (Placeholder) */}
-          <div className="space-y-4 min-h-[150px]"> {/* Added min-h-[150px] */}
-            <h3 className="text-lg font-semibold flex items-center gap-2 text-purple-600 dark:text-purple-400">
-              <GitFork className="h-5 w-5" /> Assignment Changes Feed
-            </h3>
-            <div className="text-sm space-y-2">
+          <Card className="shadow-sm min-h-[150px]"> {/* Added min-h-[150px] */}
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                <GitFork className="h-4 w-4" /> Assignment Changes Feed
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
               <p className="text-muted-foreground">
                 This feed would show recent changes in ticket assignments (e.g., "Ticket #123 assigned to John Doe").
                 Full implementation requires a dedicated historical log of assignment changes, which is not available in the current `freshdesk_tickets` table.
               </p>
-              <Button variant="link" size="sm" className="mt-2 w-full justify-center text-blue-600 dark:text-blue-400" disabled>
+              <Button variant="link" size="sm" className="mt-1 w-full justify-center text-blue-600 dark:text-blue-400" disabled>
                 Learn More <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
-            </div>
-          </div>
-
-          <Separator />
+            </CardContent>
+          </Card>
 
           {/* Customer Escalation Map (Kept as is, but adjusted styling for consistency) */}
-          <div className="space-y-4 min-h-[150px]"> {/* Added min-h-[150px] */}
-            <h3 className="text-lg font-semibold flex items-center gap-2 text-purple-600 dark:text-purple-400">
-              <Users className="h-5 w-5" /> Customer Escalation Map
-            </h3>
-            <div className="text-sm space-y-2">
+          <Card className="shadow-sm min-h-[150px]"> {/* Added min-h-[150px] */}
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                <Users className="h-4 w-4" /> Customer Escalation Map
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
               {selectedCompanyForMap ? (
                 customerEscalationMap ? (
                   <div className="space-y-1">
-                    <p className="text-base font-semibold text-foreground">{customerEscalationMap.company}</p>
-                    <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                    <p className="text-sm font-semibold text-foreground">{customerEscalationMap.company}</p>
+                    <div className="grid grid-cols-2 gap-2">
                       <div className="flex flex-col">
-                        <span>Tickets (30D):</span>
+                        <span className="text-muted-foreground">Tickets (30D):</span>
                         <span className="font-bold text-foreground">{customerEscalationMap.totalTickets}</span>
                       </div>
                       <div className="flex flex-col">
-                        <span>Urgent:</span>
+                        <span className="text-muted-foreground">Urgent:</span>
                         <span className="font-bold text-red-500">{customerEscalationMap.urgentTickets}</span>
                       </div>
                       <div className="flex flex-col">
-                        <span>Breached SLAs:</span>
+                        <span className="text-muted-foreground">Breached SLAs:</span>
                         <span className="font-bold text-orange-500">{customerEscalationMap.breachedSLAs}</span>
                       </div>
                       <div className="flex flex-col">
-                        <span>Avg. Res. Time:</span>
+                        <span className="text-muted-foreground">Avg. Res. Time:</span>
                         <span className="font-bold text-foreground">{customerEscalationMap.avgResolutionTime}</span>
                       </div>
                     </div>
@@ -544,8 +548,8 @@ const DashboardInsightsOverlay = ({
               ) : (
                 <p className="text-muted-foreground">Select a company in the main filters to view its escalation map.</p>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </ScrollArea>
       </SheetContent>
     </Sheet>
