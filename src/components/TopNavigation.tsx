@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users } from 'lucide-react';
+import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users, CalendarDays } from 'lucide-react'; // Added CalendarDays
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -56,6 +56,7 @@ const TopNavigation = () => {
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: BarChart2, label: "Insights", path: "/analytics" },
     { icon: Users, label: "Customer 360", path: "/customer360" },
+    { icon: CalendarDays, label: "Weekly Summary", path: "/weekly-summary" }, // New navigation item
   ];
 
   return (

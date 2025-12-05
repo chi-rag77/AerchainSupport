@@ -5,28 +5,28 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LayoutDashboard } from "lucide-react";
 import HandWaveIcon from "@/components/HandWaveIcon";
-import WeeklySupportSummaryCard from "@/components/WeeklySupportSummaryCard"; // Import the new component
+// import WeeklySupportSummaryCard from "@/components/WeeklySupportSummaryCard"; // Removed import
 
 const DashboardV2 = () => {
   const { session } = useSupabase();
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
-  // Dummy data for the WeeklySupportSummaryCard
-  const dummyWeeklySummaryData = {
-    customerName: "Acme Corp",
-    metrics: {
-      ticketsCreatedThisWeek: 42,
-      ticketsResolvedThisWeek: 35,
-      stillOpenFromThisWeek: 7,
-      totalOpenIncludingPrevious: 24,
-    },
-    ticketMix: {
-      bug: { count: 6, percentage: 14 },
-      query: { count: 29, percentage: 69 },
-      taskChange: { count: 7, percentage: 17 },
-    },
-  };
+  // Dummy data for the WeeklySupportSummaryCard - REMOVED
+  // const dummyWeeklySummaryData = {
+  //   customerName: "Acme Corp",
+  //   metrics: {
+  //     ticketsCreatedThisWeek: 42,
+  //     ticketsResolvedThisWeek: 35,
+  //     stillOpenFromThisWeek: 7,
+  //     totalOpenIncludingPrevious: 24,
+  //   },
+  //   ticketMix: {
+  //     bug: { count: 6, percentage: 14 },
+  //     query: { count: 29, percentage: 69 },
+  //     taskChange: { count: 7, percentage: 17 },
+  //   },
+  // };
 
   return (
     <TooltipProvider>
@@ -54,8 +54,8 @@ const DashboardV2 = () => {
           <div className="flex-grow p-8 text-center text-muted-foreground flex items-center justify-center">
             <div className="w-full max-w-md">
               <p className="text-xl mb-8">Your new dashboard starts here!</p>
-              {/* Integrate the new WeeklySupportSummaryCard */}
-              <WeeklySupportSummaryCard data={dummyWeeklySummaryData} />
+              {/* WeeklySupportSummaryCard - REMOVED */}
+              {/* <WeeklySupportSummaryCard data={dummyWeeklySummaryData} /> */}
             </div>
           </div>
         </div>
