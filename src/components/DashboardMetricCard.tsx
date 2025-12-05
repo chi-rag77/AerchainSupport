@@ -39,9 +39,9 @@ const DashboardMetricCard = ({
           </CardHeader>
           <CardContent className="p-2"> {/* Reduced padding */}
             <div className="text-2xl font-bold text-foreground">{value}</div> {/* Reduced font size */}
-            {trend !== undefined && (
+            {trend !== undefined && trend !== 0 && ( // Added explicit check for trend !== 0
               <p className={cn("text-xs flex items-center mt-1", trendColor)}>
-                {trend !== 0 && <TrendIcon className="h-3 w-3 mr-1" />}
+                <TrendIcon className="h-3 w-3 mr-1" />
                 {Math.abs(trend)}% this week
               </p>
             )}
