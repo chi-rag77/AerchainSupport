@@ -11,14 +11,16 @@ export type Ticket = {
   updated_at: string;
   due_by?: string;
   fr_due_by?: string;
+  resolved_at?: string; // New: Timestamp when the ticket was resolved/closed
+  first_response_at?: string; // New: Timestamp of the first response
   description_text?: string;
   description_html?: string;
   custom_fields?: Record<string, any>;
   assignee?: string; // Added assignee field
   // Freshdesk custom fields
   cf_company?: string;
-  cf_country?: string;
-  cf_module?: string;
+  cf_country?: string; // New: Custom field for country
+  cf_module?: string; // New: Custom field for module
   cf_dependency?: string;
   cf_recurrence?: string;
   ageing?: number; // Added ageing field
