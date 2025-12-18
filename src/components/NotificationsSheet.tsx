@@ -13,13 +13,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Notification } from '@/types';
 import { formatDistanceToNowStrict } from 'date-fns';
-import { AlertCircle, Info, CheckCircle, XCircle, BellOff, MailOpen, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, Info, CheckCircle, XCircle, BellOff, MailOpen, ExternalLink, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { useSupabase } from '@/components/SupabaseProvider'; // Added missing import
+import { useNavigate } => 'react-router-dom';
+import { useSupabase } from '@/components/SupabaseProvider';
 
 interface NotificationsSheetProps {
   isOpen: boolean;
