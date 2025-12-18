@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useSupabase } from '@/components/SupabaseProvider'; // Added missing import
 
 interface NotificationsSheetProps {
   isOpen: boolean;
