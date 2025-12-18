@@ -78,4 +78,6 @@ export type Notification = {
   read: boolean;
   created_at: string;
   link?: string; // Optional link to a specific page/resource
+  digest_key?: string; // New: Key to group similar notifications for digest
+  group_count?: number; // New: Number of notifications in this digest group
 };

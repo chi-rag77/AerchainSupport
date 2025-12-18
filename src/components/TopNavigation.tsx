@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users, CalendarDays } from 'lucide-react'; // Added CalendarDays
+import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -13,22 +13,24 @@ import Logo from './Logo';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import NavPill from './NavPill';
-import NotificationsSheet from './NotificationsSheet'; // Import the new component
-import { useQuery, UseQueryOptions } from '@tanstack/react-query'; // Import useQuery
+import NotificationsSheet from './NotificationsSheet';
+import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { Notification } from '@/types'; // Import Notification type
 
-const fetchUserNotifications = async (userId: string | undefined): Promise<Notification[]> => {
-  if (!userId) return [];
-  const { data, error } = await supabase
+// Function to fetch only the unread count
+const fetchUnreadNotificationsCount = async (userId: string | undefined): Promise<number> => {
+  if (!userId) return 0;
+  const { count, error } = await supabase
     .from('user_notifications')
-    .select('*')
+    .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .eq('read', false);
 
   if (error) {
-    console.error("Error fetching user notifications:", error);
+    console.error("Error fetching unread notifications count:", error);
     throw error;
   }
-  return data || [];
+  return count || 0;
 };
 
 const TopNavigation = () => {
@@ -38,14 +40,12 @@ const TopNavigation = () => {
   const location = useLocation();
   const [isNotificationsSheetOpen, setIsNotificationsSheetOpen] = useState(false);
 
-  const { data: notifications = [] } = useQuery<Notification[], Error>({
-    queryKey: ["userNotifications", user?.id],
-    queryFn: () => fetchUserNotifications(user?.id),
+  const { data: unreadCount = 0 } = useQuery<number, Error>({
+    queryKey: ["unreadNotificationsCount", user?.id],
+    queryFn: () => fetchUnreadNotificationsCount(user?.id),
     enabled: !!user?.id,
-    refetchInterval: 30000, // Refetch every 30 seconds to get new notifications
-  } as UseQueryOptions<Notification[], Error>);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
+    refetchInterval: 30000, // Refetch every 30 seconds
+  } as UseQueryOptions<number, Error>);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -56,7 +56,7 @@ const TopNavigation = () => {
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: BarChart2, label: "Insights", path: "/analytics" },
     { icon: Users, label: "Customer 360", path: "/customer360" },
-    { icon: CalendarDays, label: "Weekly Summary", path: "/weekly-summary" }, // New navigation item
+    { icon: CalendarDays, label: "Weekly Summary", path: "/weekly-summary" },
   ];
 
   return (
@@ -130,8 +130,8 @@ const TopNavigation = () => {
       <NotificationsSheet
         isOpen={isNotificationsSheetOpen}
         onClose={() => setIsNotificationsSheetOpen(false)}
-        notifications={notifications}
-        unreadCount={unreadCount}
+        // notifications and unreadCount props are no longer passed directly
+        // The sheet will fetch its own data
       />
     </nav>
   );
