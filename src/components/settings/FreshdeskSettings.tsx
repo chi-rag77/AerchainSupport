@@ -9,9 +9,11 @@ import { useOrgData } from '@/hooks/use-org-user';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
 
 const FreshdeskSettings = () => {
   const { orgSettings, orgId, isOrgLoading } = useOrgData();
+  const queryClient = useQueryClient(); // Initialize query client
   const [domain, setDomain] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -50,6 +52,8 @@ const FreshdeskSettings = () => {
         toast.error(`Failed to save settings: ${error.message}`);
       } else {
         toast.success("Freshdesk settings updated successfully!");
+        // Invalidate the orgData query to force a refetch and update the UI immediately
+        queryClient.invalidateQueries({ queryKey: ["orgData", orgId] });
         // Optionally clear API key input after successful save
         setApiKey(''); 
       }
