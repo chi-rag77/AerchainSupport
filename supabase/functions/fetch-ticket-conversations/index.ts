@@ -17,17 +17,23 @@ serve(async (req) => {
     // @ts-ignore
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-ignore
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY'); // Use Anon Key for client-side access
 
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      console.error('Environment variables: Supabase URL or Service Role Key not set.');
-      return new Response(JSON.stringify({ error: 'Supabase URL or Service Role Key not set in environment variables.' }), {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Environment variables: Supabase URL or Anon Key not set.');
+      return new Response(JSON.stringify({ error: 'Supabase URL or Anon Key not set in environment variables.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    // Initialize Supabase client for database operations (using the user's JWT)
+    const authHeader = req.headers.get('Authorization');
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
 
     const requestBody = await req.json();
     const { freshdesk_ticket_id } = requestBody;
@@ -61,7 +67,7 @@ serve(async (req) => {
 
     let allConversations: any[] = [];
     let page = 1;
-    const perPage = 100; // Max per_page for Freshdesk API
+    const perPage = 100;
 
     console.log(`[fetch-ticket-conversations] Starting fetch for Freshdesk Ticket ID: ${freshdesk_ticket_id}`);
 
@@ -73,9 +79,18 @@ serve(async (req) => {
       if (!freshdeskResponse.ok) {
         const errorText = await freshdeskResponse.text();
         console.error(`[fetch-ticket-conversations] Freshdesk API error fetching conversations (page ${page}): ${freshdeskResponse.status} - ${errorText}`);
-        // Return the specific error response directly
+        
+        // Specific handling for 404 (Ticket not found in Freshdesk)
+        if (freshdeskResponse.status === 404) {
+          return new Response(JSON.stringify({ error: `Freshdesk API error: Ticket ID ${freshdesk_ticket_id} not found in Freshdesk.` }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Generic non-2xx error handling
         return new Response(JSON.stringify({ error: `Freshdesk API error: ${freshdeskResponse.status} - ${errorText}` }), {
-          status: freshdeskResponse.status, // Use the actual status from Freshdesk
+          status: freshdeskResponse.status,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
