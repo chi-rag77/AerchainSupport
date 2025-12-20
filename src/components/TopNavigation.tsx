@@ -17,6 +17,7 @@ import NotificationsSheet from './NotificationsSheet';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { Notification } from '@/types';
 import { useOrgData } from '@/hooks/use-org-user'; // Import useOrgData
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'; // <-- ADDED IMPORTS
 
 // Function to fetch only the unread count
 const fetchUnreadNotificationsCount = async (userId: string | undefined): Promise<number> => {
