@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users, CalendarDays, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -15,7 +15,8 @@ import { Badge } from './ui/badge';
 import NavPill from './NavPill';
 import NotificationsSheet from './NotificationsSheet';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { Notification } from '@/types'; // Import Notification type
+import { Notification } from '@/types';
+import { useOrgData } from '@/hooks/use-org-user'; // Import useOrgData
 
 // Function to fetch only the unread count
 const fetchUnreadNotificationsCount = async (userId: string | undefined): Promise<number> => {
@@ -35,6 +36,7 @@ const fetchUnreadNotificationsCount = async (userId: string | undefined): Promis
 
 const TopNavigation = () => {
   const { session } = useSupabase();
+  const { orgUser, isOrgLoading } = useOrgData(); // Use org data
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const location = useLocation();
@@ -59,6 +61,8 @@ const TopNavigation = () => {
     { icon: CalendarDays, label: "Weekly Summary", path: "/weekly-summary" },
   ];
 
+  const canViewSettings = orgUser && (orgUser.role === 'admin' || orgUser.role === 'manager');
+
   return (
     <nav className="sticky top-0 z-40 w-full bg-background border-b border-border shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -77,6 +81,19 @@ const TopNavigation = () => {
 
         {/* Right Section: Notifications and User Profile */}
         <div className="flex items-center space-x-4">
+          {canViewSettings && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full" asChild>
+                  <Link to="/settings">
+                    <Settings className="h-5 w-5 text-muted-foreground" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Settings</TooltipContent>
+            </Tooltip>
+          )}
+
           <Button variant="ghost" size="icon" className="rounded-full relative" onClick={() => setIsNotificationsSheetOpen(true)}>
             <Bell className="h-5 w-5 text-muted-foreground" />
             {unreadCount > 0 && (
@@ -108,6 +125,12 @@ const TopNavigation = () => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {orgUser && (
+                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  <span>Role: {orgUser.role.charAt(0).toUpperCase() + orgUser.role.slice(1)}</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem asChild>
                 <Link to="/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />

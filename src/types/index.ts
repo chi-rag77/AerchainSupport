@@ -81,3 +81,21 @@ export type Notification = {
   digest_key?: string; // New: Key to group similar notifications for digest
   group_count?: number; // New: Number of notifications in this digest group
 };
+
+export type OrgUser = {
+  id: string;
+  org_id: string;
+  email: string;
+  role: 'admin' | 'manager' | 'viewer';
+  is_active: boolean;
+  created_at: string;
+};
+
+export type OrgSettings = {
+  id: string;
+  org_id: string;
+  freshdesk_domain: string;
+  freshdesk_api_key: string;
+  created_at: string;
+  updated_at: string;
+};

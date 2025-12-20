@@ -2,6 +2,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'; // Import Supabase client
+// @ts-ignore
+import * as dateFns from "https://esm.sh/date-fns@2.30.0"; // Import dateFns
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,16 +64,14 @@ serve(async (req) => {
 
   try {
     // @ts-ignore
-    const freshdeskApiKey = Deno.env.get('FRESHDESK_API_KEY');
-    // @ts-ignore
-    const freshdeskDomain = Deno.env.get('FRESHDESK_DOMAIN');
-    // @ts-ignore
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-ignore
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY'); // Use anon key for client-invoked functions
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // @ts-ignore
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
-    if (!freshdeskApiKey || !freshdeskDomain || !supabaseUrl || !supabaseAnonKey) {
-      return new Response(JSON.stringify({ error: 'Environment variables for Freshdesk or Supabase not set.' }), {
+    if (!supabaseUrl || !supabaseServiceRoleKey || !supabaseAnonKey) {
+      return new Response(JSON.stringify({ error: 'Supabase environment variables not set.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -82,12 +82,36 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    // Initialize Supabase client within the Edge Function
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader }
-      }
+    // 1. Initialize Supabase client with user's JWT to get user info
+    const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
     });
+    
+    const { data: { user }, error: userError } = await userSupabase.auth.getUser();
+    if (userError || !user) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+    }
+    const client_user_id = user.id; // This is also our org_id
+
+    // 2. Initialize Supabase client with Service Role Key to fetch secrets (org_settings)
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    const { data: settings, error: settingsError } = await serviceSupabase
+      .from("org_settings")
+      .select("freshdesk_domain, freshdesk_api_key")
+      .eq("org_id", client_user_id)
+      .single();
+
+    if (settingsError || !settings) {
+      console.error('Freshdesk settings not configured:', settingsError);
+      return new Response(JSON.stringify({ error: 'Freshdesk settings not configured for this organization.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const freshdeskApiKey = settings.freshdesk_api_key;
+    const freshdeskDomain = settings.freshdesk_domain;
 
     let requestBody;
     if (req.headers.get('content-type')?.includes('application/json')) {
@@ -99,12 +123,12 @@ serve(async (req) => {
       });
     }
 
-    const { action, user_id: client_user_id } = requestBody; // Extract user_id from request body
+    const { action } = requestBody;
 
     switch (action) {
       case 'syncTickets': {
         const today = new Date();
-        const twentyFourHoursAgo = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+        const twentyFourHoursAgo = dateFns.subHours(today, 24);
         const updatedSince = twentyFourHoursAgo.toISOString();
 
         const fdOptions = {
@@ -126,9 +150,8 @@ serve(async (req) => {
           if (!response.ok) {
             const errorText = await response.text();
             console.error(`Freshdesk API Error (Code: ${response.status}): ${errorText}`);
-            // Return the specific error response directly
             return new Response(JSON.stringify({ error: `Freshdesk API error: ${response.status} - ${errorText}` }), {
-              status: response.status, // Use the actual status from Freshdesk
+              status: response.status,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
           }
@@ -170,7 +193,7 @@ serve(async (req) => {
             ticketsToUpsert.push(newTicketData);
 
             // Check if this is a new ticket or a critical update for notification
-            const { data: existingTicket, error: fetchExistingError } = await supabase
+            const { data: existingTicket, error: fetchExistingError } = await userSupabase // Use userSupabase for RLS-protected tables
               .from('freshdesk_tickets')
               .select('status, priority')
               .eq('freshdesk_id', newTicketData.freshdesk_id)
@@ -218,7 +241,7 @@ serve(async (req) => {
         }
 
         // Upsert tickets into Supabase
-        const { data: upsertedData, error: upsertError } = await supabase.from('freshdesk_tickets').upsert(ticketsToUpsert, { onConflict: 'freshdesk_id' });
+        const { data: upsertedData, error: upsertError } = await userSupabase.from('freshdesk_tickets').upsert(ticketsToUpsert, { onConflict: 'freshdesk_id' });
 
         if (upsertError) {
           console.error('Supabase Upsert Error:', upsertError);
@@ -230,7 +253,7 @@ serve(async (req) => {
 
         // Insert notifications
         if (notificationsToInsert.length > 0) {
-          const { error: notificationError } = await supabase.from('user_notifications').insert(notificationsToInsert);
+          const { error: notificationError } = await userSupabase.from('user_notifications').insert(notificationsToInsert);
           if (notificationError) {
             console.error('Supabase Notification Insert Error:', notificationError);
           } else {

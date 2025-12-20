@@ -11,7 +11,8 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Customer360 from "./pages/Customer360";
-import WeeklySummaryPage from "./pages/WeeklySummaryPage"; // New import
+import WeeklySummaryPage from "./pages/WeeklySummaryPage";
+import SettingsPage from "./pages/SettingsPage"; // New import
 import { SupabaseProvider } from "./components/SupabaseProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./hooks/use-theme";
@@ -38,7 +39,8 @@ const App = () => (
                   <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2 /></ProtectedRoute>} />
                   <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                   <Route path="/customer360" element={<ProtectedRoute><Customer360 /></ProtectedRoute>} />
-                  <Route path="/weekly-summary" element={<ProtectedRoute><WeeklySummaryPage /></ProtectedRoute>} /> {/* New route */}
+                  <Route path="/weekly-summary" element={<ProtectedRoute><WeeklySummaryPage /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} /> {/* New route */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

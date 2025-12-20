@@ -17,23 +17,53 @@ serve(async (req) => {
     // @ts-ignore
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-ignore
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY'); // Use Anon Key for client-side access
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // @ts-ignore
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Environment variables: Supabase URL or Anon Key not set.');
-      return new Response(JSON.stringify({ error: 'Supabase URL or Anon Key not set in environment variables.' }), {
+    if (!supabaseUrl || !supabaseServiceRoleKey || !supabaseAnonKey) {
+      console.error('Environment variables: Supabase URL or Keys not set.');
+      return new Response(JSON.stringify({ error: 'Supabase environment variables not set.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Initialize Supabase client for database operations (using the user's JWT)
     const authHeader = req.headers.get('Authorization');
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader },
-      },
+    if (!authHeader) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+    }
+
+    // 1. Initialize Supabase client with user's JWT to get user info
+    const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
     });
+    
+    const { data: { user }, error: userError } = await userSupabase.auth.getUser();
+    if (userError || !user) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+    }
+    const org_id = user.id;
+
+    // 2. Initialize Supabase client with Service Role Key to fetch secrets (org_settings)
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    const { data: settings, error: settingsError } = await serviceSupabase
+      .from("org_settings")
+      .select("freshdesk_domain, freshdesk_api_key")
+      .eq("org_id", org_id)
+      .single();
+
+    if (settingsError || !settings) {
+      console.error('Freshdesk settings not configured:', settingsError);
+      return new Response(JSON.stringify({ error: 'Freshdesk settings not configured for this organization.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const freshdeskApiKey = settings.freshdesk_api_key;
+    const freshdeskDomain = settings.freshdesk_domain;
 
     const requestBody = await req.json();
     const { freshdesk_ticket_id } = requestBody;
@@ -42,19 +72,6 @@ serve(async (req) => {
       console.error('Request Error: freshdesk_ticket_id is required.');
       return new Response(JSON.stringify({ error: 'freshdesk_ticket_id is required.' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // @ts-ignore
-    const freshdeskDomain = Deno.env.get('FRESHDESK_DOMAIN');
-    // @ts-ignore
-    const freshdeskApiKey = Deno.env.get('FRESHDESK_API_KEY');
-
-    if (!freshdeskDomain || !freshdeskApiKey) {
-      console.error('Environment variables: Freshdesk API key or domain not set.');
-      return new Response(JSON.stringify({ error: 'Freshdesk API key or domain not set.' }), {
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -120,7 +137,7 @@ serve(async (req) => {
     }));
 
     console.log(`[fetch-ticket-conversations] Attempting to upsert ${transformedMessages.length} messages to Supabase.`);
-    const { data: upsertData, error: upsertError } = await supabase
+    const { data: upsertData, error: upsertError } = await userSupabase // Use userSupabase for RLS-protected tables
       .from('ticket_messages')
       .upsert(transformedMessages, { onConflict: 'id' });
 
