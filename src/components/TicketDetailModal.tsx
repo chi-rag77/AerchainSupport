@@ -56,86 +56,26 @@ const TicketDetailModal = ({
     setFetchError(null);
 
     try {
-      // 1. Verify parent ticket exists in freshdesk_tickets table
-      const { data: parentTicketData, error: parentTicketError } = await supabase
-        .from('freshdesk_tickets')
-        .select('freshdesk_id')
-        .eq('freshdesk_id', ticket.id)
-        .single();
+      // 1. Trigger Freshdesk conversation sync (always run to ensure latest data via upsert)
+      const { error: syncError } = await supabase.functions.invoke('fetch-ticket-conversations', {
+        method: 'POST',
+        body: { freshdesk_ticket_id: ticket.id },
+      });
 
-      if (parentTicketError && parentTicketError.code !== 'PGRST116') {
-        console.error("Error checking parent ticket existence:", parentTicketError);
-        setFetchError(`Failed to verify parent ticket: ${parentTicketError.message}`);
+      if (syncError) {
+        console.error("Error syncing conversations from Freshdesk:", syncError);
+        let errorMessage = `Failed to sync conversations: ${syncError.message}`;
+        if (syncError.message.includes("Freshdesk API error: 401") || syncError.message.includes("Freshdesk API key or domain not set")) {
+          errorMessage += ". Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are correctly set as Supabase secrets for the 'fetch-ticket-conversations' Edge Function.";
+        } else if (syncError.message.includes("non-2xx status code")) {
+          errorMessage += ". This often indicates an issue with the Freshdesk API or its credentials. Please check your Supabase secrets (FRESHDESK_API_KEY, FRESHDESK_DOMAIN).";
+        }
+        setFetchError(errorMessage);
         setIsLoadingMessages(false);
         return;
       }
 
-      if (!parentTicketData) {
-        console.warn(`Parent ticket ${ticket.id} not found in freshdesk_tickets. Attempting to sync all tickets.`);
-        toast.info("Ticket not found in database. Attempting to sync all tickets to ensure data integrity.", { id: "sync-parent-ticket" });
-
-        const { error: syncError } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-          method: 'POST',
-          body: { action: 'syncTickets' },
-        });
-
-        if (syncError) {
-          console.error("Error during full ticket sync:", syncError);
-          toast.error(`Failed to sync tickets: ${syncError.message}. Please try again.`, { id: "sync-parent-ticket" });
-          setFetchError("Parent ticket not found and failed to sync. Please ensure the ticket exists in Freshdesk and try syncing again.");
-          setIsLoadingMessages(false);
-          return;
-        } else {
-          toast.success("Tickets synced. Retrying conversation fetch...", { id: "sync-parent-ticket" });
-          const { data: retryParentTicketData, error: retryParentTicketError } = await supabase
-            .from('freshdesk_tickets')
-            .select('freshdesk_id')
-            .eq('freshdesk_id', ticket.id)
-            .single();
-
-          if (retryParentTicketError || !retryParentTicketData) {
-            console.error(`Parent ticket ${ticket.id} still not found after sync.`);
-            setFetchError("Parent ticket still not found after sync. Please ensure the ticket exists in Freshdesk and try syncing again.");
-            setIsLoadingMessages(false);
-            return;
-          }
-        }
-      }
-
-      const { data: existingMessages, error: checkError } = await supabase
-        .from('ticket_messages')
-        .select('id')
-        .eq('ticket_id', ticket.id)
-        .limit(1);
-
-      if (checkError) {
-        console.error("Error checking for existing messages:", checkError);
-      }
-
-      if (!existingMessages || existingMessages.length === 0 || checkError) {
-        console.log(`No existing messages found for ticket ${ticket.id}, syncing from Freshdesk...`);
-        const { data, error: syncError } = await supabase.functions.invoke('fetch-ticket-conversations', {
-          method: 'POST',
-          body: { freshdesk_ticket_id: ticket.id },
-        });
-
-        if (syncError) {
-          console.error("Error syncing conversations from Freshdesk:", syncError);
-          // Display the full error message from the Edge Function
-          let errorMessage = `Failed to sync conversations: ${syncError.message}`;
-          if (syncError.message.includes("Freshdesk API error: 401") || syncError.message.includes("Freshdesk API key or domain not set")) {
-            errorMessage += ". Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are correctly set as Supabase secrets for the 'fetch-ticket-conversations' Edge Function.";
-          } else if (syncError.message.includes("non-2xx status code")) {
-            errorMessage += ". This often indicates an issue with the Freshdesk API or its credentials. Please check your Supabase secrets (FRESHDESK_API_KEY, FRESHDESK_DOMAIN).";
-          }
-          setFetchError(errorMessage);
-        } else {
-          console.log("Successfully synced conversations:", data);
-        }
-      } else {
-        console.log(`Existing messages found for ticket ${ticket.id}, skipping Freshdesk sync.`);
-      }
-
+      // 2. Fetch all messages from our Supabase DB
       const { data: messagesData, error: fetchMessagesError } = await supabase
         .from('ticket_messages')
         .select('*')
