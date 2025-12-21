@@ -40,6 +40,7 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardInsightsOverlay from "@/components/DashboardInsightsOverlay"; // New import
 import { invokeEdgeFunction } from "@/lib/apiClient"; // Corrected import
 import { ApiError } from "@/lib/errorHandler"; // Added missing import
+import OperationalTicker from "@/components/OperationalTicker"; // New import
 
 const fetchDashboardInsights = async (): Promise<Insight[]> => {
   try {
@@ -578,8 +579,8 @@ const Index = () => {
     t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
   );
 
-  // Removed tier1Metrics entirely
-  const tier2Metrics = [
+  // Only the four requested metrics remain
+  const coreMetrics = [
     {
       title: "Total Tickets",
       value: metrics.totalTicketsOverall, // Overall count
@@ -908,28 +909,11 @@ const Index = () => {
                 
                 {/* Executive Summary Strip (New Section) */}
                 <section>
-                  <Card className="p-4 shadow-lg border-l-4 border-blue-500 dark:border-blue-400">
-                    <div className="flex items-center gap-4">
-                      <Lightbulb className="h-6 w-6 text-blue-500 flex-shrink-0" />
-                      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                        <span className="font-semibold text-foreground">Executive Insights:</span>
-                        {dashboardInsights.slice(0, 3).map((insight, index) => (
-                          <Badge key={insight.id} className={cn("flex items-center gap-1", getInsightSeverityClass(insight.severity))}>
-                            {insight.severity === 'critical' ? <AlertCircle className="h-3 w-3" /> : <Info className="h-3 w-3" />}
-                            {insight.message}
-                          </Badge>
-                        ))}
-                        {dashboardInsights.length > 3 && (
-                          <Button variant="link" size="sm" onClick={() => setIsDashboardInsightsOverlayOpen(true)} className="h-auto p-0 text-blue-600 dark:text-blue-400">
-                            View All {dashboardInsights.length} Insights
-                          </Button>
-                        )}
-                        {dashboardInsights.length === 0 && (
-                          <span className="text-muted-foreground">No critical insights detected in the last 24 hours.</span>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
+                  <OperationalTicker 
+                    insights={dashboardInsights || []} 
+                    allTickets={freshdeskTickets || []}
+                    onSignalClick={handleKPIDrilldown}
+                  />
                 </section>
 
                 {/* Row 1: High-level KPI cards */}
@@ -938,8 +922,8 @@ const Index = () => {
                     <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {/* Tier 2 Metrics (Volume/Health) - Now the primary metrics */}
-                    {tier2Metrics.map((metric, index) => (
+                    {/* Only the four core metrics remain */}
+                    {coreMetrics.map((metric, index) => (
                       <DashboardMetricCardV2
                         key={index}
                         {...metric}
