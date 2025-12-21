@@ -622,24 +622,6 @@ const Index = () => {
       cta: "Analyze bug volume",
       onClick: () => handleKPIDrilldown("Total Bugs Received (Overall)", "All tickets categorized as 'Bug' in the system.", freshdeskTickets?.filter(t => t.type?.toLowerCase() === 'bug') || []),
     },
-    {
-      title: "First Response SLA Met",
-      value: metrics.firstResponseSlaMet,
-      icon: Percent,
-      archetype: 'health' as const,
-      subtext: metrics.firstResponseSlaMet === "N/A" ? "No FR SLA data available." : (parseFloat(metrics.firstResponseSlaMet) < 95 ? "Needs improvement (Target > 95%)." : "Excellent first response performance."),
-      cta: "View FR met tickets",
-      onClick: () => handleKPIDrilldown("First Response SLA Met", "Tickets that met their First Response SLA.", firstResponseSlaMetList),
-    },
-    {
-      title: "Median Resolution Time",
-      value: metrics.medianResolutionTime,
-      icon: Clock,
-      archetype: 'health' as const,
-      subtext: metrics.medianResolutionTime === "N/A" ? "No resolved tickets this period." : `Target resolution time is 48 hrs.`,
-      cta: "Analyze resolution time",
-      onClick: () => handleKPIDrilldown("Median Resolution Time", "Resolved tickets used to calculate the median resolution time.", medianResolutionTimeList),
-    },
   ];
 
   const defaultFilters = [
