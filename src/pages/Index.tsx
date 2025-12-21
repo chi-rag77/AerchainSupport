@@ -578,37 +578,7 @@ const Index = () => {
     t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
   );
 
-  const tier1Metrics = [
-    {
-      title: "Overdue Tickets",
-      value: metrics.overdueTickets,
-      icon: CalendarDays,
-      archetype: 'attention' as const,
-      subtext: `${overdueTicketsList.filter(t => differenceInHours(new Date(), parseISO(t.due_by!)) <= 48).length} tickets breached SLA in last 48h`,
-      cta: "View impacted tickets",
-      onClick: () => handleKPIDrilldown("Overdue Tickets", "Tickets that have already breached their SLA.", overdueTicketsList),
-    },
-    {
-      title: "Urgent Tickets at Risk",
-      value: metrics.urgentTicketsAtRisk,
-      icon: AlertCircle,
-      archetype: 'attention' as const,
-      subtext: `Highest priority tickets nearing SLA breach (within 2 hours).`,
-      cta: "Review urgent queue",
-      onClick: () => handleKPIDrilldown("Urgent Tickets at Risk", "Urgent tickets that are active and within 2 hours of breaching their SLA.", urgentTicketsAtRiskList),
-    },
-    {
-      title: "Resolution SLA Met",
-      value: metrics.resolutionSlaMet,
-      icon: ShieldAlert,
-      archetype: 'health' as const,
-      subtext: metrics.resolutionSlaMet === "N/A" ? "No resolved tickets with SLA data." : (parseFloat(metrics.resolutionSlaMet) < 85 ? "Below healthy range (Target > 85%)." : "Performance is within target range."),
-      cta: "View SLA met tickets",
-      onClick: () => handleKPIDrilldown("Resolution SLA Met", "Resolved tickets that met their Resolution SLA.", resolvedSlaMetList),
-    },
-  ];
-
-  // Updated Tier 2 Metrics based on user request
+  // Removed tier1Metrics entirely
   const tier2Metrics = [
     {
       title: "Total Tickets",
@@ -986,23 +956,10 @@ const Index = () => {
                     <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {/* Tier 1 Metrics (Attention/Health) - 3 cards */}
-                    {tier1Metrics.map((metric, index) => (
+                    {/* Tier 2 Metrics (Volume/Health) - Now the primary metrics */}
+                    {tier2Metrics.map((metric, index) => (
                       <DashboardMetricCardV2
                         key={index}
-                        {...metric}
-                        isLoading={isLoading}
-                      />
-                    ))}
-                    {/* Tier 2 Metrics (Volume/Health) - 5 cards, wrapping to next line */}
-                    {tier2Metrics.filter(metric => 
-                      metric.title === "Total Tickets" || 
-                      metric.title === "Total Open Tickets" || 
-                      metric.title === "Resolved Tickets" || 
-                      metric.title === "Total Bugs Received"
-                    ).map((metric, index) => (
-                      <DashboardMetricCardV2
-                        key={index + tier1Metrics.length}
                         {...metric}
                         isLoading={isLoading}
                       />
