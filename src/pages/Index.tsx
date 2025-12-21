@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import HandWaveIcon from "@/components/HandWaveIcon";
-import DashboardMetricCard from "@/components/DashboardMetricCard";
+import DashboardMetricCardV2 from "@/components/DashboardMetricCardV2"; // Updated import
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -532,44 +532,59 @@ const Index = () => {
     );
   }
 
+  const overdueTicketsList = filteredDashboardTickets.filter(t =>
+    (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed') &&
+    t.due_by && isPast(parseISO(t.due_by))
+  );
+
+  const urgentTicketsAtRiskList = filteredDashboardTickets.filter(t => {
+    const statusLower = t.status.toLowerCase();
+    const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
+    const isUrgent = t.priority.toLowerCase() === 'urgent';
+    const isNearDue = t.due_by && differenceInHours(parseISO(t.due_by), new Date()) <= 2;
+    return isActive && isUrgent && isNearDue;
+  });
+
+  const resolvedSlaMetList = filteredDashboardTickets.filter(t =>
+    (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
+    t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by)
+  );
+
+  const firstResponseSlaMetList = filteredDashboardTickets.filter(t =>
+    t.fr_due_by && parseISO(t.updated_at) <= parseISO(t.fr_due_by)
+  );
+
+  const medianResolutionTimeList = filteredDashboardTickets.filter(t =>
+    t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+  );
+
   const tier1Metrics = [
     {
       title: "Overdue Tickets",
       value: metrics.overdueTickets,
       icon: CalendarDays,
-      description: "Active tickets that are past their due date within the selected date range.",
-      onClick: () => handleKPIDrilldown("Overdue Tickets", "Active tickets that are past their due date within the selected date range.", filteredDashboardTickets.filter(t =>
-        (t.status.toLowerCase() === 'open (being processed)' ||
-         t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-         t.status.toLowerCase() === 'waiting on customer' ||
-         t.status.toLowerCase() === 'on tech' ||
-         t.status.toLowerCase() === 'on product' ||
-         t.status.toLowerCase() === 'escalated') &&
-        t.due_by && isPast(parseISO(t.due_by))
-      )),
-    },
-    {
-      title: "Resolution SLA Met",
-      value: metrics.resolutionSlaMet,
-      icon: ShieldAlert,
-      description: "Percentage of resolved tickets that met their resolution SLA. (Using 'updated_at' as proxy for resolution time).",
-      onClick: () => handleKPIDrilldown("Resolution SLA Met", "Resolved tickets that met their Resolution SLA.", filteredDashboardTickets.filter(t =>
-        (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
-        t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by)
-      )),
+      archetype: 'attention' as const,
+      subtext: `${overdueTicketsList.filter(t => differenceInHours(new Date(), parseISO(t.due_by!)) <= 48).length} tickets breached SLA in last 48h`,
+      cta: "View impacted tickets",
+      onClick: () => handleKPIDrilldown("Overdue Tickets", "Tickets that have already breached their SLA.", overdueTicketsList),
     },
     {
       title: "Urgent Tickets at Risk",
       value: metrics.urgentTicketsAtRisk,
       icon: AlertCircle,
-      description: "Urgent tickets that are active and within 2 hours of breaching their SLA.",
-      onClick: () => handleKPIDrilldown("Urgent Tickets at Risk", "Urgent tickets that are active and within 2 hours of breaching their SLA.", filteredDashboardTickets.filter(t => {
-        const statusLower = t.status.toLowerCase();
-        const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
-        const isUrgent = t.priority.toLowerCase() === 'urgent';
-        const isNearDue = t.due_by && differenceInHours(parseISO(t.due_by), now) <= 2;
-        return isActive && isUrgent && isNearDue;
-      })),
+      archetype: 'attention' as const,
+      subtext: `Highest priority tickets nearing SLA breach (within 2 hours).`,
+      cta: "Review urgent queue",
+      onClick: () => handleKPIDrilldown("Urgent Tickets at Risk", "Urgent tickets that are active and within 2 hours of breaching their SLA.", urgentTicketsAtRiskList),
+    },
+    {
+      title: "Resolution SLA Met",
+      value: metrics.resolutionSlaMet,
+      icon: ShieldAlert,
+      archetype: 'health' as const,
+      subtext: metrics.resolutionSlaMet === "N/A" ? "No resolved tickets with SLA data." : (parseFloat(metrics.resolutionSlaMet) < 85 ? "Below healthy range (Target > 85%)." : "Performance is within target range."),
+      cta: "View SLA met tickets",
+      onClick: () => handleKPIDrilldown("Resolution SLA Met", "Resolved tickets that met their Resolution SLA.", resolvedSlaMetList),
     },
   ];
 
@@ -578,16 +593,20 @@ const Index = () => {
       title: "Total Tickets",
       value: metrics.totalTickets,
       icon: TicketIcon,
+      archetype: 'volume' as const,
       trend: metrics.totalTicketsTrend,
-      description: "Count of tickets created within the selected date range and filters.",
+      subtext: `Total volume created in the selected period.`,
+      cta: "View all tickets",
       onClick: () => handleKPIDrilldown("Total Tickets", "All tickets created within the selected date range and filters.", filteredDashboardTickets),
     },
     {
       title: "Open Tickets",
       value: metrics.openTickets,
       icon: Hourglass,
+      archetype: 'volume' as const,
       trend: metrics.openTicketsTrend,
-      description: "Tickets currently in an 'Open' or active status within the selected date range.",
+      subtext: `Active backlog requiring agent attention.`,
+      cta: "View active queue",
       onClick: () => handleKPIDrilldown("Open Tickets", "Tickets currently in an 'Open' or active status within the selected date range.", filteredDashboardTickets.filter(t =>
         t.status.toLowerCase() === 'open (being processed)' ||
         t.status.toLowerCase() === 'pending (awaiting your reply)' ||
@@ -601,8 +620,10 @@ const Index = () => {
       title: "Resolved Tickets",
       value: metrics.resolvedTickets,
       icon: CheckCircle,
+      archetype: 'volume' as const,
       trend: metrics.resolvedTicketsTrend,
-      description: "Tickets resolved or closed within the selected date range.",
+      subtext: `Tickets successfully closed this period.`,
+      cta: "View resolved tickets",
       onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t =>
         t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
       )),
@@ -611,19 +632,19 @@ const Index = () => {
       title: "First Response SLA Met",
       value: metrics.firstResponseSlaMet,
       icon: Percent,
-      description: "Percentage of tickets where the first response was sent within the SLA. (Using 'updated_at' as proxy for first response time).",
-      onClick: () => handleKPIDrilldown("First Response SLA Met", "Tickets that met their First Response SLA.", filteredDashboardTickets.filter(t =>
-        t.fr_due_by && parseISO(t.updated_at) <= parseISO(t.fr_due_by)
-      )),
+      archetype: 'health' as const,
+      subtext: metrics.firstResponseSlaMet === "N/A" ? "No FR SLA data available." : (parseFloat(metrics.firstResponseSlaMet) < 95 ? "Needs improvement (Target > 95%)." : "Excellent first response performance."),
+      cta: "View FR met tickets",
+      onClick: () => handleKPIDrilldown("First Response SLA Met", "Tickets that met their First Response SLA.", firstResponseSlaMetList),
     },
     {
       title: "Median Resolution Time",
       value: metrics.medianResolutionTime,
       icon: Clock,
-      description: "The median time taken to resolve tickets within the selected date range.",
-      onClick: () => handleKPIDrilldown("Median Resolution Time", "Resolved tickets used to calculate the median resolution time.", filteredDashboardTickets.filter(t =>
-        t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
-      )),
+      archetype: 'health' as const,
+      subtext: metrics.medianResolutionTime === "N/A" ? "No resolved tickets this period." : `Target resolution time is 48 hrs.`,
+      cta: "Analyze resolution time",
+      onClick: () => handleKPIDrilldown("Median Resolution Time", "Resolved tickets used to calculate the median resolution time.", medianResolutionTimeList),
     },
   ];
 
@@ -941,38 +962,21 @@ const Index = () => {
                     <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {/* Tier 1 Metrics (Highlighted) */}
+                    {/* Tier 1 Metrics (Attention/Health) - 3 cards */}
                     {tier1Metrics.map((metric, index) => (
-                      <Tooltip key={index}>
-                        <TooltipTrigger asChild>
-                          <div className="w-full">
-                            <DashboardMetricCard
-                              {...metric}
-                              isTier1={true}
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>{metric.description}</TooltipContent>
-                      </Tooltip>
+                      <DashboardMetricCardV2
+                        key={index}
+                        {...metric}
+                        isLoading={isLoading}
+                      />
                     ))}
-                    {/* Tier 2 Metrics (Standard) */}
+                    {/* Tier 2 Metrics (Volume/Health) - 5 cards, wrapping to next line */}
                     {tier2Metrics.map((metric, index) => (
-                      <Tooltip key={index + tier1Metrics.length}>
-                        <TooltipTrigger asChild>
-                          <div className="w-full">
-                            <DashboardMetricCard
-                              {...metric}
-                              isTier1={false}
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {metric.description}
-                          {metric.trend !== undefined && (
-                            <p className="mt-1 text-xs text-muted-foreground">{getTrendTooltip(metric.trend)}</p>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
+                      <DashboardMetricCardV2
+                        key={index + tier1Metrics.length}
+                        {...metric}
+                        isLoading={isLoading}
+                      />
                     ))}
                   </div>
                 </section>
