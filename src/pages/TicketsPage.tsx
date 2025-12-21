@@ -10,7 +10,7 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Ticket } from "@/features/tickets/types"; // Updated import path
 import {
-  Search, RefreshCw, Filter, TicketIcon, Hourglass, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, SlidersHorizontal, Zap, User, CalendarX, Flag, Users, Building2, Tag, GitFork, CalendarDays, Trash2, CheckCircle, AlertCircle
+  Search, RefreshCw, Filter, TicketIcon, Hourglass, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, SlidersHorizontal, Zap, User, CalendarX, Flag, Users, Building2, Tag, GitFork, CalendarDays, Trash2, CheckCircle, AlertCircle, Clock
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from "@tanstack/react-query";
