@@ -7,8 +7,8 @@ import { Insight, Ticket } from '@/types';
 import { AlertCircle, Clock, TrendingUp, CheckCircle, ArrowUp, ArrowDown, Users, Tag, Info, MessageSquare } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card'; // <-- ADDED IMPORT
-import { formatDistanceToNowStrict, differenceInDays, parseISO } from 'date-fns';
+import { Card } from '@/components/ui/card';
+import { formatDistanceToNowStrict, differenceInDays, parseISO, isPast, differenceInHours } from 'date-fns';
 
 // Define the structure for a single signal item
 interface SignalItem {
@@ -39,12 +39,16 @@ const statusColors = {
 const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalTickerProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
-  // --- 1. Map Insights to Signals ---
+  // --- 1. Map Insights and Derive New Signals ---
   const mappedSignals: SignalItem[] = useMemo(() => {
     const signals: SignalItem[] = [];
     const now = new Date();
 
-    // A. Map fetched insights (Stalled & High Volume)
+    const openTickets = allTickets.filter(t => 
+      t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed'
+    );
+
+    // --- A. Map fetched insights (Stalled & High Volume) ---
     insights.forEach(insight => {
       const status = insight.severity === 'critical' ? 'Critical' : insight.severity === 'warning' ? 'Watch' : 'Normal';
       const Icon = insight.type === 'stalledOnTech' ? Clock : Users;
@@ -54,7 +58,7 @@ const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalT
         if (ticket) {
           signals.push({
             id: insight.id,
-            entity: `Ticket #${insight.ticketId}`,
+            entity: `Ticket #${ticket.id}`,
             metric: `Stalled ${insight.daysStalled} days`,
             status: status,
             icon: Icon,
@@ -64,7 +68,8 @@ const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalT
           });
         }
       } else if (insight.type === 'highVolumeCustomer' && insight.customerName && insight.ticketCount !== undefined) {
-        const tickets = allTickets.filter(t => t.cf_company === insight.customerName && differenceInDays(now, parseISO(t.created_at)) <= 1);
+        // Filter tickets relevant to this high volume insight (last 24h)
+        const tickets = allTickets.filter(t => t.cf_company === insight.customerName && differenceInHours(now, parseISO(t.created_at)) <= 24);
         signals.push({
           id: insight.id,
           entity: insight.customerName,
@@ -78,24 +83,12 @@ const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalT
       }
     });
 
-    // B. Placeholder/Derived Signals (for variety and demonstration)
-    
-    // SLA Recovery Signal (Placeholder)
-    signals.push({
-      id: 'sla-recovery',
-      entity: 'SLA Compliance',
-      metric: '↑ 6% WoW',
-      status: 'Recovery',
-      icon: CheckCircle,
-      change: 'vs last week',
-      tooltip: 'Overall Resolution SLA compliance has improved by 6% compared to the previous week.',
-    });
+    // --- B. Derived Signals (Calculated from raw data) ---
 
-    // Urgent Unassigned Signal (Derived)
-    const urgentUnassigned = allTickets.filter(t => 
+    // 1. Urgent Unassigned Signal (Ownership Gaps)
+    const urgentUnassigned = openTickets.filter(t => 
       t.priority.toLowerCase() === 'urgent' && 
-      (t.assignee === 'Unassigned' || !t.assignee) &&
-      t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed'
+      (t.assignee === 'Unassigned' || !t.assignee)
     );
     if (urgentUnassigned.length > 0) {
       signals.push({
@@ -110,7 +103,67 @@ const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalT
       });
     }
 
-    // Resolution Time Degradation (Placeholder)
+    // 2. Longest Open Ticket Signal (Aging & Staleness)
+    const oldestTicket = openTickets.sort((a, b) => parseISO(a.created_at).getTime() - parseISO(b.created_at).getTime())[0];
+    if (oldestTicket) {
+      const daysOpen = differenceInDays(now, parseISO(oldestTicket.created_at));
+      if (daysOpen >= 7) {
+        signals.push({
+          id: 'longest-open',
+          entity: `Ticket #${oldestTicket.id}`,
+          metric: `Open ${daysOpen} days`,
+          status: daysOpen >= 14 ? 'Critical' : 'Watch',
+          icon: Clock,
+          change: oldestTicket.cf_company,
+          tooltip: `The oldest open ticket is ${daysOpen} days old. Subject: ${oldestTicket.subject}`,
+          tickets: [oldestTicket],
+        });
+      }
+    }
+
+    // 3. SLA Breach Forecast (Risk Signals)
+    const nearBreachTickets = openTickets.filter(t => 
+      t.due_by && differenceInHours(parseISO(t.due_by), now) <= 4 && !isPast(parseISO(t.due_by)) // Due within 4 hours
+    );
+    if (nearBreachTickets.length > 0) {
+      signals.push({
+        id: 'sla-forecast',
+        entity: 'SLA Risk',
+        metric: `${nearBreachTickets.length} tickets at risk`,
+        status: nearBreachTickets.length >= 5 ? 'Critical' : 'Watch',
+        icon: AlertCircle,
+        change: 'Near Breach',
+        tooltip: `${nearBreachTickets.length} tickets are due within the next 4 hours.`,
+        tickets: nearBreachTickets,
+      });
+    }
+
+    // 4. Positive Signal: Low Open Backlog (Operational Momentum)
+    if (openTickets.length <= 5) {
+      signals.push({
+        id: 'low-backlog',
+        entity: 'Backlog',
+        metric: `Only ${openTickets.length} open tickets`,
+        status: 'Normal',
+        icon: CheckCircle,
+        change: 'Low Load',
+        tooltip: 'The current active ticket backlog is minimal, indicating high operational efficiency.',
+        tickets: openTickets,
+      });
+    }
+    
+    // 5. Placeholder: Resolution Effectiveness (Recovery/Degradation)
+    // These remain placeholders as they require historical trend data not available in the single 'allTickets' array.
+    signals.push({
+      id: 'res-time-recovery',
+      entity: 'Resolution Time',
+      metric: 'Avg time ↓ 15% WoW',
+      status: 'Recovery',
+      icon: TrendingUp,
+      change: 'Faster',
+      tooltip: 'Average resolution time has decreased by 15% compared to the previous week.',
+    });
+    
     signals.push({
       id: 'res-time-degrade',
       entity: 'Resolution Time',
@@ -121,7 +174,10 @@ const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalT
       tooltip: 'Median resolution time has exceeded the 48-hour threshold this period.',
     });
 
-    return signals;
+    // Ensure critical signals appear first
+    const statusOrder = { 'Critical': 3, 'Watch': 2, 'Recovery': 1, 'Normal': 0 };
+    return signals.sort((a, b) => statusOrder[b.status] - statusOrder[a.status]);
+
   }, [insights, allTickets]);
 
   // --- 2. Ticker Animation Logic ---
