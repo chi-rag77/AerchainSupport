@@ -357,12 +357,16 @@ const Index = () => {
         totalTicketsTrend: undefined,
         openTicketsTrend: undefined,
         resolvedTicketsTrend: undefined,
+        // New Overall Metrics
+        totalTicketsOverall: 0,
+        totalOpenOverall: 0,
+        totalBugsOverall: 0,
       };
     }
 
     const now = new Date();
 
-    // Current Period Counts
+    // Current Period Counts (Filtered by Date/Filters)
     const totalTickets = filteredDashboardTickets.length;
     const openTickets = filteredDashboardTickets.filter(t =>
       t.status.toLowerCase() === 'open (being processed)' ||
@@ -375,6 +379,19 @@ const Index = () => {
     const resolvedTickets = filteredDashboardTickets.filter(t =>
       t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
     ).length;
+
+    // Overall Counts (Unfiltered by Date/Filters)
+    const totalTicketsOverall = freshdeskTickets.length;
+    const totalOpenOverall = freshdeskTickets.filter(t =>
+      t.status.toLowerCase() === 'open (being processed)' ||
+      t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+      t.status.toLowerCase() === 'waiting on customer' ||
+      t.status.toLowerCase() === 'on tech' ||
+      t.status.toLowerCase() === 'on product' ||
+      t.status.toLowerCase() === 'escalated'
+    ).length;
+    const totalBugsOverall = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
+
 
     // Previous Period Counts (for trend calculation)
     const prevTotalTickets = previousPeriodTickets.length;
@@ -471,6 +488,9 @@ const Index = () => {
       totalTicketsTrend,
       openTicketsTrend,
       resolvedTicketsTrend,
+      totalTicketsOverall,
+      totalOpenOverall,
+      totalBugsOverall,
     };
   }, [filteredDashboardTickets, freshdeskTickets, previousPeriodTickets]);
 
@@ -588,33 +608,27 @@ const Index = () => {
     },
   ];
 
+  // Updated Tier 2 Metrics based on user request
   const tier2Metrics = [
     {
       title: "Total Tickets",
-      value: metrics.totalTickets,
+      value: metrics.totalTicketsOverall, // Overall count
       icon: TicketIcon,
       archetype: 'volume' as const,
-      trend: metrics.totalTicketsTrend,
-      subtext: `Total volume created in the selected period.`,
+      trend: metrics.totalTicketsTrend, // Trend still based on filtered data
+      subtext: `Total volume in the system. Filtered period: ${metrics.totalTickets}`,
       cta: "View all tickets",
-      onClick: () => handleKPIDrilldown("Total Tickets", "All tickets created within the selected date range and filters.", filteredDashboardTickets),
+      onClick: () => handleKPIDrilldown("Total Tickets (Overall)", "All tickets currently in the system.", freshdeskTickets || []),
     },
     {
-      title: "Open Tickets",
-      value: metrics.openTickets,
+      title: "Total Open Tickets",
+      value: metrics.totalOpenOverall, // Overall open count
       icon: Hourglass,
       archetype: 'volume' as const,
-      trend: metrics.openTicketsTrend,
-      subtext: `Active backlog requiring agent attention.`,
+      trend: metrics.openTicketsTrend, // Trend still based on filtered data
+      subtext: `Active backlog requiring attention. Filtered period: ${metrics.openTickets}`,
       cta: "View active queue",
-      onClick: () => handleKPIDrilldown("Open Tickets", "Tickets currently in an 'Open' or active status within the selected date range.", filteredDashboardTickets.filter(t =>
-        t.status.toLowerCase() === 'open (being processed)' ||
-        t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-        t.status.toLowerCase() === 'waiting on customer' ||
-        t.status.toLowerCase() === 'on tech' ||
-        t.status.toLowerCase() === 'on product' ||
-        t.status.toLowerCase() === 'escalated'
-      )),
+      onClick: () => handleKPIDrilldown("Total Open Tickets (Overall)", "All tickets currently in an active status.", allOpenTickets),
     },
     {
       title: "Resolved Tickets",
@@ -627,6 +641,16 @@ const Index = () => {
       onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t =>
         t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
       )),
+    },
+    {
+      title: "Total Bugs Received",
+      value: metrics.totalBugsOverall, // Overall bug count
+      icon: Bug,
+      archetype: 'volume' as const,
+      trend: undefined, // No trend calculation for overall bug count
+      subtext: `Total tickets categorized as 'Bug' in the system.`,
+      cta: "Analyze bug volume",
+      onClick: () => handleKPIDrilldown("Total Bugs Received (Overall)", "All tickets categorized as 'Bug' in the system.", freshdeskTickets?.filter(t => t.type?.toLowerCase() === 'bug') || []),
     },
     {
       title: "First Response SLA Met",
@@ -971,7 +995,12 @@ const Index = () => {
                       />
                     ))}
                     {/* Tier 2 Metrics (Volume/Health) - 5 cards, wrapping to next line */}
-                    {tier2Metrics.map((metric, index) => (
+                    {tier2Metrics.filter(metric => 
+                      metric.title === "Total Tickets" || 
+                      metric.title === "Total Open Tickets" || 
+                      metric.title === "Resolved Tickets" || 
+                      metric.title === "Total Bugs Received"
+                    ).map((metric, index) => (
                       <DashboardMetricCardV2
                         key={index + tier1Metrics.length}
                         {...metric}
