@@ -737,6 +737,21 @@ const Index = () => {
     }
   };
 
+  // Helper to generate trend tooltip content
+  const getTrendTooltip = (trend: number | undefined) => {
+    if (trend === undefined) return "No comparison data available for this period.";
+    
+    let periodLabel = "previous period";
+    if (typeof activeDateFilter === 'string' && activeDateFilter !== 'custom') {
+      periodLabel = `previous ${activeDateFilter.replace('last', '')}`;
+    } else if (effectiveStartDate && previousEffectiveStartDate) {
+      const durationDays = differenceInDays(effectiveEndDate || new Date(), effectiveStartDate) + 1;
+      periodLabel = `previous ${durationDays} days`;
+    }
+
+    return `Compared to ${periodLabel}`;
+  };
+
   return (
     <>
       <div className="flex-1 flex overflow-hidden bg-background">
@@ -791,6 +806,12 @@ const Index = () => {
                   </React.Fragment>
                 ))}
 
+                {/* More Filters Toggle */}
+                <Button variant="outline" onClick={() => setShowMoreFilters(!showMoreFilters)} className="flex items-center gap-1 bg-card">
+                  {showMoreFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  More Filters
+                </Button>
+
                 {/* Custom Date Picker Popover (Hidden by default, shown if custom is selected) */}
                 <Popover>
                   <PopoverTrigger asChild>
@@ -826,12 +847,6 @@ const Index = () => {
                   </PopoverContent>
                 </Popover>
 
-                {/* More Filters Toggle */}
-                <Button variant="outline" onClick={() => setShowMoreFilters(!showMoreFilters)} className="flex items-center gap-1 bg-card">
-                  {showMoreFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  More Filters
-                </Button>
-
                 {/* Expanded Filters */}
                 {showMoreFilters && (
                   <>
@@ -843,8 +858,8 @@ const Index = () => {
                   </>
                 )}
 
-                {/* Search Input */}
-                <div className="relative flex-grow">
+                {/* Search Input (Moved to the right end) */}
+                <div className="relative flex-grow max-w-[250px] ml-auto">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <Input
                     type="text"
@@ -928,19 +943,36 @@ const Index = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {/* Tier 1 Metrics (Highlighted) */}
                     {tier1Metrics.map((metric, index) => (
-                      <DashboardMetricCard
-                        key={index}
-                        {...metric}
-                        isTier1={true}
-                      />
+                      <Tooltip key={index}>
+                        <TooltipTrigger asChild>
+                          <div className="w-full">
+                            <DashboardMetricCard
+                              {...metric}
+                              isTier1={true}
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>{metric.description}</TooltipContent>
+                      </Tooltip>
                     ))}
                     {/* Tier 2 Metrics (Standard) */}
                     {tier2Metrics.map((metric, index) => (
-                      <DashboardMetricCard
-                        key={index + tier1Metrics.length}
-                        {...metric}
-                        isTier1={false}
-                      />
+                      <Tooltip key={index + tier1Metrics.length}>
+                        <TooltipTrigger asChild>
+                          <div className="w-full">
+                            <DashboardMetricCard
+                              {...metric}
+                              isTier1={false}
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {metric.description}
+                          {metric.trend !== undefined && (
+                            <p className="mt-1 text-xs text-muted-foreground">{getTrendTooltip(metric.trend)}</p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                 </section>
@@ -955,8 +987,12 @@ const Index = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card className="h-96 p-6 bg-card border border-border shadow-sm">
                       <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Volume & SLA Trend</CardTitle>
-                      <CardContent className="h-[calc(100%-40px)] p-0">
+                      <CardContent className="h-[calc(100%-40px)] p-0 relative">
                         <VolumeSlaTrendChart tickets={freshdeskTickets || []} startDate={effectiveStartDate} endDate={effectiveEndDate} />
+                        {/* Placeholder for Annotation Markers */}
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs text-muted-foreground opacity-50 pointer-events-none">
+                          [Placeholder: Annotation markers for major releases/incidents]
+                        </div>
                       </CardContent>
                     </Card>
                     <Card className="h-96 p-6 bg-card border border-border shadow-sm">
@@ -968,12 +1004,16 @@ const Index = () => {
                           uniqueModules={uniqueModules}
                           uniqueCountries={uniqueCountries}
                         />
+                        {/* One-line insight placeholder */}
+                        <p className="text-sm font-medium text-center mt-2 text-blue-600 dark:text-blue-400">
+                          <Info className="h-4 w-4 inline mr-1" /> Insight: Cloudnine accounts for 32% of urgent tickets this week.
+                        </p>
                       </CardContent>
                     </Card>
                     <Card className="h-96 p-6 bg-card border border-border shadow-sm">
                       <CardTitle className="text-lg font-semibold mb-2 text-foreground w-full text-center">Ticket Aging Buckets (Open Tickets)</CardTitle>
                       <CardContent className="h-[calc(100%-40px)] p-0">
-                        <AgingBucketsChart tickets={filteredDashboardTickets || []} />
+                        <AgingBucketsChart tickets={filteredDashboardTickets || []} onBarClick={handleKPIDrilldown} />
                       </CardContent>
                     </Card>
                     <Card className="h-96 p-6 bg-card border border-border shadow-sm">

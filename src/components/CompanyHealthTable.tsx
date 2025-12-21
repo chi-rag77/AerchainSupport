@@ -12,7 +12,7 @@ import {
 import { Ticket } from '@/types';
 import { differenceInMinutes, parseISO, isPast } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle, AlertCircle, Clock, Users, Heart } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Users, Heart, HelpCircle } from 'lucide-react'; // Added HelpCircle
 import { cn } from '@/lib/utils';
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -118,6 +118,10 @@ const CompanyHealthTable = ({ tickets }: CompanyHealthTableProps) => {
     const statusOrder = { 'Critical': 3, 'At-risk': 2, 'Healthy': 1, 'No Data': 0 };
 
     return processedData.sort((a, b) => {
+      // Pin 'Unknown Company' to the top if it's critical/at-risk
+      if (a.company === 'Unknown Company' && statusOrder[a.healthStatus] > 0) return -1;
+      if (b.company === 'Unknown Company' && statusOrder[b.healthStatus] > 0) return 1;
+
       const orderA = statusOrder[a.healthStatus];
       const orderB = statusOrder[b.healthStatus];
 
@@ -166,10 +170,23 @@ const CompanyHealthTable = ({ tickets }: CompanyHealthTableProps) => {
                   className={cn(
                     "transition-all duration-200 ease-in-out hover:bg-gray-50 dark:hover:bg-gray-700",
                     index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750',
-                    data.healthStatus === 'Critical' && 'bg-red-50/50 dark:bg-red-950/30'
+                    data.healthStatus === 'Critical' && 'bg-red-50/50 dark:bg-red-950/30',
+                    data.company === 'Unknown Company' && 'bg-yellow-50/50 dark:bg-yellow-950/30 border-l-4 border-yellow-500'
                   )}
                 >
-                  <TableCell className="font-medium py-2">{data.company}</TableCell>
+                  <TableCell className="font-medium py-2 flex items-center gap-2">
+                    {data.company}
+                    {data.company === 'Unknown Company' && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Tickets without a company assigned. Requires data hygiene action.
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </TableCell>
                   <TableCell className="py-2 text-center">
                     {getHealthBadge(data.healthStatus)}
                   </TableCell>
