@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Ticket } from '@/types';
-import { format, formatDistanceToNowStrict, differenceInMinutes, parseISO, isPast } from 'date-fns';
+import { format, formatDistanceToNowStrict, differenceInMinutes, parseISO, isPast, differenceInHours } from 'date-fns';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle, Hourglass, Laptop, AlertCircle, XCircle, Clock, Users, Shield, MessageSquare, Tag, ArrowUpDown, Filter, CalendarX, Flag } from 'lucide-react';
@@ -108,7 +108,7 @@ const TopRiskTicketsTable = ({ tickets, onRowClick }: TopRiskTicketsTableProps) 
 
   const getSlaDueStatus = (ticket: Ticket) => {
     if (!ticket.due_by || ticket.status.toLowerCase() === 'resolved' || ticket.status.toLowerCase() === 'closed') {
-      return { text: 'N/A', color: 'text-muted-foreground' };
+      return { text: 'N/A', color: 'text-muted-foreground', tooltip: 'SLA not applicable or ticket closed.' };
     }
 
     const dueDate = parseISO(ticket.due_by);
@@ -116,13 +116,17 @@ const TopRiskTicketsTable = ({ tickets, onRowClick }: TopRiskTicketsTableProps) 
     const diffMinutes = differenceInMinutes(dueDate, now);
 
     if (isPast(dueDate)) {
-      return { text: `Overdue by ${formatAgeing(Math.abs(diffMinutes))}`, color: 'text-red-600 dark:text-red-400 font-semibold' };
+      const overdueTime = formatAgeing(Math.abs(diffMinutes));
+      return { text: `Overdue by ${overdueTime}`, color: 'text-red-600 dark:text-red-400 font-semibold', tooltip: `Breached SLA. Overdue by ${overdueTime}.` };
     } else if (diffMinutes <= 2 * 60) { // 2 hours
-      return { text: `Due in ${formatAgeing(diffMinutes)}`, color: 'text-orange-600 dark:text-orange-400 font-semibold' };
+      const dueTime = formatAgeing(diffMinutes);
+      return { text: `Due in ${dueTime}`, color: 'text-orange-600 dark:text-orange-400 font-semibold', tooltip: `SLA due in ${dueTime}. High risk.` };
     } else if (diffMinutes <= 24 * 60) { // 24 hours
-      return { text: `Due in ${formatAgeing(diffMinutes)}`, color: 'text-yellow-600 dark:text-yellow-400' };
+      const dueTime = formatAgeing(diffMinutes);
+      return { text: `Due in ${dueTime}`, color: 'text-yellow-600 dark:text-yellow-400', tooltip: `SLA due in ${dueTime}.` };
     } else {
-      return { text: format(dueDate, 'MMM dd, HH:mm'), color: 'text-muted-foreground' };
+      const dueTime = format(dueDate, 'MMM dd, HH:mm');
+      return { text: dueTime, color: 'text-muted-foreground', tooltip: `SLA due on ${dueTime}.` };
     }
   };
 
@@ -164,7 +168,7 @@ const TopRiskTicketsTable = ({ tickets, onRowClick }: TopRiskTicketsTableProps) 
               <TableHead className className="py-2 whitespace-nowrap">Status</TableHead>
               <TableHead className="py-2 text-right whitespace-nowrap">Age</TableHead>
               <TableHead className="py-2 text-right whitespace-nowrap">SLA Due</TableHead>
-              <TableHead className="py-2 whitespace-nowrap">Assignee</TableHead>
+              <TableHead className="py-2 whitespace-nowrap">Assignee</TableHead> {/* Added Assignee column */}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -203,7 +207,12 @@ const TopRiskTicketsTable = ({ tickets, onRowClick }: TopRiskTicketsTableProps) 
                       {formatAgeing(calculateAgeing(ticket))}
                     </TableCell>
                     <TableCell className={cn("py-2 text-right", slaStatus.color)}>
-                      {slaStatus.text}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>{slaStatus.text}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>{slaStatus.tooltip}</TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     <TableCell className="py-2">
                       <Tooltip>

@@ -13,7 +13,7 @@ import { Ticket } from '@/types';
 import { differenceInHours, parseISO } from 'date-fns';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { User, AlertCircle, Clock } from 'lucide-react';
+import { User, AlertCircle, Clock, TrendingUp, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from "@/components/ui/badge";
 
@@ -69,14 +69,40 @@ const TeamLoadTable = ({ tickets }: TeamLoadTableProps) => {
         avgTicketAge = `${(avgTicketAgeHours / 24).toFixed(1)} days`;
       }
 
+      // Capacity Indicator Logic
+      let capacityStatus: 'Normal' | 'At Risk' | 'Overloaded';
+      let capacityBadgeClass: string;
+      
+      if (data.openTickets > 20) {
+        capacityStatus = 'Overloaded';
+        capacityBadgeClass = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      } else if (data.openTickets > 10) {
+        capacityStatus = 'At Risk';
+        capacityBadgeClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      } else {
+        capacityStatus = 'Normal';
+        capacityBadgeClass = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      }
+
       return {
         assignee: data.assignee,
         openTickets: data.openTickets,
         urgentTickets: data.urgentTickets,
         avgTicketAge,
+        capacityStatus,
+        capacityBadgeClass,
       };
     }).sort((a, b) => b.openTickets - a.openTickets); // Sort by open tickets descending
   }, [tickets]);
+
+  const getCapacityIcon = (status: string) => {
+    switch (status) {
+      case 'Overloaded': return <AlertCircle className="h-3 w-3 mr-1" />;
+      case 'At Risk': return <TrendingUp className="h-3 w-3 mr-1" />;
+      case 'Normal': return <CheckCircle className="h-3 w-3 mr-1" />;
+      default: return null;
+    }
+  };
 
   return (
     <div className="w-full flex flex-col h-full">
@@ -85,6 +111,7 @@ const TeamLoadTable = ({ tickets }: TeamLoadTableProps) => {
           <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
             <TableRow>
               <TableHead className="py-2 whitespace-nowrap">Assignee</TableHead>
+              <TableHead className="py-2 text-center whitespace-nowrap">Capacity</TableHead>
               <TableHead className="py-2 text-center whitespace-nowrap">Open Tickets</TableHead>
               <TableHead className="py-2 text-center whitespace-nowrap">Urgent Tickets</TableHead>
               <TableHead className="py-2 text-right whitespace-nowrap">Avg. Ticket Age</TableHead>
@@ -123,6 +150,12 @@ const TeamLoadTable = ({ tickets }: TeamLoadTableProps) => {
                       </TooltipContent>
                     </Tooltip>
                   </TableCell>
+                  <TableCell className="py-2 text-center">
+                    <Badge className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold", data.capacityBadgeClass)}>
+                      {getCapacityIcon(data.capacityStatus)}
+                      {data.capacityStatus}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="py-2 text-center font-semibold text-blue-600 dark:text-blue-400">
                     {data.openTickets}
                   </TableCell>
@@ -141,7 +174,7 @@ const TeamLoadTable = ({ tickets }: TeamLoadTableProps) => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3">
+                <TableCell colSpan={5} className="h-24 text-center text-gray-500 dark:text-gray-400 py-3">
                   No team load data found.
                 </TableCell>
               </TableRow>

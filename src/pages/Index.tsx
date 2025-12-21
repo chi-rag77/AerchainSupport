@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal, ChevronUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,8 @@ import { exportToCsv } from '@/utils/export';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 import VolumeSlaTrendChart from "@/components/VolumeSlaTrendChart";
 import TicketBreakdownChart from "@/components/TicketBreakdownChart";
@@ -79,6 +81,7 @@ const Index = () => {
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showMoreFilters, setShowMoreFilters] = useState(false); // New state for progressive disclosure
 
   const [isFilteredTicketsModalOpen, setIsFilteredTicketsModalOpen] = useState(false);
   const [filteredModalTitle, setFilteredModalTitle] = useState("");
@@ -89,7 +92,7 @@ const Index = () => {
 
   const [isMyOpenTicketsModalOpen, setIsMyOpenTicketsModalOpen] = useState(false);
   const [isInsightsSheetOpen, setIsInsightsSheetOpen] = useState(false);
-  const [isDashboardInsightsOverlayOpen, setIsDashboardInsightsOverlayOpen] = useState(false); // New state for overlay
+  const [isDashboardInsightsOverlayOpen, setIsDashboardInsightsOverlayOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -279,6 +282,44 @@ const Index = () => {
     return currentTickets;
   }, [freshdeskTickets, effectiveStartDate, effectiveEndDate, selectedCompanies, selectedCountries, selectedModules, selectedPriorities, selectedStatuses, searchTerm]);
 
+  const previousPeriodTickets: Ticket[] = useMemo(() => {
+    if (!freshdeskTickets || !previousEffectiveStartDate || !previousEffectiveEndDate) return [];
+
+    let currentTickets: Ticket[] = freshdeskTickets;
+
+    currentTickets = currentTickets.filter(ticket =>
+      isWithinInterval(new Date(ticket.created_at), { start: previousEffectiveStartDate, end: previousEffectiveEndDate })
+    );
+
+    if (selectedCompanies.length > 0) {
+      currentTickets = currentTickets.filter(ticket => ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
+    }
+    if (selectedCountries.length > 0) {
+      currentTickets = currentTickets.filter(ticket => ticket.cf_country && selectedCountries.includes(ticket.cf_country));
+    }
+    if (selectedModules.length > 0) {
+      currentTickets = currentTickets.filter(ticket => ticket.cf_module && selectedModules.includes(ticket.cf_module));
+    }
+    if (selectedPriorities.length > 0) {
+      currentTickets = currentTickets.filter(ticket => selectedPriorities.includes(ticket.priority));
+    }
+    if (selectedStatuses.length > 0) {
+      currentTickets = currentTickets.filter(ticket => selectedStatuses.includes(ticket.status));
+    }
+
+    if (searchTerm) {
+      currentTickets = currentTickets.filter(ticket =>
+        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return currentTickets;
+  }, [freshdeskTickets, previousEffectiveStartDate, previousEffectiveEndDate, selectedCompanies, selectedCountries, selectedModules, selectedPriorities, selectedStatuses, searchTerm]);
+
+
   const allOpenTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
     return freshdeskTickets.filter(ticket =>
@@ -291,6 +332,15 @@ const Index = () => {
     );
   }, [freshdeskTickets]);
 
+  const calculateTrend = (currentCount: number, previousCount: number): number | undefined => {
+    if (previousCount === 0) {
+      if (currentCount > 0) return 100; // Infinite increase, cap at 100% for display
+      return undefined;
+    }
+    const trend = ((currentCount - previousCount) / previousCount) * 100;
+    return parseFloat(trend.toFixed(1));
+  };
+
   const metrics = useMemo(() => {
     if (!freshdeskTickets) {
       return {
@@ -302,11 +352,16 @@ const Index = () => {
         resolutionSlaMet: "N/A",
         medianResolutionTime: "N/A",
         urgentTicketsAtRisk: 0,
+        // Trends
+        totalTicketsTrend: undefined,
+        openTicketsTrend: undefined,
+        resolvedTicketsTrend: undefined,
       };
     }
 
     const now = new Date();
 
+    // Current Period Counts
     const totalTickets = filteredDashboardTickets.length;
     const openTickets = filteredDashboardTickets.filter(t =>
       t.status.toLowerCase() === 'open (being processed)' ||
@@ -319,6 +374,26 @@ const Index = () => {
     const resolvedTickets = filteredDashboardTickets.filter(t =>
       t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
     ).length;
+
+    // Previous Period Counts (for trend calculation)
+    const prevTotalTickets = previousPeriodTickets.length;
+    const prevOpenTickets = previousPeriodTickets.filter(t =>
+      t.status.toLowerCase() === 'open (being processed)' ||
+      t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+      t.status.toLowerCase() === 'waiting on customer' ||
+      t.status.toLowerCase() === 'on tech' ||
+      t.status.toLowerCase() === 'on product' ||
+      t.status.toLowerCase() === 'escalated'
+    ).length;
+    const prevResolvedTickets = previousPeriodTickets.filter(t =>
+      t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+    ).length;
+
+    // Trends
+    const totalTicketsTrend = calculateTrend(totalTickets, prevTotalTickets);
+    const openTicketsTrend = calculateTrend(openTickets, prevOpenTickets);
+    const resolvedTicketsTrend = calculateTrend(resolvedTickets, prevResolvedTickets);
+
 
     const overdueTickets = filteredDashboardTickets.filter(t =>
       (t.status.toLowerCase() === 'open (being processed)' ||
@@ -392,8 +467,11 @@ const Index = () => {
       resolutionSlaMet,
       medianResolutionTime,
       urgentTicketsAtRisk,
+      totalTicketsTrend,
+      openTicketsTrend,
+      resolvedTicketsTrend,
     };
-  }, [filteredDashboardTickets, freshdeskTickets, effectiveStartDate, effectiveEndDate]);
+  }, [filteredDashboardTickets, freshdeskTickets, previousPeriodTickets]);
 
   const handleSyncTickets = async () => {
     toast.loading("Syncing latest tickets from Freshdesk...", { id: "sync-tickets-dashboard" });
@@ -453,6 +531,211 @@ const Index = () => {
     );
   }
 
+  const tier1Metrics = [
+    {
+      title: "Overdue Tickets",
+      value: metrics.overdueTickets,
+      icon: CalendarDays,
+      description: "Active tickets that are past their due date within the selected date range.",
+      onClick: () => handleKPIDrilldown("Overdue Tickets", "Active tickets that are past their due date within the selected date range.", filteredDashboardTickets.filter(t =>
+        (t.status.toLowerCase() === 'open (being processed)' ||
+         t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+         t.status.toLowerCase() === 'waiting on customer' ||
+         t.status.toLowerCase() === 'on tech' ||
+         t.status.toLowerCase() === 'on product' ||
+         t.status.toLowerCase() === 'escalated') &&
+        t.due_by && isPast(parseISO(t.due_by))
+      )),
+    },
+    {
+      title: "Resolution SLA Met",
+      value: metrics.resolutionSlaMet,
+      icon: ShieldAlert,
+      description: "Percentage of resolved tickets that met their resolution SLA. (Using 'updated_at' as proxy for resolution time).",
+      onClick: () => handleKPIDrilldown("Resolution SLA Met", "Resolved tickets that met their Resolution SLA.", filteredDashboardTickets.filter(t =>
+        (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
+        t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by)
+      )),
+    },
+    {
+      title: "Urgent Tickets at Risk",
+      value: metrics.urgentTicketsAtRisk,
+      icon: AlertCircle,
+      description: "Urgent tickets that are active and within 2 hours of breaching their SLA.",
+      onClick: () => handleKPIDrilldown("Urgent Tickets at Risk", "Urgent tickets that are active and within 2 hours of breaching their SLA.", filteredDashboardTickets.filter(t => {
+        const statusLower = t.status.toLowerCase();
+        const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
+        const isUrgent = t.priority.toLowerCase() === 'urgent';
+        const isNearDue = t.due_by && differenceInHours(parseISO(t.due_by), now) <= 2;
+        return isActive && isUrgent && isNearDue;
+      })),
+    },
+  ];
+
+  const tier2Metrics = [
+    {
+      title: "Total Tickets",
+      value: metrics.totalTickets,
+      icon: TicketIcon,
+      trend: metrics.totalTicketsTrend,
+      description: "Count of tickets created within the selected date range and filters.",
+      onClick: () => handleKPIDrilldown("Total Tickets", "All tickets created within the selected date range and filters.", filteredDashboardTickets),
+    },
+    {
+      title: "Open Tickets",
+      value: metrics.openTickets,
+      icon: Hourglass,
+      trend: metrics.openTicketsTrend,
+      description: "Tickets currently in an 'Open' or active status within the selected date range.",
+      onClick: () => handleKPIDrilldown("Open Tickets", "Tickets currently in an 'Open' or active status within the selected date range.", filteredDashboardTickets.filter(t =>
+        t.status.toLowerCase() === 'open (being processed)' ||
+        t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+        t.status.toLowerCase() === 'waiting on customer' ||
+        t.status.toLowerCase() === 'on tech' ||
+        t.status.toLowerCase() === 'on product' ||
+        t.status.toLowerCase() === 'escalated'
+      )),
+    },
+    {
+      title: "Resolved Tickets",
+      value: metrics.resolvedTickets,
+      icon: CheckCircle,
+      trend: metrics.resolvedTicketsTrend,
+      description: "Tickets resolved or closed within the selected date range.",
+      onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t =>
+        t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+      )),
+    },
+    {
+      title: "First Response SLA Met",
+      value: metrics.firstResponseSlaMet,
+      icon: Percent,
+      description: "Percentage of tickets where the first response was sent within the SLA. (Using 'updated_at' as proxy for first response time).",
+      onClick: () => handleKPIDrilldown("First Response SLA Met", "Tickets that met their First Response SLA.", filteredDashboardTickets.filter(t =>
+        t.fr_due_by && parseISO(t.updated_at) <= parseISO(t.fr_due_by)
+      )),
+    },
+    {
+      title: "Median Resolution Time",
+      value: metrics.medianResolutionTime,
+      icon: Clock,
+      description: "The median time taken to resolve tickets within the selected date range.",
+      onClick: () => handleKPIDrilldown("Median Resolution Time", "Resolved tickets used to calculate the median resolution time.", filteredDashboardTickets.filter(t =>
+        t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+      )),
+    },
+  ];
+
+  const defaultFilters = [
+    {
+      label: "Date Range",
+      component: (
+        <Select
+          value={typeof activeDateFilter === 'string' ? activeDateFilter : "custom"}
+          onValueChange={(value) => {
+            if (value === "custom") {
+              setActiveDateFilter({ from: undefined, to: undefined });
+            } else {
+              setActiveDateFilter(value);
+            }
+          }}
+        >
+          <SelectTrigger className="w-[180px] bg-card">
+            <CalendarDays className="h-4 w-4 mr-2 text-gray-500" />
+            <SelectValue placeholder="Select Date Range">
+              {dateRangeDisplay}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="last7days">Last 7 Days</SelectItem>
+            <SelectItem value="last30days">Last 30 Days</SelectItem>
+            <SelectItem value="last90days">Last 90 Days</SelectItem>
+            <SelectItem value="alltime">All Time</SelectItem>
+            <SelectItem value="custom">Custom Range</SelectItem>
+          </SelectContent>
+        </Select>
+      ),
+    },
+    {
+      label: "Company",
+      component: (
+        <MultiSelect
+          options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+          selected={selectedCompanies}
+          onSelectedChange={setSelectedCompanies}
+          placeholder="Filter by Company"
+          className="w-[200px] bg-card"
+          icon={Users}
+        />
+      ),
+    },
+    {
+      label: "Status",
+      component: (
+        <MultiSelect
+          options={uniqueStatuses.map(status => ({ value: status, label: status }))}
+          selected={selectedStatuses}
+          onSelectedChange={setSelectedStatuses}
+          placeholder="Filter by Status"
+          className="w-[180px] bg-card"
+          icon={Filter}
+        />
+      ),
+    },
+  ];
+
+  const moreFilters = [
+    {
+      label: "Country",
+      component: (
+        <MultiSelect
+          options={uniqueCountries.map(country => ({ value: country, label: country }))}
+          selected={selectedCountries}
+          onSelectedChange={setSelectedCountries}
+          placeholder="Filter by Country"
+          className="w-[180px] bg-card"
+          icon={MapPin}
+        />
+      ),
+    },
+    {
+      label: "Module",
+      component: (
+        <MultiSelect
+          options={uniqueModules.map(module => ({ value: module, label: module }))}
+          selected={selectedModules}
+          onSelectedChange={setSelectedModules}
+          placeholder="Filter by Module"
+          className="w-[180px] bg-card"
+          icon={GitFork}
+        />
+      ),
+    },
+    {
+      label: "Priority",
+      component: (
+        <MultiSelect
+          options={uniquePriorities.map(priority => ({ value: priority, label: priority }))}
+          selected={selectedPriorities}
+          onSelectedChange={setSelectedPriorities}
+          placeholder="Filter by Priority"
+          className="w-[180px] bg-card"
+          icon={Flag}
+        />
+      ),
+    },
+  ];
+
+  const getInsightSeverityClass = (severity: Insight['severity']) => {
+    switch (severity) {
+      case 'critical': return "bg-red-500 text-white";
+      case 'warning': return "bg-yellow-500 text-black";
+      case 'info': return "bg-blue-500 text-white";
+      default: return "bg-gray-500 text-white";
+    }
+  };
+
   return (
     <>
       <div className="flex-1 flex overflow-hidden bg-background">
@@ -476,7 +759,7 @@ const Index = () => {
                 </div>
                 <div className="flex items-center space-x-4">
                   <Button
-                    onClick={() => setIsDashboardInsightsOverlayOpen(true)} // Button to open the overlay
+                    onClick={() => setIsDashboardInsightsOverlayOpen(true)}
                     className="h-10 px-5 text-base font-semibold relative overflow-hidden group bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
                     <SlidersHorizontal className="mr-2 h-4 w-4" /> View Insights
@@ -492,7 +775,7 @@ const Index = () => {
                     ) : (
                       <RefreshCw className="mr-2 h-4 w-4" />
                     )}
-                    Sync Tickets
+                    Sync Freshdesk
                     <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
                   </Button>
                 </div>
@@ -500,34 +783,14 @@ const Index = () => {
 
               {/* Filter Bar */}
               <div className="flex flex-wrap gap-4 items-center p-6 pt-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl shadow-inner">
-                {/* Date Range */}
-                <Select
-                  value={typeof activeDateFilter === 'string' ? activeDateFilter : "custom"}
-                  onValueChange={(value) => {
-                    if (value === "custom") {
-                      setActiveDateFilter({ from: undefined, to: undefined });
-                    } else {
-                      setActiveDateFilter(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-[180px] bg-card">
-                    <CalendarDays className="h-4 w-4 mr-2 text-gray-500" />
-                    <SelectValue placeholder="Select Date Range">
-                      {dateRangeDisplay}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="last7days">Last 7 Days</SelectItem>
-                    <SelectItem value="last30days">Last 30 Days</SelectItem>
-                    <SelectItem value="last90days">Last 90 Days</SelectItem>
-                    <SelectItem value="alltime">All Time</SelectItem>
-                    <SelectItem value="custom">Custom Range</SelectItem>
-                  </SelectContent>
-                </Select>
+                {/* Default Filters (Date, Company, Status) */}
+                {defaultFilters.map((filter, index) => (
+                  <React.Fragment key={index}>
+                    {filter.component}
+                  </React.Fragment>
+                ))}
 
-                {/* Custom Date Picker Popover */}
+                {/* Custom Date Picker Popover (Hidden by default, shown if custom is selected) */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -562,55 +825,22 @@ const Index = () => {
                   </PopoverContent>
                 </Popover>
 
-                {/* Company Multi-Select */}
-                <MultiSelect
-                  options={uniqueCompanies.map(company => ({ value: company, label: company }))}
-                  selected={selectedCompanies}
-                  onSelectedChange={setSelectedCompanies}
-                  placeholder="Filter by Company"
-                  className="w-[200px] bg-card"
-                  icon={Users}
-                />
+                {/* More Filters Toggle */}
+                <Button variant="outline" onClick={() => setShowMoreFilters(!showMoreFilters)} className="flex items-center gap-1 bg-card">
+                  {showMoreFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  More Filters
+                </Button>
 
-                {/* Country Multi-Select */}
-                <MultiSelect
-                  options={uniqueCountries.map(country => ({ value: country, label: country }))}
-                  selected={selectedCountries}
-                  onSelectedChange={setSelectedCountries}
-                  placeholder="Filter by Country"
-                  className="w-[180px] bg-card"
-                  icon={MapPin}
-                />
-
-                {/* Module Multi-Select */}
-                <MultiSelect
-                  options={uniqueModules.map(module => ({ value: module, label: module }))}
-                  selected={selectedModules}
-                  onSelectedChange={setSelectedModules}
-                  placeholder="Filter by Module"
-                  className="w-[180px] bg-card"
-                  icon={GitFork}
-                />
-
-                {/* Priority Multi-Select */}
-                <MultiSelect
-                  options={uniquePriorities.map(priority => ({ value: priority, label: priority }))}
-                  selected={selectedPriorities}
-                  onSelectedChange={setSelectedPriorities}
-                  placeholder="Filter by Priority"
-                  className="w-[180px] bg-card"
-                  icon={Flag}
-                />
-
-                {/* Status Multi-Select */}
-                <MultiSelect
-                  options={uniqueStatuses.map(status => ({ value: status, label: status }))}
-                  selected={selectedStatuses}
-                  onSelectedChange={setSelectedStatuses}
-                  placeholder="Filter by Status"
-                  className="w-[180px] bg-card"
-                  icon={Filter}
-                />
+                {/* Expanded Filters */}
+                {showMoreFilters && (
+                  <>
+                    {moreFilters.map((filter, index) => (
+                      <React.Fragment key={index}>
+                        {filter.component}
+                      </React.Fragment>
+                    ))}
+                  </>
+                )}
 
                 {/* Search Input */}
                 <div className="relative flex-grow">
@@ -635,6 +865,7 @@ const Index = () => {
                     <DropdownMenuItem>Exec Summary</DropdownMenuItem>
                     <DropdownMenuItem>Customer Success</DropdownMenuItem>
                     <DropdownMenuItem>Ops / Support Manager</DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem>Save Current View</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -661,99 +892,55 @@ const Index = () => {
               </div>
             ) : (
               <div className="flex-grow p-8 space-y-10 bg-gray-50 dark:bg-gray-900/50">
+                
+                {/* Executive Summary Strip (New Section) */}
+                <section>
+                  <Card className="p-4 shadow-lg border-l-4 border-blue-500 dark:border-blue-400">
+                    <div className="flex items-center gap-4">
+                      <Lightbulb className="h-6 w-6 text-blue-500 flex-shrink-0" />
+                      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                        <span className="font-semibold text-foreground">Executive Insights:</span>
+                        {dashboardInsights.slice(0, 3).map((insight, index) => (
+                          <Badge key={insight.id} className={cn("flex items-center gap-1", getInsightSeverityClass(insight.severity))}>
+                            {insight.severity === 'critical' ? <AlertCircle className="h-3 w-3" /> : <Info className="h-3 w-3" />}
+                            {insight.message}
+                          </Badge>
+                        ))}
+                        {dashboardInsights.length > 3 && (
+                          <Button variant="link" size="sm" onClick={() => setIsDashboardInsightsOverlayOpen(true)} className="h-auto p-0 text-blue-600 dark:text-blue-400">
+                            View All {dashboardInsights.length} Insights
+                          </Button>
+                        )}
+                        {dashboardInsights.length === 0 && (
+                          <span className="text-muted-foreground">No critical insights detected in the last 24 hours.</span>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                </section>
+
                 {/* Row 1: High-level KPI cards */}
                 <section>
                   <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                     <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <DashboardMetricCard
-                      title="Total Tickets"
-                      value={metrics.totalTickets}
-                      icon={TicketIcon}
-                      trend={12}
-                      description="Count of tickets created within the selected date range and filters."
-                      onClick={() => handleKPIDrilldown("Total Tickets", "All tickets created within the selected date range and filters.", filteredDashboardTickets)}
-                    />
-                    <DashboardMetricCard
-                      title="Open Tickets"
-                      value={metrics.openTickets}
-                      icon={Hourglass}
-                      description="Tickets currently in an 'Open' or active status within the selected date range."
-                      onClick={() => handleKPIDrilldown("Open Tickets", "Tickets currently in an 'Open' or active status within the selected date range.", filteredDashboardTickets.filter(t =>
-                        t.status.toLowerCase() === 'open (being processed)' ||
-                        t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-                        t.status.toLowerCase() === 'waiting on customer' ||
-                        t.status.toLowerCase() === 'on tech' ||
-                        t.status.toLowerCase() === 'on product' ||
-                        t.status.toLowerCase() === 'escalated'
-                      ))}
-                    />
-                    <DashboardMetricCard
-                      title="Resolved Tickets"
-                      value={metrics.resolvedTickets}
-                      icon={CheckCircle}
-                      description="Tickets resolved or closed within the selected date range."
-                      onClick={() => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t =>
-                        t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
-                      ))}
-                    />
-                    <DashboardMetricCard
-                      title="Overdue Tickets"
-                      value={metrics.overdueTickets}
-                      icon={CalendarDays}
-                      description="Active tickets that are past their due date within the selected date range."
-                      onClick={() => handleKPIDrilldown("Overdue Tickets", "Active tickets that are past their due date within the selected date range.", filteredDashboardTickets.filter(t =>
-                        (t.status.toLowerCase() === 'open (being processed)' ||
-                         t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-                         t.status.toLowerCase() === 'waiting on customer' ||
-                         t.status.toLowerCase() === 'on tech' ||
-                         t.status.toLowerCase() === 'on product' ||
-                         t.status.toLowerCase() === 'escalated') &&
-                        t.due_by && isPast(parseISO(t.due_by))
-                      ))}
-                    />
-                    <DashboardMetricCard
-                      title="First Response SLA Met"
-                      value={metrics.firstResponseSlaMet}
-                      icon={Percent}
-                      description="Percentage of tickets where the first response was sent within the SLA. (Using 'updated_at' as proxy for first response time)."
-                      onClick={() => handleKPIDrilldown("First Response SLA Met", "Tickets that met their First Response SLA.", filteredDashboardTickets.filter(t =>
-                        t.fr_due_by && parseISO(t.updated_at) <= parseISO(t.fr_due_by)
-                      ))}
-                    />
-                    <DashboardMetricCard
-                      title="Resolution SLA Met"
-                      value={metrics.resolutionSlaMet}
-                      icon={ShieldAlert}
-                      description="Percentage of resolved tickets that met their resolution SLA. (Using 'updated_at' as proxy for resolution time)."
-                      onClick={() => handleKPIDrilldown("Resolution SLA Met", "Resolved tickets that met their Resolution SLA.", filteredDashboardTickets.filter(t =>
-                        (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
-                        t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by)
-                      ))}
-                    />
-                    <DashboardMetricCard
-                      title="Median Resolution Time"
-                      value={metrics.medianResolutionTime}
-                      icon={Clock}
-                      description="The median time taken to resolve tickets within the selected date range."
-                      onClick={() => handleKPIDrilldown("Median Resolution Time", "Resolved tickets used to calculate the median resolution time.", filteredDashboardTickets.filter(t =>
-                        t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
-                      ))}
-                    />
-                    <DashboardMetricCard
-                      title="Urgent Tickets at Risk"
-                      value={metrics.urgentTicketsAtRisk}
-                      icon={AlertCircle}
-                      description="Urgent tickets that are active and within 2 hours of breaching their SLA."
-                      onClick={() => handleKPIDrilldown("Urgent Tickets at Risk", "Urgent tickets that are active and within 2 hours of breaching their SLA.", filteredDashboardTickets.filter(t => {
-                        const statusLower = t.status.toLowerCase();
-                        const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
-                        const isUrgent = t.priority.toLowerCase() === 'urgent';
-                        const isNearDue = t.due_by && differenceInHours(parseISO(t.due_by), now) <= 2;
-                        return isActive && isUrgent && isNearDue;
-                      }))}
-                    />
+                    {/* Tier 1 Metrics (Highlighted) */}
+                    {tier1Metrics.map((metric, index) => (
+                      <DashboardMetricCard
+                        key={index}
+                        {...metric}
+                        isTier1={true}
+                      />
+                    ))}
+                    {/* Tier 2 Metrics (Standard) */}
+                    {tier2Metrics.map((metric, index) => (
+                      <DashboardMetricCard
+                        key={index + tier1Metrics.length}
+                        {...metric}
+                        isTier1={false}
+                      />
+                    ))}
                   </div>
                 </section>
 
