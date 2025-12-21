@@ -24,7 +24,8 @@ import CustomerConversationActivityCard from "@/components/customer360/CustomerC
 import CustomerHistoricalBehaviourCard from "@/components/customer360/CustomerHistoricalBehaviourCard";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import CustomerAISummaryCard from "@/components/customer360/CustomerAISummaryCard"; // New import
-import { invokeEdgeFunction, ApiError } from "@/lib/apiClient"; // Import apiClient
+import { invokeEdgeFunction } from "@/lib/apiClient"; // Corrected import
+import { ApiError } from "@/lib/errorHandler"; // Added missing import
 
 const fetchCustomerAISummary = async (customerName: string, ticketsData: any[]): Promise<string> => {
   if (!customerName || !ticketsData || ticketsData.length === 0) {
@@ -86,7 +87,8 @@ const Customer360 = () => {
       if (ticket.cf_company) {
         customers.add(ticket.cf_company);
       }
-    });
+    }
+    );
     return Array.from(customers).sort();
   }, [allTickets]);
 
@@ -249,7 +251,7 @@ const Customer360 = () => {
               <section>
                 <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                   <TrendingUp className="h-6 w-6 text-purple-600" /> Operational Load & Efficiency
-                </h2>
+                </h2 >
                 <CustomerOperationalLoadCard customerName={selectedCustomer} tickets={customerTickets} />
               </section>
 

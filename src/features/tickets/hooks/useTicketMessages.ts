@@ -3,7 +3,8 @@ import { TicketMessage } from '../types';
 import { fetchTicketMessages } from '../services/ticket.service';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { invokeEdgeFunction, ApiError } from '@/lib/apiClient'; // Import apiClient
+import { invokeEdgeFunction } from '@/lib/apiClient'; // Corrected import
+import { ApiError } from '@/lib/errorHandler'; // Added missing import
 
 const MESSAGE_QUERY_KEY = "ticketMessages";
 

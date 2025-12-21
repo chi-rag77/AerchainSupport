@@ -38,7 +38,8 @@ import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardInsightsOverlay from "@/components/DashboardInsightsOverlay"; // New import
-import { invokeEdgeFunction, ApiError } from "@/lib/apiClient"; // New import
+import { invokeEdgeFunction } from "@/lib/apiClient"; // Corrected import
+import { ApiError } from "@/lib/errorHandler"; // Added missing import
 
 const fetchDashboardInsights = async (): Promise<Insight[]> => {
   try {

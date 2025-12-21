@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from 'sonner';
-import { invokeEdgeFunction, ApiError } from "@/lib/apiClient"; // New import
+import { invokeEdgeFunction } from "@/lib/apiClient"; // Corrected import
+import { ApiError } from "@/lib/errorHandler"; // Added missing import
 
 interface WeeklySupportSummaryData {
   customerName: string;
