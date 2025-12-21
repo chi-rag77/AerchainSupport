@@ -8,28 +8,27 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import TicketTable from "@/components/TicketTable";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCard from "@/components/DashboardMetricCard";
-import { Ticket, ConversationMessage } from "@/types";
+import { Ticket } from "@/features/tickets/types"; // Updated import path
 import {
-  Search, RefreshCw, Filter, ChevronLeft, ChevronRight, TicketIcon, Hourglass, CheckCircle, XCircle, AlertCircle, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, ArrowUpDown, Settings, Inbox, Clock,
-  SlidersHorizontal, Zap, User, CalendarX, Flag, Users, Building2, Tag, GitFork, CalendarDays, Trash2
+  Search, RefreshCw, Filter, TicketIcon, Hourglass, Bug, Loader2, Download, LayoutDashboard, Eraser, ListFilter, PlusCircle, SlidersHorizontal, Zap, User, CalendarX, Flag, Users, Building2, Tag, GitFork, CalendarDays, Trash2, CheckCircle, AlertCircle
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQuery, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
-import { exportCsvTemplate } from '@/utils/export';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { MultiSelect } from "@/components/MultiSelect";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
-import { format, parseISO, isPast, isWithinInterval, addDays } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area"; // Corrected: Added missing import for ScrollArea
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTickets } from "@/features/tickets/hooks/useTickets"; // New hook import
+import { exportToCsv } from '@/utils/export';
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -38,6 +37,9 @@ const TicketsPage = () => {
 
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  
+  // --- Filter States ---
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [filterPriority, setFilterPriority] = useState<string>("All");
@@ -45,13 +47,9 @@ const TicketsPage = () => {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("all");
-  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
-  
   const [filterMyTickets, setFilterMyTickets] = useState(false);
   const [filterHighPriority, setFilterHighPriority] = useState(false);
   const [filterSLABreached, setFilterSLABreached] = useState(false);
-
   const [dateField, setDateField] = useState<'created_at' | 'updated_at'>('created_at');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   
@@ -60,25 +58,34 @@ const TicketsPage = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: freshdeskTickets, isLoading, error, isFetching } = useQuery<Ticket[], Error>({
-    queryKey: ["freshdeskTickets"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('updated_at', { ascending: false }).limit(10000);
-      if (error) throw error;
-      return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
-    },
-    onSuccess: () => {
-      toast.success("Tickets loaded from Supabase successfully!");
-    },
-    onError: (err) => {
-      toast.error(`Failed to load tickets from Supabase: ${err.message}`);
-    },
-  } as UseQueryOptions<Ticket[], Error>);
+  // --- Use Tickets Hook ---
+  const { 
+    tickets: allFilteredTickets, 
+    isLoading, 
+    isFetching, 
+    error, 
+    metrics, 
+    uniqueFilters,
+    queryKey,
+  } = useTickets({
+    searchTerm,
+    status: filterStatus,
+    priority: filterPriority,
+    assignees: selectedAssignees,
+    companies: selectedCompanies,
+    types: selectedTypes,
+    dependencies: selectedDependencies,
+    myTickets: filterMyTickets,
+    highPriority: filterHighPriority,
+    slaBreached: filterSLABreached,
+    dateField,
+    dateRange,
+  });
 
   const handleSyncTickets = async () => {
     toast.loading("Syncing latest tickets from Freshdesk...", { id: "sync-tickets" });
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
+      const { error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
         method: 'POST',
         body: { action: 'syncTickets', user_id: user?.id },
       });
@@ -90,13 +97,13 @@ const TicketsPage = () => {
         } else if (error.message.includes("non-2xx status code")) {
           errorMessage += ". This often indicates an issue with the Freshdesk API or its credentials. Please check your Supabase secrets (FRESHDESK_API_KEY, FRESHDESK_DOMAIN).";
         }
-        throw new Error(errorMessage); // Re-throw to be caught by the outer catch
+        throw new Error(errorMessage);
       }
 
       toast.success("Tickets synced successfully!", { id: "sync-tickets" });
-      queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] });
+      queryClient.invalidateQueries({ queryKey }); // Invalidate the tickets query key
     } catch (err: any) {
-      toast.error(err.message, { id: "sync-tickets" }); // Display the enhanced error message
+      toast.error(err.message, { id: "sync-tickets" });
     }
   };
 
@@ -127,64 +134,11 @@ const TicketsPage = () => {
     setCurrentPage(1);
   };
 
-  const allFilteredTickets = useMemo(() => {
-    if (!freshdeskTickets) return [];
+  const handleExportFilteredTickets = () => {
+    exportToCsv(allFilteredTickets, `tickets_queue_filtered_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
+  };
 
-    let currentTickets: Ticket[] = freshdeskTickets;
-
-    if (filterMyTickets && user?.email) {
-      currentTickets = currentTickets.filter(ticket => ticket.requester_email === user.email || ticket.assignee?.toLowerCase().includes(fullName.toLowerCase()));
-    }
-    if (filterHighPriority) {
-      currentTickets = currentTickets.filter(ticket => ticket.priority.toLowerCase() === 'high' || ticket.priority.toLowerCase() === 'urgent');
-    }
-    if (filterSLABreached) {
-      currentTickets = currentTickets.filter(ticket => {
-        if (ticket.due_by) {
-          const dueDate = parseISO(ticket.due_by);
-          const now = new Date();
-          const statusLower = ticket.status.toLowerCase();
-          return isPast(dueDate) && statusLower !== 'resolved' && statusLower !== 'closed';
-        }
-        return false;
-      });
-    }
-
-    currentTickets = currentTickets.filter(ticket => {
-      const matchesSearch = searchTerm === "" ||
-        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
-
-    currentTickets = currentTickets.filter(ticket => {
-      const matchesStatus = filterStatus === "All" || ticket.status.toLowerCase().includes(filterStatus.toLowerCase());
-      const matchesPriority = filterPriority === "All" || ticket.priority.toLowerCase() === filterPriority.toLowerCase();
-      const matchesAssignee = selectedAssignees.length === 0 || (ticket.assignee && selectedAssignees.includes(ticket.assignee));
-      const matchesCompany = selectedCompanies.length === 0 || (ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
-      const matchesType = selectedTypes.length === 0 || (ticket.type && selectedTypes.includes(ticket.type));
-      const matchesDependency = selectedDependencies.length === 0 || (ticket.cf_dependency && selectedDependencies.includes(ticket.cf_dependency));
-      return matchesStatus && matchesPriority && matchesAssignee && matchesCompany && matchesType && matchesDependency;
-    });
-
-    if (dateRange?.from) {
-      currentTickets = currentTickets.filter(ticket => {
-        const dateToCheck = dateField === 'created_at' ? parseISO(ticket.created_at) : parseISO(ticket.updated_at);
-        const start = dateRange.from;
-        const end = dateRange.to || start;
-
-        const effectiveStart = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
-        const effectiveEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999);
-
-        return isWithinInterval(dateToCheck, { start: effectiveStart, end: effectiveEnd });
-      });
-    }
-
-    return currentTickets;
-  }, [freshdeskTickets, searchTerm, filterStatus, filterPriority, selectedAssignees, selectedCompanies, selectedTypes, selectedDependencies, filterMyTickets, filterHighPriority, filterSLABreached, dateField, dateRange, user?.email, fullName]);
-
+  // --- Pagination Logic ---
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentTicketsForTable = allFilteredTickets.slice(indexOfFirstItem, indexOfLastItem);
@@ -194,87 +148,7 @@ const TicketsPage = () => {
     setCurrentPage(pageNumber);
   };
 
-  const metrics = useMemo(() => {
-    if (!freshdeskTickets) {
-      return {
-        totalTicketsOverall: 0,
-        totalActiveTickets: 0,
-        openTicketsSpecific: 0,
-        bugsReceivedOverall: 0,
-      };
-    }
-
-    const totalTicketsOverall = freshdeskTickets.length;
-    const totalActiveTickets = freshdeskTickets.filter(t =>
-      t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed'
-    ).length;
-    const openTicketsSpecific = freshdeskTickets.filter(t => t.status.toLowerCase() === 'open (being processed)').length;
-    const bugsReceivedOverall = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
-
-    return {
-      totalTicketsOverall,
-      totalActiveTickets,
-      openTicketsSpecific,
-      bugsReceivedOverall,
-    };
-  }, [freshdeskTickets]);
-
-  const uniqueAssignees = useMemo(() => {
-    const assignees = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => {
-      if (ticket.assignee && ticket.assignee !== "Unassigned") {
-        assignees.add(ticket.assignee);
-      }
-    });
-    return Array.from(assignees).sort();
-  }, [freshdeskTickets]);
-
-  const uniqueStatuses = useMemo(() => {
-    const statuses = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => {
-      statuses.add(ticket.status);
-    });
-    return ["All", ...Array.from(statuses).sort()];
-  }, [freshdeskTickets]);
-
-  const uniquePriorities = useMemo(() => {
-    const priorities = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => {
-      priorities.add(ticket.priority);
-    });
-    return ["All", ...Array.from(priorities).sort()];
-  }, [freshdeskTickets]);
-
-  const uniqueCompanies = useMemo(() => {
-    const companies = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => {
-      if (ticket.cf_company) {
-        companies.add(ticket.cf_company);
-      }
-    });
-    return Array.from(companies).sort();
-  }, [freshdeskTickets]);
-
-  const uniqueTypes = useMemo(() => {
-    const types = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => {
-      if (ticket.type) {
-        types.add(ticket.type);
-      }
-    });
-    return Array.from(types).sort();
-  }, [freshdeskTickets]);
-
-  const uniqueDependencies = useMemo(() => {
-    const dependencies = new Set<string>();
-    (freshdeskTickets || []).forEach(ticket => {
-      if (ticket.cf_dependency) {
-        dependencies.add(ticket.cf_dependency);
-      }
-    });
-    return Array.from(dependencies).sort();
-  }, [freshdeskTickets]);
-
+  // --- Active Filter Count ---
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (searchTerm) count++;
@@ -314,8 +188,11 @@ const TicketsPage = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button onClick={handleSyncTickets} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                <RefreshCw className="h-5 w-5" /> Sync Tickets
+              <Button onClick={handleSyncTickets} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white" disabled={isFetching}>
+                {isFetching ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />} Sync Tickets
+              </Button>
+              <Button variant="outline" onClick={handleExportFilteredTickets} className="flex items-center gap-2">
+                <Download className="h-5 w-5" /> Export
               </Button>
             </div>
           </div>
@@ -474,7 +351,7 @@ const TicketsPage = () => {
                             <SelectValue placeholder="All" />
                           </SelectTrigger>
                           <SelectContent>
-                            {uniqueStatuses.map(status => (
+                            {uniqueFilters.statuses.map(status => (
                               <SelectItem key={status} value={status}>
                                 {status}
                               </SelectItem>
@@ -488,7 +365,7 @@ const TicketsPage = () => {
                             <SelectValue placeholder="All" />
                           </SelectTrigger>
                           <SelectContent>
-                            {uniquePriorities.map(priority => (
+                            {uniqueFilters.priorities.map(priority => (
                               <SelectItem key={priority} value={priority}>
                                 {priority}
                               </SelectItem>
@@ -496,7 +373,7 @@ const TicketsPage = () => {
                           </SelectContent>
                         </Select>
                         <MultiSelect
-                          options={uniqueAssignees.map(assignee => ({ value: assignee, label: assignee }))}
+                          options={uniqueFilters.assignees.map(assignee => ({ value: assignee, label: assignee }))}
                           selected={selectedAssignees}
                           onSelectedChange={(values) => {setSelectedAssignees(values); setCurrentPage(1);}}
                           placeholder="Filter by Assignee"
@@ -513,7 +390,7 @@ const TicketsPage = () => {
                       </AccordionTrigger>
                       <AccordionContent className="pt-4 pb-2 space-y-4">
                         <MultiSelect
-                          options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+                          options={uniqueFilters.companies.map(company => ({ value: company, label: company }))}
                           selected={selectedCompanies}
                           onSelectedChange={(values) => {setSelectedCompanies(values); setCurrentPage(1);}}
                           placeholder="Filter by Company"
@@ -521,7 +398,7 @@ const TicketsPage = () => {
                           className="w-full bg-card"
                         />
                         <MultiSelect
-                          options={uniqueTypes.map(type => ({ value: type, label: type }))}
+                          options={uniqueFilters.types.map(type => ({ value: type, label: type }))}
                           selected={selectedTypes}
                           onSelectedChange={(values) => {setSelectedTypes(values); setCurrentPage(1);}}
                           placeholder="Filter by Type"
@@ -529,7 +406,7 @@ const TicketsPage = () => {
                           className="w-full bg-card"
                         />
                         <MultiSelect
-                          options={uniqueDependencies.map(dependency => ({ value: dependency, label: dependency }))}
+                          options={uniqueFilters.dependencies.map(dependency => ({ value: dependency, label: dependency }))}
                           selected={selectedDependencies}
                           onSelectedChange={(values) => {setSelectedDependencies(values); setCurrentPage(1);}}
                           placeholder="Filter by Dependency"
@@ -617,7 +494,7 @@ const TicketsPage = () => {
               description="The total number of support tickets in the system."
             />
             <DashboardMetricCard
-              title="Total Open Tickets"
+              title="Total Active Tickets"
               value={metrics.totalActiveTickets}
               icon={Hourglass}
               trend={5}

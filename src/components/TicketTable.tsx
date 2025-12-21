@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Ticket } from '@/types';
+import { Ticket } from '@/features/tickets/types'; // Updated import path
 import { format, formatDistanceToNowStrict, differenceInDays } from 'date-fns'; // Import differenceInDays
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

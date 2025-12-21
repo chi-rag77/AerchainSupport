@@ -11,11 +11,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/integrations/supabase/client';
-import { Ticket, TicketMessage } from '@/types';
+import { Ticket } from "@/features/tickets/types"; // Updated import path
 import { format, isPast, parseISO } from 'date-fns';
 import {
   Loader2, AlertCircle, Copy, CheckCircle, Hourglass, Clock, Users, Shield, Laptop, XCircle,
-  Tag, Building2, MessageSquare, CalendarDays, User, Info
+  Tag, Building2, MessageSquare, CalendarDays, User, Info, RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTicketMessages } from '@/features/tickets/hooks/useTicketMessages'; // New hook import
 
 interface TicketDetailModalProps {
   isOpen: boolean;
@@ -45,65 +46,14 @@ const TicketDetailModal = ({
   onClose,
   ticket,
 }: TicketDetailModalProps) => {
-  const [conversationMessages, setConversationMessages] = useState<TicketMessage[]>([]);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-
-  const fetchAndSyncMessages = useCallback(async () => {
-    if (!ticket?.id) return;
-
-    setIsLoadingMessages(true);
-    setFetchError(null);
-
-    try {
-      // 1. Trigger Freshdesk conversation sync (always run to ensure latest data via upsert)
-      const { error: syncError } = await supabase.functions.invoke('fetch-ticket-conversations', {
-        method: 'POST',
-        body: { freshdesk_ticket_id: ticket.id },
-      });
-
-      if (syncError) {
-        console.error("Error syncing conversations from Freshdesk:", syncError);
-        let errorMessage = `Failed to sync conversations: ${syncError.message}`;
-        if (syncError.message.includes("Freshdesk API error: 401") || syncError.message.includes("Freshdesk API key or domain not set")) {
-          errorMessage += ". Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are correctly set as Supabase secrets for the 'fetch-ticket-conversations' Edge Function.";
-        } else if (syncError.message.includes("non-2xx status code")) {
-          errorMessage += ". This often indicates an issue with the Freshdesk API or its credentials. Please check your Supabase secrets (FRESHDESK_API_KEY, FRESHDESK_DOMAIN).";
-        }
-        setFetchError(errorMessage);
-        setIsLoadingMessages(false);
-        return;
-      }
-
-      // 2. Fetch all messages from our Supabase DB
-      const { data: messagesData, error: fetchMessagesError } = await supabase
-        .from('ticket_messages')
-        .select('*')
-        .eq('ticket_id', ticket.id)
-        .order('created_at', { ascending: true });
-
-      if (fetchMessagesError) {
-        console.error("Error fetching conversation messages from Supabase:", fetchMessagesError);
-        setFetchError(`Failed to load conversation messages from Supabase: ${fetchMessagesError.message}`);
-      } else {
-        setConversationMessages(messagesData || []);
-      }
-    } catch (err: any) {
-      console.error("Unexpected error during conversation fetch/sync:", err);
-      setFetchError(`An unexpected error occurred: ${err.message}`);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  }, [ticket?.id]);
+  const { conversationMessages, isLoadingMessages, fetchError, syncMessages } = useTicketMessages(ticket?.id || null);
 
   useEffect(() => {
     if (isOpen && ticket?.id) {
-      fetchAndSyncMessages();
-    } else {
-      setConversationMessages([]);
-      setFetchError(null);
+      // Trigger initial sync when modal opens
+      syncMessages();
     }
-  }, [isOpen, ticket?.id, fetchAndSyncMessages]);
+  }, [isOpen, ticket?.id]); // Removed syncMessages from dependency array to prevent infinite loop
 
   if (!ticket) return null;
 
@@ -223,7 +173,7 @@ const TicketDetailModal = ({
                         </AvatarFallback>
                       </Avatar>
                       <span className="font-medium text-gray-700 dark:text-gray-200">{ticket.assignee}</span>
-                    </span>
+                    </span >
                   </>
                 )}
               </div>
@@ -293,7 +243,13 @@ const TicketDetailModal = ({
           <Separator />
 
           {/* Conversation Stream */}
-          <h3 className="text-lg font-semibold text-foreground">Conversation History</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-foreground">Conversation History</h3>
+            <Button variant="outline" size="sm" onClick={syncMessages} disabled={isLoadingMessages}>
+              {isLoadingMessages ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Sync
+            </Button>
+          </div>
           {isLoadingMessages ? (
             <div className="flex items-center justify-center h-24 text-gray-500 dark:text-gray-400">
               <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading messages...
@@ -303,7 +259,7 @@ const TicketDetailModal = ({
               <AlertCircle className="h-6 w-6 mb-2" />
               <p className="font-medium">Error loading conversations:</p>
               <p className="text-sm">{fetchError}</p>
-              <p className="text-sm mt-2">Please try syncing tickets from the main page.</p>
+              <p className="text-sm mt-2">Please ensure Freshdesk credentials are correct and try syncing.</p>
             </div>
           ) : conversationMessages.length > 0 ? (
             <div className="relative space-y-6 before:absolute before:left-4 before:top-0 before:h-full before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700">
