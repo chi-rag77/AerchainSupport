@@ -7,6 +7,7 @@ import { Insight, Ticket } from '@/types';
 import { AlertCircle, Clock, TrendingUp, CheckCircle, ArrowUp, ArrowDown, Users, Tag, Info, MessageSquare } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card'; // <-- ADDED IMPORT
 import { formatDistanceToNowStrict, differenceInDays, parseISO } from 'date-fns';
 
 // Define the structure for a single signal item
