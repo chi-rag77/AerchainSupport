@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from 'sonner';
+import { invokeEdgeFunction, ApiError } from "@/lib/apiClient"; // New import
 
 interface WeeklySupportSummaryData {
   customerName: string;
@@ -124,25 +125,22 @@ const WeeklySummaryPage = () => {
   const handleSyncTickets = async () => {
     toast.loading("Syncing latest tickets from Freshdesk...", { id: "sync-tickets-weekly-summary" });
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-        method: 'POST',
-        body: { action: 'syncTickets', user_id: user?.id },
-      });
-
-      if (error) {
-        let errorMessage = `Failed to sync tickets: ${error.message}`;
-        if (error.message.includes("Freshdesk API error: 401") || error.message.includes("Freshdesk API key or domain not set")) {
-          errorMessage += ". Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are correctly set as Supabase secrets for the 'fetch-freshdesk-tickets' Edge Function.";
-        } else if (error.message.includes("non-2xx status code")) {
-          errorMessage += ". This often indicates an issue with the Freshdesk API or its credentials. Please check your Supabase secrets (FRESHDESK_API_KEY, FRESHDESK_DOMAIN).";
+      await invokeEdgeFunction(
+        'fetch-freshdesk-tickets',
+        {
+          method: 'POST',
+          body: { action: 'syncTickets', user_id: user?.id },
         }
-        throw new Error(errorMessage);
-      }
+      );
 
       toast.success("Tickets synced successfully!", { id: "sync-tickets-weekly-summary" });
       queryClient.invalidateQueries({ queryKey: ["allFreshdeskTicketsForWeeklySummary"] });
     } catch (err: any) {
-      toast.error(err.message, { id: "sync-tickets-weekly-summary" });
+      let errorMessage = err.message;
+      if (err instanceof ApiError) {
+        errorMessage = `Sync failed (Status ${err.status}): ${err.message}`;
+      }
+      toast.error(errorMessage, { id: "sync-tickets-weekly-summary" });
     }
   };
 

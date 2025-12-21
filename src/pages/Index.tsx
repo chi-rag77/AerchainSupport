@@ -7,7 +7,7 @@ import DashboardMetricCard from "@/components/DashboardMetricCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal } from "lucide-react";
@@ -36,26 +36,25 @@ import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardInsightsOverlay from "@/components/DashboardInsightsOverlay"; // New import
+import { invokeEdgeFunction, ApiError } from "@/lib/apiClient"; // New import
 
-const fetchDashboardInsights = async (token: string | undefined): Promise<Insight[]> => {
-  if (!token) return [];
-
+const fetchDashboardInsights = async (): Promise<Insight[]> => {
   try {
-    const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (error) {
-      console.error("Error fetching insights from Edge Function:", error);
-      throw error;
-    }
-    return data as Insight[];
+    const insights = await invokeEdgeFunction<Insight[]>(
+      'generate-dashboard-insights',
+      { method: 'POST' }
+    );
+    return insights;
   } catch (err: any) {
-    console.error("Failed to fetch insights:", err.message);
+    if (err instanceof ApiError) {
+      return [{
+        id: 'insight-fetch-error',
+        type: 'info',
+        message: `Failed to load insights (Status ${err.status}): ${err.message}.`,
+        severity: 'warning',
+        icon: 'Info',
+      }];
+    }
     return [{
       id: 'insight-fetch-error',
       type: 'info',
@@ -110,8 +109,8 @@ const Index = () => {
   } as UseQueryOptions<Ticket[], Error>);
 
   const { data: dashboardInsights = [] } = useQuery<Insight[], Error>({
-    queryKey: ["dashboardInsights", authToken],
-    queryFn: () => fetchDashboardInsights(authToken),
+    queryKey: ["dashboardInsights"],
+    queryFn: fetchDashboardInsights,
     enabled: !!authToken,
     refetchInterval: 60000, // Refetch every 60 seconds
   } as UseQueryOptions<Insight[], Error>);
@@ -399,26 +398,24 @@ const Index = () => {
   const handleSyncTickets = async () => {
     toast.loading("Syncing latest tickets from Freshdesk...", { id: "sync-tickets-dashboard" });
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
-        method: 'POST',
-        body: { action: 'syncTickets', user_id: user?.id },
-      });
-
-      if (error) {
-        let errorMessage = `Failed to sync tickets: ${error.message}`;
-        if (error.message.includes("Freshdesk API error: 401") || error.message.includes("Freshdesk API key or domain not set")) {
-          errorMessage += ". Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are correctly set as Supabase secrets for the 'fetch-freshdesk-tickets' Edge Function.";
-        } else if (error.message.includes("non-2xx status code")) {
-          errorMessage += ". This often indicates an issue with the Freshdesk API or its credentials. Please check your Supabase secrets (FRESHDESK_API_KEY, FRESHDESK_DOMAIN).";
+      // Use apiClient for Edge Function invocation
+      await invokeEdgeFunction(
+        'fetch-freshdesk-tickets',
+        {
+          method: 'POST',
+          body: { action: 'syncTickets', user_id: user?.id },
         }
-        throw new Error(errorMessage); // Re-throw to be caught by the outer catch
-      }
+      );
 
       toast.success("Tickets synced successfully!", { id: "sync-tickets-dashboard" });
       queryClient.invalidateQueries({ queryKey: ["freshdeskTickets"] });
       queryClient.invalidateQueries({ queryKey: ["dashboardInsights"] });
     } catch (err: any) {
-      toast.error(err.message, { id: "sync-tickets-dashboard" }); // Display the enhanced error message
+      let errorMessage = err.message;
+      if (err instanceof ApiError) {
+        errorMessage = `Sync failed (Status ${err.status}): ${err.message}`;
+      }
+      toast.error(errorMessage, { id: "sync-tickets-dashboard" });
     }
   };
 
@@ -674,6 +671,7 @@ const Index = () => {
                       title="Total Tickets"
                       value={metrics.totalTickets}
                       icon={TicketIcon}
+                      trend={12}
                       description="Count of tickets created within the selected date range and filters."
                       onClick={() => handleKPIDrilldown("Total Tickets", "All tickets created within the selected date range and filters.", filteredDashboardTickets)}
                     />

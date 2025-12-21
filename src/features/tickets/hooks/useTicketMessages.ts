@@ -3,6 +3,7 @@ import { TicketMessage } from '../types';
 import { fetchTicketMessages } from '../services/ticket.service';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { invokeEdgeFunction, ApiError } from '@/lib/apiClient'; // Import apiClient
 
 const MESSAGE_QUERY_KEY = "ticketMessages";
 
@@ -23,23 +24,22 @@ export function useTicketMessages(ticketId: string | null) {
 
     const syncToastId = toast.loading("Syncing latest conversations...", { duration: 10000 });
     try {
-      const { error: syncError } = await supabase.functions.invoke('fetch-ticket-conversations', {
-        method: 'POST',
-        body: { freshdesk_ticket_id: ticketId },
-      });
-
-      if (syncError) {
-        let errorMessage = `Failed to sync conversations: ${syncError.message}`;
-        if (syncError.message.includes("Freshdesk API error: 401") || syncError.message.includes("Freshdesk API key or domain not set")) {
-          errorMessage += ". Please ensure FRESHDESK_API_KEY and FRESHDESK_DOMAIN are correctly set as Supabase secrets.";
+      await invokeEdgeFunction(
+        'fetch-ticket-conversations',
+        {
+          method: 'POST',
+          body: { freshdesk_ticket_id: ticketId },
         }
-        throw new Error(errorMessage);
-      }
+      );
 
       toast.success("Conversations synced successfully!", { id: syncToastId });
       queryClient.invalidateQueries({ queryKey: [MESSAGE_QUERY_KEY, ticketId] }); // Force refetch from DB
     } catch (err: any) {
-      toast.error(err.message, { id: syncToastId });
+      let errorMessage = err.message;
+      if (err instanceof ApiError) {
+        errorMessage = `Sync failed (Status ${err.status}): ${err.message}`;
+      }
+      toast.error(errorMessage, { id: syncToastId });
       console.error("Error during conversation sync:", err);
     }
   };

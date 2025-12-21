@@ -24,29 +24,27 @@ import CustomerConversationActivityCard from "@/components/customer360/CustomerC
 import CustomerHistoricalBehaviourCard from "@/components/customer360/CustomerHistoricalBehaviourCard";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import CustomerAISummaryCard from "@/components/customer360/CustomerAISummaryCard"; // New import
+import { invokeEdgeFunction, ApiError } from "@/lib/apiClient"; // Import apiClient
 
-const fetchCustomerAISummary = async (customerName: string, ticketsData: any[], authToken: string | undefined): Promise<string> => {
-  if (!customerName || !ticketsData || ticketsData.length === 0 || !authToken) {
+const fetchCustomerAISummary = async (customerName: string, ticketsData: any[]): Promise<string> => {
+  if (!customerName || !ticketsData || ticketsData.length === 0) {
     return "No tickets available for summary or authentication missing.";
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke('summarize-customer-tickets', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: { customerName, ticketsData },
-    });
+    const data = await invokeEdgeFunction<{ summary: string }>(
+      'summarize-customer-tickets',
+      {
+        method: 'POST',
+        body: { customerName, ticketsData },
+      }
+    );
 
-    if (error) {
-      console.error("Error fetching AI summary from Edge Function:", error);
-      throw error;
-    }
     return data.summary as string;
   } catch (err: any) {
-    console.error("Failed to fetch AI summary:", err.message);
+    if (err instanceof ApiError) {
+      throw new Error(`AI Summary failed (Status ${err.status}): ${err.message}`);
+    }
     throw new Error(`Failed to generate AI summary: ${err.message}`);
   }
 };
@@ -119,8 +117,8 @@ const Customer360 = () => {
   // Fetch AI Summary
   const { data: aiCustomerSummary, isLoading: isAISummaryLoading, error: aiSummaryError } = useQuery<string, Error>({
     queryKey: ["customerAISummary", selectedCustomer, simplifiedCustomerTicketsData],
-    queryFn: () => fetchCustomerAISummary(selectedCustomer!, simplifiedCustomerTicketsData, authToken),
-    enabled: !!selectedCustomer && simplifiedCustomerTicketsData.length > 0 && !!authToken,
+    queryFn: () => fetchCustomerAISummary(selectedCustomer!, simplifiedCustomerTicketsData),
+    enabled: !!selectedCustomer && simplifiedCustomerTicketsData.length > 0,
     staleTime: 5 * 60 * 1000, // Summary can be stale for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   } as UseQueryOptions<string, Error>);
