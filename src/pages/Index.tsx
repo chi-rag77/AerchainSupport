@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal, ChevronUp, TrendingUp, Gauge, Building2 } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal, ChevronUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,11 +37,9 @@ import InsightsSheet from "@/components/InsightsSheet";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import DashboardInsightsOverlay from "@/components/DashboardInsightsOverlay";
-import { invokeEdgeFunction } from "@/lib/apiClient";
-import { ApiError } from "@/lib/errorHandler";
-import OperationalTicker from "@/components/OperationalTicker";
-import DashboardCriticalSignals from "@/components/DashboardCriticalSignals"; // New import
+import DashboardInsightsOverlay from "@/components/DashboardInsightsOverlay"; // New import
+import { invokeEdgeFunction } from "@/lib/apiClient"; // Corrected import
+import { ApiError } from "@/lib/errorHandler"; // Added missing import
 
 const fetchDashboardInsights = async (): Promise<Insight[]> => {
   try {
@@ -84,7 +82,7 @@ const Index = () => {
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [showMoreFilters, setShowMoreFilters] = useState(false); // New state for progressive disclosure
 
   const [isFilteredTicketsModalOpen, setIsFilteredTicketsModalOpen] = useState(false);
   const [filteredModalTitle, setFilteredModalTitle] = useState("");
@@ -254,33 +252,31 @@ const Index = () => {
     let currentTickets: Ticket[] = freshdeskTickets;
 
     currentTickets = currentTickets.filter(ticket =>
-      ticket && isWithinInterval(new Date(ticket.created_at), { start: effectiveStartDate, end: effectiveEndDate })
+      isWithinInterval(new Date(ticket.created_at), { start: effectiveStartDate, end: effectiveEndDate })
     );
 
     if (selectedCompanies.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
+      currentTickets = currentTickets.filter(ticket => ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
     }
     if (selectedCountries.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_country && selectedCountries.includes(ticket.cf_country));
+      currentTickets = currentTickets.filter(ticket => ticket.cf_country && selectedCountries.includes(ticket.cf_country));
     }
     if (selectedModules.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_module && selectedModules.includes(ticket.cf_module));
+      currentTickets = currentTickets.filter(ticket => ticket.cf_module && selectedModules.includes(ticket.cf_module));
     }
     if (selectedPriorities.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && selectedPriorities.includes(ticket.priority));
+      currentTickets = currentTickets.filter(ticket => selectedPriorities.includes(ticket.priority));
     }
     if (selectedStatuses.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && selectedStatuses.includes(ticket.status));
+      currentTickets = currentTickets.filter(ticket => selectedStatuses.includes(ticket.status));
     }
 
     if (searchTerm) {
       currentTickets = currentTickets.filter(ticket =>
-        ticket && (
-          ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -293,33 +289,31 @@ const Index = () => {
     let currentTickets: Ticket[] = freshdeskTickets;
 
     currentTickets = currentTickets.filter(ticket =>
-      ticket && isWithinInterval(new Date(ticket.created_at), { start: previousEffectiveStartDate, end: previousEffectiveEndDate })
+      isWithinInterval(new Date(ticket.created_at), { start: previousEffectiveStartDate, end: previousEffectiveEndDate })
     );
 
     if (selectedCompanies.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
+      currentTickets = currentTickets.filter(ticket => ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
     }
     if (selectedCountries.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_country && selectedCountries.includes(ticket.cf_country));
+      currentTickets = currentTickets.filter(ticket => ticket.cf_country && selectedCountries.includes(ticket.cf_country));
     }
     if (selectedModules.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_module && selectedModules.includes(ticket.cf_module));
+      currentTickets = currentTickets.filter(ticket => ticket.cf_module && selectedModules.includes(ticket.cf_module));
     }
     if (selectedPriorities.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && selectedPriorities.includes(ticket.priority));
+      currentTickets = currentTickets.filter(ticket => selectedPriorities.includes(ticket.priority));
     }
     if (selectedStatuses.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket && selectedStatuses.includes(ticket.status));
+      currentTickets = currentTickets.filter(ticket => selectedStatuses.includes(ticket.status));
     }
 
     if (searchTerm) {
       currentTickets = currentTickets.filter(ticket =>
-        ticket && (
-          ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -329,13 +323,13 @@ const Index = () => {
 
   const allOpenTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
-    return freshdeskTickets.filter(t =>
-      t && t.status && (t.status.toLowerCase() === 'open (being processed)' ||
-       t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-       t.status.toLowerCase() === 'waiting on customer' ||
-       t.status.toLowerCase() === 'on tech' ||
-       t.status.toLowerCase() === 'on product' ||
-       t.status.toLowerCase() === 'escalated')
+    return freshdeskTickets.filter(ticket =>
+      (ticket.status.toLowerCase() === 'open (being processed)' ||
+       ticket.status.toLowerCase() === 'pending (awaiting your reply)' ||
+       ticket.status.toLowerCase() === 'waiting on customer' ||
+       ticket.status.toLowerCase() === 'on tech' ||
+       ticket.status.toLowerCase() === 'on product' ||
+       ticket.status.toLowerCase() === 'escalated')
     );
   }, [freshdeskTickets]);
 
@@ -375,32 +369,42 @@ const Index = () => {
     // Current Period Counts (Filtered by Date/Filters)
     const totalTickets = filteredDashboardTickets.length;
     const openTickets = filteredDashboardTickets.filter(t =>
-      t && t.status && (t.status.toLowerCase() === 'open (being processed)' ||
+      t.status.toLowerCase() === 'open (being processed)' ||
       t.status.toLowerCase() === 'pending (awaiting your reply)' ||
       t.status.toLowerCase() === 'waiting on customer' ||
       t.status.toLowerCase() === 'on tech' ||
       t.status.toLowerCase() === 'on product' ||
-      t.status.toLowerCase() === 'escalated')
+      t.status.toLowerCase() === 'escalated'
     ).length;
     const resolvedTickets = filteredDashboardTickets.filter(t =>
-      t && t.status && (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed')
+      t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
     ).length;
 
     // Overall Counts (Unfiltered by Date/Filters)
     const totalTicketsOverall = freshdeskTickets.length;
     const totalOpenOverall = freshdeskTickets.filter(t =>
-      t && t.status && (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed')
+      t.status.toLowerCase() === 'open (being processed)' ||
+      t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+      t.status.toLowerCase() === 'waiting on customer' ||
+      t.status.toLowerCase() === 'on tech' ||
+      t.status.toLowerCase() === 'on product' ||
+      t.status.toLowerCase() === 'escalated'
     ).length;
-    const totalBugsOverall = freshdeskTickets.filter(t => t && t.type?.toLowerCase() === 'bug').length;
+    const totalBugsOverall = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
 
 
     // Previous Period Counts (for trend calculation)
     const prevTotalTickets = previousPeriodTickets.length;
     const prevOpenTickets = previousPeriodTickets.filter(t =>
-      t && t.status && (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed')
+      t.status.toLowerCase() === 'open (being processed)' ||
+      t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+      t.status.toLowerCase() === 'waiting on customer' ||
+      t.status.toLowerCase() === 'on tech' ||
+      t.status.toLowerCase() === 'on product' ||
+      t.status.toLowerCase() === 'escalated'
     ).length;
     const prevResolvedTickets = previousPeriodTickets.filter(t =>
-      t && t.status && (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed')
+      t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
     ).length;
 
     // Trends
@@ -410,7 +414,12 @@ const Index = () => {
 
 
     const overdueTickets = filteredDashboardTickets.filter(t =>
-      t && t.status && (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed') &&
+      (t.status.toLowerCase() === 'open (being processed)' ||
+       t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+       t.status.toLowerCase() === 'waiting on customer' ||
+       t.status.toLowerCase() === 'on tech' ||
+       t.status.toLowerCase() === 'on product' ||
+       t.status.toLowerCase() === 'escalated') &&
       t.due_by && isPast(parseISO(t.due_by))
     ).length;
 
@@ -418,7 +427,7 @@ const Index = () => {
     let frSlaMetCount = 0;
     let frSlaTotalCount = 0;
     filteredDashboardTickets.forEach(ticket => {
-      if (ticket && ticket.fr_due_by) {
+      if (ticket.fr_due_by) {
         frSlaTotalCount++;
         // Assuming updated_at is a proxy for first_response_at if actual field is missing
         if (parseISO(ticket.updated_at) <= parseISO(ticket.fr_due_by)) {
@@ -432,7 +441,7 @@ const Index = () => {
     let resSlaMetCount = 0;
     let resSlaTotalCount = 0;
     filteredDashboardTickets.forEach(ticket => {
-      if (ticket && ticket.due_by && (ticket.status.toLowerCase() === 'resolved' || ticket.status.toLowerCase() === 'closed')) {
+      if (ticket.due_by && (ticket.status.toLowerCase() === 'resolved' || ticket.status.toLowerCase() === 'closed')) {
         resSlaTotalCount++;
         // Assuming updated_at is a proxy for resolved_at if actual field is missing
         if (parseISO(ticket.updated_at) <= parseISO(ticket.due_by)) {
@@ -443,7 +452,7 @@ const Index = () => {
     const resolutionSlaMet = resSlaTotalCount > 0 ? ((resSlaMetCount / resSlaTotalCount) * 100).toFixed(1) + "%" : "N/A";
 
     // Median Resolution Time
-    const resolvedTicketsForMedian = filteredDashboardTickets.filter(t => t && t.status && (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'));
+    const resolvedTicketsForMedian = filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed');
     let medianResolutionTime: string = "N/A";
     if (resolvedTicketsForMedian.length > 0) {
       const resolutionTimesHours = resolvedTicketsForMedian.map(t =>
@@ -459,7 +468,6 @@ const Index = () => {
 
     // Urgent Tickets at Risk
     const urgentTicketsAtRisk = filteredDashboardTickets.filter(t => {
-      if (!t || !t.status || !t.priority) return false;
       const statusLower = t.status.toLowerCase();
       const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
       const isUrgent = t.priority.toLowerCase() === 'urgent';
@@ -545,12 +553,11 @@ const Index = () => {
   }
 
   const overdueTicketsList = filteredDashboardTickets.filter(t =>
-    t && t.status && (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed') &&
+    (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed') &&
     t.due_by && isPast(parseISO(t.due_by))
   );
 
   const urgentTicketsAtRiskList = filteredDashboardTickets.filter(t => {
-    if (!t || !t.status || !t.priority) return false;
     const statusLower = t.status.toLowerCase();
     const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
     const isUrgent = t.priority.toLowerCase() === 'urgent';
@@ -558,10 +565,68 @@ const Index = () => {
     return isActive && isUrgent && isNearDue;
   });
 
-  // --- Filter Definitions ---
-  const defaultFilters = useMemo(() => [
+  const resolvedSlaMetList = filteredDashboardTickets.filter(t =>
+    (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
+    t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by)
+  );
+
+  const firstResponseSlaMetList = filteredDashboardTickets.filter(t =>
+    t.fr_due_by && parseISO(t.updated_at) <= parseISO(t.fr_due_by)
+  );
+
+  const medianResolutionTimeList = filteredDashboardTickets.filter(t =>
+    t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+  );
+
+  // Removed tier1Metrics entirely
+  const tier2Metrics = [
     {
-      key: 'date-range',
+      title: "Total Tickets",
+      value: metrics.totalTicketsOverall, // Overall count
+      icon: TicketIcon,
+      archetype: 'volume' as const,
+      trend: metrics.totalTicketsTrend, // Trend still based on filtered data
+      subtext: `Total volume in the system. Filtered period: ${metrics.totalTickets}`,
+      cta: "View all tickets",
+      onClick: () => handleKPIDrilldown("Total Tickets (Overall)", "All tickets currently in the system.", freshdeskTickets || []),
+    },
+    {
+      title: "Total Open Tickets",
+      value: metrics.totalOpenOverall, // Overall open count
+      icon: Hourglass,
+      archetype: 'volume' as const,
+      trend: metrics.openTicketsTrend, // Trend still based on filtered data
+      subtext: `Active backlog requiring attention. Filtered period: ${metrics.openTickets}`,
+      cta: "View active queue",
+      onClick: () => handleKPIDrilldown("Total Open Tickets (Overall)", "All tickets currently in an active status.", allOpenTickets),
+    },
+    {
+      title: "Resolved Tickets",
+      value: metrics.resolvedTickets,
+      icon: CheckCircle,
+      archetype: 'volume' as const,
+      trend: metrics.resolvedTicketsTrend,
+      subtext: `Tickets successfully closed this period.`,
+      cta: "View resolved tickets",
+      onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t =>
+        t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+      )),
+    },
+    {
+      title: "Total Bugs Received",
+      value: metrics.totalBugsOverall, // Overall bug count
+      icon: Bug,
+      archetype: 'volume' as const,
+      trend: undefined, // No trend calculation for overall bug count
+      subtext: `Total tickets categorized as 'Bug' in the system.`,
+      cta: "Analyze bug volume",
+      onClick: () => handleKPIDrilldown("Total Bugs Received (Overall)", "All tickets categorized as 'Bug' in the system.", freshdeskTickets?.filter(t => t.type?.toLowerCase() === 'bug') || []),
+    },
+  ];
+
+  const defaultFilters = [
+    {
+      label: "Date Range",
       component: (
         <Select
           value={typeof activeDateFilter === 'string' ? activeDateFilter : "custom"}
@@ -588,144 +653,101 @@ const Index = () => {
             <SelectItem value="custom">Custom Range</SelectItem>
           </SelectContent>
         </Select>
-      )
+      ),
     },
     {
-      key: 'company',
+      label: "Company",
       component: (
         <MultiSelect
           options={uniqueCompanies.map(company => ({ value: company, label: company }))}
           selected={selectedCompanies}
           onSelectedChange={setSelectedCompanies}
           placeholder="Filter by Company"
-          icon={Building2}
           className="w-[200px] bg-card"
+          icon={Users}
         />
-      )
+      ),
     },
     {
-      key: 'status',
+      label: "Status",
       component: (
         <MultiSelect
           options={uniqueStatuses.map(status => ({ value: status, label: status }))}
           selected={selectedStatuses}
           onSelectedChange={setSelectedStatuses}
           placeholder="Filter by Status"
-          icon={Flag}
-          className="w-[200px] bg-card"
+          className="w-[180px] bg-card"
+          icon={Filter}
         />
-      )
+      ),
     },
-  ], [activeDateFilter, dateRangeDisplay, uniqueCompanies, selectedCompanies, uniqueStatuses, selectedStatuses]);
+  ];
 
-  const moreFilters = useMemo(() => [
+  const moreFilters = [
     {
-      key: 'country',
+      label: "Country",
       component: (
         <MultiSelect
           options={uniqueCountries.map(country => ({ value: country, label: country }))}
           selected={selectedCountries}
           onSelectedChange={setSelectedCountries}
           placeholder="Filter by Country"
-          icon={MapPin}
           className="w-[180px] bg-card"
+          icon={MapPin}
         />
-      )
+      ),
     },
     {
-      key: 'module',
+      label: "Module",
       component: (
         <MultiSelect
           options={uniqueModules.map(module => ({ value: module, label: module }))}
           selected={selectedModules}
           onSelectedChange={setSelectedModules}
           placeholder="Filter by Module"
-          icon={GitFork}
           className="w-[180px] bg-card"
+          icon={GitFork}
         />
-      )
+      ),
     },
     {
-      key: 'priority',
+      label: "Priority",
       component: (
         <MultiSelect
           options={uniquePriorities.map(priority => ({ value: priority, label: priority }))}
           selected={selectedPriorities}
           onSelectedChange={setSelectedPriorities}
           placeholder="Filter by Priority"
-          icon={AlertCircle}
           className="w-[180px] bg-card"
+          icon={Flag}
         />
-      )
-    },
-  ], [uniqueCountries, selectedCountries, uniqueModules, selectedModules, uniquePriorities, selectedPriorities]);
-  // --- End Filter Definitions ---
-
-
-  // New KPI Cards for Dashboard V2
-  const coreMetricsV2 = [
-    {
-      title: "Tickets Created",
-      value: metrics.totalTickets,
-      icon: TicketIcon,
-      archetype: 'volume' as const,
-      trend: metrics.totalTicketsTrend,
-      subtext: `Tickets created in the selected period.`,
-      cta: "View all tickets",
-      onClick: () => handleKPIDrilldown("Tickets Created", "All tickets created within the selected date range.", filteredDashboardTickets),
-    },
-    {
-      title: "Open Backlog",
-      value: metrics.totalOpenOverall,
-      icon: Hourglass,
-      archetype: metrics.totalOpenOverall > 20 ? 'attention' as const : 'volume' as const,
-      trend: metrics.openTicketsTrend,
-      subtext: `Total active tickets across all time.`,
-      cta: "View active queue",
-      onClick: () => handleKPIDrilldown("Total Open Tickets (Overall)", "All tickets currently in an active status.", allOpenTickets),
-    },
-    {
-      title: "Avg. Resolution Time",
-      value: metrics.medianResolutionTime,
-      icon: Clock,
-      archetype: 'health' as const,
-      trend: -5, // Placeholder trend for time (negative is good)
-      subtext: `Median time to resolve tickets this period.`,
-      cta: "Analyze efficiency",
-      onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t => t && t.status && (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'))),
-    },
-    {
-      title: "SLA Adherence (Res)",
-      value: metrics.resolutionSlaMet,
-      icon: ShieldAlert,
-      archetype: metrics.resolutionSlaMet.includes('N/A') || parseFloat(metrics.resolutionSlaMet) < 90 ? 'health' as const : 'volume' as const,
-      trend: 2, // Placeholder trend
-      subtext: `Percentage of resolved tickets meeting SLA.`,
-      cta: "View SLA breaches",
-      onClick: () => handleKPIDrilldown("SLA Met Tickets", "Tickets resolved within their SLA.", filteredDashboardTickets.filter(t => t && t.due_by && t.updated_at && parseISO(t.updated_at) <= parseISO(t.due_by))),
-    },
-    {
-      title: "Overdue Tickets",
-      value: overdueTicketsList.length,
-      icon: CalendarDays,
-      archetype: overdueTicketsList.length > 0 ? 'attention' as const : 'normal' as const,
-      trend: calculateTrend(overdueTicketsList.length, previousPeriodTickets.filter(t => t && t.due_by && isPast(parseISO(t.due_by))).length),
-      subtext: `Tickets past their due date.`,
-      cta: "Review overdue list",
-      onClick: () => handleKPIDrilldown("Overdue Tickets", "Tickets currently past their due date.", overdueTicketsList),
-    },
-    {
-      title: "Urgent Tickets at Risk",
-      value: urgentTicketsAtRiskList.length,
-      icon: AlertCircle,
-      archetype: urgentTicketsAtRiskList.length > 0 ? 'attention' as const : 'normal' as const,
-      trend: undefined,
-      subtext: `Urgent tickets due within 2 hours.`,
-      cta: "Prioritize now",
-      onClick: () => handleKPIDrilldown("Urgent Tickets at Risk", "Urgent tickets due within the next 2 hours.", urgentTicketsAtRiskList),
+      ),
     },
   ];
 
+  const getInsightSeverityClass = (severity: Insight['severity']) => {
+    switch (severity) {
+      case 'critical': return "bg-red-500 text-white";
+      case 'warning': return "bg-yellow-500 text-black";
+      case 'info': return "bg-blue-500 text-white";
+      default: return "bg-gray-500 text-white";
+    }
+  };
+
+  // Helper to generate trend tooltip content
+  const getTrendTooltip = (trend: number | undefined) => {
+    if (trend === undefined) return "No comparison data available for this period.";
+    
+    let periodLabel = "previous period";
+    if (typeof activeDateFilter === 'string' && activeDateFilter !== 'custom') {
+      periodLabel = `previous ${activeDateFilter.replace('last', '')}`;
+    } else if (effectiveStartDate && previousEffectiveStartDate) {
+      const durationDays = differenceInDays(effectiveEndDate || new Date(), effectiveStartDate) + 1;
+      periodLabel = `previous ${durationDays} days`;
+    }
+
+    return `Compared to ${periodLabel}`;
+  };
 
   return (
     <>
@@ -886,11 +908,28 @@ const Index = () => {
                 
                 {/* Executive Summary Strip (New Section) */}
                 <section>
-                  <OperationalTicker 
-                    insights={dashboardInsights || []} 
-                    allTickets={freshdeskTickets || []}
-                    onSignalClick={handleKPIDrilldown}
-                  />
+                  <Card className="p-4 shadow-lg border-l-4 border-blue-500 dark:border-blue-400">
+                    <div className="flex items-center gap-4">
+                      <Lightbulb className="h-6 w-6 text-blue-500 flex-shrink-0" />
+                      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                        <span className="font-semibold text-foreground">Executive Insights:</span>
+                        {dashboardInsights.slice(0, 3).map((insight, index) => (
+                          <Badge key={insight.id} className={cn("flex items-center gap-1", getInsightSeverityClass(insight.severity))}>
+                            {insight.severity === 'critical' ? <AlertCircle className="h-3 w-3" /> : <Info className="h-3 w-3" />}
+                            {insight.message}
+                          </Badge>
+                        ))}
+                        {dashboardInsights.length > 3 && (
+                          <Button variant="link" size="sm" onClick={() => setIsDashboardInsightsOverlayOpen(true)} className="h-auto p-0 text-blue-600 dark:text-blue-400">
+                            View All {dashboardInsights.length} Insights
+                          </Button>
+                        )}
+                        {dashboardInsights.length === 0 && (
+                          <span className="text-muted-foreground">No critical insights detected in the last 24 hours.</span>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
                 </section>
 
                 {/* Row 1: High-level KPI cards */}
@@ -898,8 +937,9 @@ const Index = () => {
                   <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                     <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
                   </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-                    {coreMetricsV2.map((metric, index) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {/* Tier 2 Metrics (Volume/Health) - Now the primary metrics */}
+                    {tier2Metrics.map((metric, index) => (
                       <DashboardMetricCardV2
                         key={index}
                         {...metric}
@@ -911,21 +951,7 @@ const Index = () => {
 
                 <Separator className="my-10" />
 
-                {/* Row 2: Critical Signals Panel */}
-                <section>
-                  <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
-                    <AlertCircle className="h-6 w-6 text-red-600" /> Top Critical Signals
-                  </h2 >
-                  <DashboardCriticalSignals 
-                    insights={dashboardInsights || []} 
-                    allTickets={freshdeskTickets || []} 
-                    onViewTicketDetails={handleViewTicketDetails} 
-                  />
-                </section>
-
-                <Separator className="my-10" />
-
-                {/* Row 3: Charts */}
+                {/* Row 2: Charts */}
                 <section>
                   <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                     <BarChart2 className="h-6 w-6 text-indigo-600" /> Key Visualizations
@@ -973,7 +999,7 @@ const Index = () => {
 
                 <Separator className="my-10" />
 
-                {/* Row 4: Tables & Risk/Escalation Panels */}
+                {/* Row 3: Tables & Risk/Escalation Panels */}
                 <section>
                   <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                     <Table2 className="h-6 w-6 text-orange-600" /> Detailed Views & Risk Panels
