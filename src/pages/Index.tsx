@@ -254,31 +254,33 @@ const Index = () => {
     let currentTickets: Ticket[] = freshdeskTickets;
 
     currentTickets = currentTickets.filter(ticket =>
-      isWithinInterval(new Date(ticket.created_at), { start: effectiveStartDate, end: effectiveEndDate })
+      ticket && isWithinInterval(new Date(ticket.created_at), { start: effectiveStartDate, end: effectiveEndDate })
     );
 
     if (selectedCompanies.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
+      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
     }
     if (selectedCountries.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket.cf_country && selectedCountries.includes(ticket.cf_country));
+      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_country && selectedCountries.includes(ticket.cf_country));
     }
     if (selectedModules.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket.cf_module && selectedModules.includes(ticket.cf_module));
+      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_module && selectedModules.includes(ticket.cf_module));
     }
     if (selectedPriorities.length > 0) {
-      currentTickets = currentTickets.filter(ticket => selectedPriorities.includes(ticket.priority));
+      currentTickets = currentTickets.filter(ticket => ticket && selectedPriorities.includes(ticket.priority));
     }
     if (selectedStatuses.length > 0) {
-      currentTickets = currentTickets.filter(ticket => selectedStatuses.includes(ticket.status));
+      currentTickets = currentTickets.filter(ticket => ticket && selectedStatuses.includes(ticket.status));
     }
 
     if (searchTerm) {
       currentTickets = currentTickets.filter(ticket =>
-        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
+        ticket && (
+          ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       );
     }
 
@@ -291,31 +293,33 @@ const Index = () => {
     let currentTickets: Ticket[] = freshdeskTickets;
 
     currentTickets = currentTickets.filter(ticket =>
-      isWithinInterval(new Date(ticket.created_at), { start: previousEffectiveStartDate, end: previousEffectiveEndDate })
+      ticket && isWithinInterval(new Date(ticket.created_at), { start: previousEffectiveStartDate, end: previousEffectiveEndDate })
     );
 
     if (selectedCompanies.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
+      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_company && selectedCompanies.includes(ticket.cf_company));
     }
     if (selectedCountries.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket.cf_country && selectedCountries.includes(ticket.cf_country));
+      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_country && selectedCountries.includes(ticket.cf_country));
     }
     if (selectedModules.length > 0) {
-      currentTickets = currentTickets.filter(ticket => ticket.cf_module && selectedModules.includes(ticket.cf_module));
+      currentTickets = currentTickets.filter(ticket => ticket && ticket.cf_module && selectedModules.includes(ticket.cf_module));
     }
     if (selectedPriorities.length > 0) {
-      currentTickets = currentTickets.filter(ticket => selectedPriorities.includes(ticket.priority));
+      currentTickets = currentTickets.filter(ticket => ticket && selectedPriorities.includes(ticket.priority));
     }
     if (selectedStatuses.length > 0) {
-      currentTickets = currentTickets.filter(ticket => selectedStatuses.includes(ticket.status));
+      currentTickets = currentTickets.filter(ticket => ticket && selectedStatuses.includes(ticket.status));
     }
 
     if (searchTerm) {
       currentTickets = currentTickets.filter(ticket =>
-        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
+        ticket && (
+          ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          ticket.requester_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (ticket.assignee && ticket.assignee.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       );
     }
 
@@ -326,7 +330,7 @@ const Index = () => {
   const allOpenTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
     return freshdeskTickets.filter(t =>
-      (t.status.toLowerCase() === 'open (being processed)' ||
+      t && t.status && (t.status.toLowerCase() === 'open (being processed)' ||
        t.status.toLowerCase() === 'pending (awaiting your reply)' ||
        t.status.toLowerCase() === 'waiting on customer' ||
        t.status.toLowerCase() === 'on tech' ||
@@ -371,32 +375,32 @@ const Index = () => {
     // Current Period Counts (Filtered by Date/Filters)
     const totalTickets = filteredDashboardTickets.length;
     const openTickets = filteredDashboardTickets.filter(t =>
-      t.status.toLowerCase() === 'open (being processed)' ||
+      t && t.status && (t.status.toLowerCase() === 'open (being processed)' ||
       t.status.toLowerCase() === 'pending (awaiting your reply)' ||
       t.status.toLowerCase() === 'waiting on customer' ||
       t.status.toLowerCase() === 'on tech' ||
       t.status.toLowerCase() === 'on product' ||
-      t.status.toLowerCase() === 'escalated'
+      t.status.toLowerCase() === 'escalated')
     ).length;
     const resolvedTickets = filteredDashboardTickets.filter(t =>
-      t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+      t && t.status && (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed')
     ).length;
 
     // Overall Counts (Unfiltered by Date/Filters)
     const totalTicketsOverall = freshdeskTickets.length;
     const totalOpenOverall = freshdeskTickets.filter(t =>
-      (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed')
+      t && t.status && (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed')
     ).length;
-    const totalBugsOverall = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
+    const totalBugsOverall = freshdeskTickets.filter(t => t && t.type?.toLowerCase() === 'bug').length;
 
 
     // Previous Period Counts (for trend calculation)
     const prevTotalTickets = previousPeriodTickets.length;
     const prevOpenTickets = previousPeriodTickets.filter(t =>
-      (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed')
+      t && t.status && (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed')
     ).length;
     const prevResolvedTickets = previousPeriodTickets.filter(t =>
-      t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
+      t && t.status && (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed')
     ).length;
 
     // Trends
@@ -406,7 +410,7 @@ const Index = () => {
 
 
     const overdueTickets = filteredDashboardTickets.filter(t =>
-      (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed') &&
+      t && t.status && (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed') &&
       t.due_by && isPast(parseISO(t.due_by))
     ).length;
 
@@ -414,7 +418,7 @@ const Index = () => {
     let frSlaMetCount = 0;
     let frSlaTotalCount = 0;
     filteredDashboardTickets.forEach(ticket => {
-      if (ticket.fr_due_by) {
+      if (ticket && ticket.fr_due_by) {
         frSlaTotalCount++;
         // Assuming updated_at is a proxy for first_response_at if actual field is missing
         if (parseISO(ticket.updated_at) <= parseISO(ticket.fr_due_by)) {
@@ -428,7 +432,7 @@ const Index = () => {
     let resSlaMetCount = 0;
     let resSlaTotalCount = 0;
     filteredDashboardTickets.forEach(ticket => {
-      if (ticket.due_by && (ticket.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed')) {
+      if (ticket && ticket.due_by && (ticket.status.toLowerCase() === 'resolved' || ticket.status.toLowerCase() === 'closed')) {
         resSlaTotalCount++;
         // Assuming updated_at is a proxy for resolved_at if actual field is missing
         if (parseISO(ticket.updated_at) <= parseISO(ticket.due_by)) {
@@ -439,7 +443,7 @@ const Index = () => {
     const resolutionSlaMet = resSlaTotalCount > 0 ? ((resSlaMetCount / resSlaTotalCount) * 100).toFixed(1) + "%" : "N/A";
 
     // Median Resolution Time
-    const resolvedTicketsForMedian = filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed');
+    const resolvedTicketsForMedian = filteredDashboardTickets.filter(t => t && t.status && (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'));
     let medianResolutionTime: string = "N/A";
     if (resolvedTicketsForMedian.length > 0) {
       const resolutionTimesHours = resolvedTicketsForMedian.map(t =>
@@ -455,6 +459,7 @@ const Index = () => {
 
     // Urgent Tickets at Risk
     const urgentTicketsAtRisk = filteredDashboardTickets.filter(t => {
+      if (!t || !t.status || !t.priority) return false;
       const statusLower = t.status.toLowerCase();
       const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
       const isUrgent = t.priority.toLowerCase() === 'urgent';
@@ -540,11 +545,12 @@ const Index = () => {
   }
 
   const overdueTicketsList = filteredDashboardTickets.filter(t =>
-    (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed') &&
+    t && t.status && (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed') &&
     t.due_by && isPast(parseISO(t.due_by))
   );
 
   const urgentTicketsAtRiskList = filteredDashboardTickets.filter(t => {
+    if (!t || !t.status || !t.priority) return false;
     const statusLower = t.status.toLowerCase();
     const isActive = statusLower !== 'resolved' && statusLower !== 'closed';
     const isUrgent = t.priority.toLowerCase() === 'urgent';
@@ -686,7 +692,7 @@ const Index = () => {
       trend: -5, // Placeholder trend for time (negative is good)
       subtext: `Median time to resolve tickets this period.`,
       cta: "Analyze efficiency",
-      onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed')),
+      onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t => t && t.status && (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'))),
     },
     {
       title: "SLA Adherence (Res)",
@@ -696,14 +702,14 @@ const Index = () => {
       trend: 2, // Placeholder trend
       subtext: `Percentage of resolved tickets meeting SLA.`,
       cta: "View SLA breaches",
-      onClick: () => handleKPIDrilldown("SLA Met Tickets", "Tickets resolved within their SLA.", filteredDashboardTickets.filter(t => t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by))),
+      onClick: () => handleKPIDrilldown("SLA Met Tickets", "Tickets resolved within their SLA.", filteredDashboardTickets.filter(t => t && t.due_by && t.updated_at && parseISO(t.updated_at) <= parseISO(t.due_by))),
     },
     {
       title: "Overdue Tickets",
       value: overdueTicketsList.length,
       icon: CalendarDays,
       archetype: overdueTicketsList.length > 0 ? 'attention' as const : 'normal' as const,
-      trend: calculateTrend(overdueTicketsList.length, previousPeriodTickets.filter(t => t.due_by && isPast(parseISO(t.due_by))).length),
+      trend: calculateTrend(overdueTicketsList.length, previousPeriodTickets.filter(t => t && t.due_by && isPast(parseISO(t.due_by))).length),
       subtext: `Tickets past their due date.`,
       cta: "Review overdue list",
       onClick: () => handleKPIDrilldown("Overdue Tickets", "Tickets currently past their due date.", overdueTicketsList),
@@ -909,7 +915,7 @@ const Index = () => {
                 <section>
                   <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                     <AlertCircle className="h-6 w-6 text-red-600" /> Top Critical Signals
-                  </h2>
+                  </h2 >
                   <DashboardCriticalSignals 
                     insights={dashboardInsights || []} 
                     allTickets={freshdeskTickets || []} 
