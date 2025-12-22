@@ -4,11 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Insight, Ticket } from '@/types';
-import { AlertCircle, Clock, TrendingUp, CheckCircle, ArrowUp, ArrowDown, Users, Tag, Info, MessageSquare } from 'lucide-react';
+import { AlertCircle, Clock, TrendingUp, CheckCircle, ArrowUp, ArrowDown, Users, Tag, Info, MessageSquare, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { formatDistanceToNowStrict, differenceInDays, parseISO, isPast, differenceInHours } from 'date-fns';
+import { formatDistanceToNowStrict, differenceInDays, parseISO, isPast, differenceInHours, subDays } from 'date-fns';
 
 // Define the structure for a single signal item
 interface SignalItem {
@@ -43,13 +43,20 @@ const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalT
   const mappedSignals: SignalItem[] = useMemo(() => {
     const signals: SignalItem[] = [];
     const now = new Date();
+    const yesterday = subDays(now, 1);
+    const last7DaysStart = subDays(now, 7);
+    const prev7DaysStart = subDays(now, 14);
 
     const openTickets = allTickets.filter(t => 
       t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed'
     );
 
     // --- A. Map fetched insights (Stalled & High Volume) ---
-    insights.forEach(insight => {
+    const stalledInsights = insights.filter(i => i.type === 'stalledOnTech').sort((a, b) => (b.daysStalled || 0) - (a.daysStalled || 0));
+    const highVolumeInsights = insights.filter(i => i.type === 'highVolumeCustomer').sort((a, b) => (b.ticketCount || 0) - (a.ticketCount || 0));
+
+    // Limit high-volume insights to top 5
+    [...stalledInsights.slice(0, 5), ...highVolumeInsights.slice(0, 5)].forEach(insight => {
       const status = insight.severity === 'critical' ? 'Critical' : insight.severity === 'warning' ? 'Watch' : 'Normal';
       const Icon = insight.type === 'stalledOnTech' ? Clock : Users;
       
@@ -68,7 +75,6 @@ const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalT
           });
         }
       } else if (insight.type === 'highVolumeCustomer' && insight.customerName && insight.ticketCount !== undefined) {
-        // Filter tickets relevant to this high volume insight (last 24h)
         const tickets = allTickets.filter(t => t.cf_company === insight.customerName && differenceInHours(now, parseISO(t.created_at)) <= 24);
         signals.push({
           id: insight.id,
@@ -138,41 +144,55 @@ const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalT
       });
     }
 
-    // 4. Positive Signal: Low Open Backlog (Operational Momentum)
-    if (openTickets.length <= 5) {
+    // 4. Week-over-Week Demand Change (Placeholder Trend)
+    // This requires comparing ticket creation counts between last 7 days and previous 7 days.
+    const ticketsLast7Days = allTickets.filter(t => parseISO(t.created_at) >= last7DaysStart).length;
+    const ticketsPrev7Days = allTickets.filter(t => parseISO(t.created_at) >= prev7DaysStart && parseISO(t.created_at) < last7DaysStart).length;
+    
+    let trendPct = 0;
+    if (ticketsPrev7Days > 0) {
+      trendPct = ((ticketsLast7Days - ticketsPrev7Days) / ticketsPrev7Days) * 100;
+    } else if (ticketsLast7Days > 0) {
+      trendPct = 100;
+    }
+
+    if (trendPct > 20) {
       signals.push({
-        id: 'low-backlog',
-        entity: 'Backlog',
-        metric: `Only ${openTickets.length} open tickets`,
-        status: 'Normal',
-        icon: CheckCircle,
-        change: 'Low Load',
-        tooltip: 'The current active ticket backlog is minimal, indicating high operational efficiency.',
-        tickets: openTickets,
+        id: 'demand-surge',
+        entity: 'Demand',
+        metric: `Volume ↑ ${Math.abs(trendPct).toFixed(0)}% WoW`,
+        status: 'Critical',
+        icon: TrendingUp,
+        change: 'Surge',
+        tooltip: `Ticket volume has surged by ${Math.abs(trendPct).toFixed(0)}% this week compared to last week.`,
+      });
+    } else if (trendPct < -10) {
+      signals.push({
+        id: 'demand-drop',
+        entity: 'Demand',
+        metric: `Volume ↓ ${Math.abs(trendPct).toFixed(0)}% WoW`,
+        status: 'Recovery',
+        icon: TrendingUp,
+        change: 'Drop',
+        tooltip: `Ticket volume has dropped by ${Math.abs(trendPct).toFixed(0)}% this week. Investigate for potential customer disengagement.`,
       });
     }
+
+    // 5. Ticket Creation Velocity (Spike/Surge - Simple daily check)
+    const ticketsToday = allTickets.filter(t => differenceInDays(now, parseISO(t.created_at)) === 0).length;
+    const avgDaily = allTickets.length / differenceInDays(now, parseISO(allTickets[allTickets.length - 1]?.created_at || now));
     
-    // 5. Placeholder: Resolution Effectiveness (Recovery/Degradation)
-    // These remain placeholders as they require historical trend data not available in the single 'allTickets' array.
-    signals.push({
-      id: 'res-time-recovery',
-      entity: 'Resolution Time',
-      metric: 'Avg time ↓ 15% WoW',
-      status: 'Recovery',
-      icon: TrendingUp,
-      change: 'Faster',
-      tooltip: 'Average resolution time has decreased by 15% compared to the previous week.',
-    });
-    
-    signals.push({
-      id: 'res-time-degrade',
-      entity: 'Resolution Time',
-      metric: 'Median crossed 48h',
-      status: 'Critical',
-      icon: Clock,
-      change: 'Slower',
-      tooltip: 'Median resolution time has exceeded the 48-hour threshold this period.',
-    });
+    if (ticketsToday > avgDaily * 1.5 && ticketsToday > 10) { // 50% higher than average and > 10 tickets
+      signals.push({
+        id: 'daily-spike',
+        entity: 'Velocity',
+        metric: `+${ticketsToday} tickets today`,
+        status: 'Watch',
+        icon: Zap,
+        change: 'Spike',
+        tooltip: `Ticket creation velocity is significantly higher today (${ticketsToday} tickets) than the average daily rate (${avgDaily.toFixed(1)}).`,
+      });
+    }
 
     // Ensure critical signals appear first
     const statusOrder = { 'Critical': 3, 'Watch': 2, 'Recovery': 1, 'Normal': 0 };
@@ -192,7 +212,7 @@ const OperationalTicker = ({ insights, allTickets, onSignalClick }: OperationalT
       transition: {
         x: {
           repeat: Infinity,
-          duration: tickerContent.length * 1.5, // Adjust speed based on number of items
+          duration: mappedSignals.length * 1.5, // Adjust speed based on number of items
           ease: 'linear',
         },
       },

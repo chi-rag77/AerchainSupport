@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal, ChevronUp } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal, ChevronUp, TrendingUp, Gauge } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,10 +37,11 @@ import InsightsSheet from "@/components/InsightsSheet";
 import PriorityDistributionChart from "@/components/PriorityDistributionChart";
 import AssigneeLoadChart from "@/components/AssigneeLoadChart";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import DashboardInsightsOverlay from "@/components/DashboardInsightsOverlay"; // New import
-import { invokeEdgeFunction } from "@/lib/apiClient"; // Corrected import
-import { ApiError } from "@/lib/errorHandler"; // Added missing import
-import OperationalTicker from "@/components/OperationalTicker"; // New import
+import DashboardInsightsOverlay from "@/components/DashboardInsightsOverlay";
+import { invokeEdgeFunction } from "@/lib/apiClient";
+import { ApiError } from "@/lib/errorHandler";
+import OperationalTicker from "@/components/OperationalTicker";
+import DashboardCriticalSignals from "@/components/DashboardCriticalSignals"; // New import
 
 const fetchDashboardInsights = async (): Promise<Insight[]> => {
   try {
@@ -83,7 +84,7 @@ const Index = () => {
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showMoreFilters, setShowMoreFilters] = useState(false); // New state for progressive disclosure
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   const [isFilteredTicketsModalOpen, setIsFilteredTicketsModalOpen] = useState(false);
   const [filteredModalTitle, setFilteredModalTitle] = useState("");
@@ -324,13 +325,13 @@ const Index = () => {
 
   const allOpenTickets = useMemo(() => {
     if (!freshdeskTickets) return [];
-    return freshdeskTickets.filter(ticket =>
-      (ticket.status.toLowerCase() === 'open (being processed)' ||
-       ticket.status.toLowerCase() === 'pending (awaiting your reply)' ||
-       ticket.status.toLowerCase() === 'waiting on customer' ||
-       ticket.status.toLowerCase() === 'on tech' ||
-       ticket.status.toLowerCase() === 'on product' ||
-       ticket.status.toLowerCase() === 'escalated')
+    return freshdeskTickets.filter(t =>
+      (t.status.toLowerCase() === 'open (being processed)' ||
+       t.status.toLowerCase() === 'pending (awaiting your reply)' ||
+       t.status.toLowerCase() === 'waiting on customer' ||
+       t.status.toLowerCase() === 'on tech' ||
+       t.status.toLowerCase() === 'on product' ||
+       t.status.toLowerCase() === 'escalated')
     );
   }, [freshdeskTickets]);
 
@@ -442,7 +443,7 @@ const Index = () => {
     let resSlaMetCount = 0;
     let resSlaTotalCount = 0;
     filteredDashboardTickets.forEach(ticket => {
-      if (ticket.due_by && (ticket.status.toLowerCase() === 'resolved' || ticket.status.toLowerCase() === 'closed')) {
+      if (ticket.due_by && (ticket.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed')) {
         resSlaTotalCount++;
         // Assuming updated_at is a proxy for resolved_at if actual field is missing
         if (parseISO(ticket.updated_at) <= parseISO(ticket.due_by)) {
@@ -566,189 +567,70 @@ const Index = () => {
     return isActive && isUrgent && isNearDue;
   });
 
-  const resolvedSlaMetList = filteredDashboardTickets.filter(t =>
-    (t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed') &&
-    t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by)
-  );
-
-  const firstResponseSlaMetList = filteredDashboardTickets.filter(t =>
-    t.fr_due_by && parseISO(t.updated_at) <= parseISO(t.fr_due_by)
-  );
-
-  const medianResolutionTimeList = filteredDashboardTickets.filter(t =>
-    t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
-  );
-
-  // Only the four requested metrics remain
-  const coreMetrics = [
+  // New KPI Cards for Dashboard V2
+  const coreMetricsV2 = [
     {
-      title: "Total Tickets",
-      value: metrics.totalTicketsOverall, // Overall count
+      title: "Tickets Created",
+      value: metrics.totalTickets,
       icon: TicketIcon,
       archetype: 'volume' as const,
-      trend: metrics.totalTicketsTrend, // Trend still based on filtered data
-      subtext: `Total volume in the system. Filtered period: ${metrics.totalTickets}`,
+      trend: metrics.totalTicketsTrend,
+      subtext: `Tickets created in the selected period.`,
       cta: "View all tickets",
-      onClick: () => handleKPIDrilldown("Total Tickets (Overall)", "All tickets currently in the system.", freshdeskTickets || []),
+      onClick: () => handleKPIDrilldown("Tickets Created", "All tickets created within the selected date range.", filteredDashboardTickets),
     },
     {
-      title: "Total Open Tickets",
-      value: metrics.totalOpenOverall, // Overall open count
+      title: "Open Backlog",
+      value: metrics.totalOpenOverall,
       icon: Hourglass,
-      archetype: 'volume' as const,
-      trend: metrics.openTicketsTrend, // Trend still based on filtered data
-      subtext: `Active backlog requiring attention. Filtered period: ${metrics.openTickets}`,
+      archetype: metrics.totalOpenOverall > 20 ? 'attention' as const : 'volume' as const,
+      trend: metrics.openTicketsTrend,
+      subtext: `Total active tickets across all time.`,
       cta: "View active queue",
       onClick: () => handleKPIDrilldown("Total Open Tickets (Overall)", "All tickets currently in an active status.", allOpenTickets),
     },
     {
-      title: "Resolved Tickets",
-      value: metrics.resolvedTickets,
-      icon: CheckCircle,
-      archetype: 'volume' as const,
-      trend: metrics.resolvedTicketsTrend,
-      subtext: `Tickets successfully closed this period.`,
-      cta: "View resolved tickets",
-      onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t =>
-        t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
-      )),
+      title: "Avg. Resolution Time",
+      value: metrics.medianResolutionTime,
+      icon: Clock,
+      archetype: 'health' as const,
+      trend: -5, // Placeholder trend for time (negative is good)
+      subtext: `Median time to resolve tickets this period.`,
+      cta: "Analyze efficiency",
+      onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", medianResolutionTimeList),
     },
     {
-      title: "Total Bugs Received",
-      value: metrics.totalBugsOverall, // Overall bug count
-      icon: Bug,
-      archetype: 'volume' as const,
-      trend: undefined, // No trend calculation for overall bug count
-      subtext: `Total tickets categorized as 'Bug' in the system.`,
-      cta: "Analyze bug volume",
-      onClick: () => handleKPIDrilldown("Total Bugs Received (Overall)", "All tickets categorized as 'Bug' in the system.", freshdeskTickets?.filter(t => t.type?.toLowerCase() === 'bug') || []),
+      title: "SLA Adherence (Res)",
+      value: metrics.resolutionSlaMet,
+      icon: ShieldAlert,
+      archetype: metrics.resolutionSlaMet.includes('N/A') || parseFloat(metrics.resolutionSlaMet) < 90 ? 'health' as const : 'volume' as const,
+      trend: 2, // Placeholder trend
+      subtext: `Percentage of resolved tickets meeting SLA.`,
+      cta: "View SLA breaches",
+      onClick: () => handleKPIDrilldown("SLA Met Tickets", "Tickets resolved within their SLA.", resolvedSlaMetList),
+    },
+    {
+      title: "Overdue Tickets",
+      value: overdueTicketsList.length,
+      icon: CalendarDays,
+      archetype: overdueTicketsList.length > 0 ? 'attention' as const : 'normal' as const,
+      trend: calculateTrend(overdueTicketsList.length, previousPeriodTickets.filter(t => t.due_by && isPast(parseISO(t.due_by))).length),
+      subtext: `Tickets past their due date.`,
+      cta: "Review overdue list",
+      onClick: () => handleKPIDrilldown("Overdue Tickets", "Tickets currently past their due date.", overdueTicketsList),
+    },
+    {
+      title: "Urgent Tickets at Risk",
+      value: urgentTicketsAtRiskList.length,
+      icon: AlertCircle,
+      archetype: urgentTicketsAtRiskList.length > 0 ? 'attention' as const : 'normal' as const,
+      trend: undefined,
+      subtext: `Urgent tickets due within 2 hours.`,
+      cta: "Prioritize now",
+      onClick: () => handleKPIDrilldown("Urgent Tickets at Risk", "Urgent tickets due within the next 2 hours.", urgentTicketsAtRiskList),
     },
   ];
 
-  const defaultFilters = [
-    {
-      label: "Date Range",
-      component: (
-        <Select
-          value={typeof activeDateFilter === 'string' ? activeDateFilter : "custom"}
-          onValueChange={(value) => {
-            if (value === "custom") {
-              setActiveDateFilter({ from: undefined, to: undefined });
-            } else {
-              setActiveDateFilter(value);
-            }
-          }}
-        >
-          <SelectTrigger className="w-[180px] bg-card">
-            <CalendarDays className="h-4 w-4 mr-2 text-gray-500" />
-            <SelectValue placeholder="Select Date Range">
-              {dateRangeDisplay}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="last7days">Last 7 Days</SelectItem>
-            <SelectItem value="last30days">Last 30 Days</SelectItem>
-            <SelectItem value="last90days">Last 90 Days</SelectItem>
-            <SelectItem value="alltime">All Time</SelectItem>
-            <SelectItem value="custom">Custom Range</SelectItem>
-          </SelectContent>
-        </Select>
-      ),
-    },
-    {
-      label: "Company",
-      component: (
-        <MultiSelect
-          options={uniqueCompanies.map(company => ({ value: company, label: company }))}
-          selected={selectedCompanies}
-          onSelectedChange={setSelectedCompanies}
-          placeholder="Filter by Company"
-          className="w-[200px] bg-card"
-          icon={Users}
-        />
-      ),
-    },
-    {
-      label: "Status",
-      component: (
-        <MultiSelect
-          options={uniqueStatuses.map(status => ({ value: status, label: status }))}
-          selected={selectedStatuses}
-          onSelectedChange={setSelectedStatuses}
-          placeholder="Filter by Status"
-          className="w-[180px] bg-card"
-          icon={Filter}
-        />
-      ),
-    },
-  ];
-
-  const moreFilters = [
-    {
-      label: "Country",
-      component: (
-        <MultiSelect
-          options={uniqueCountries.map(country => ({ value: country, label: country }))}
-          selected={selectedCountries}
-          onSelectedChange={setSelectedCountries}
-          placeholder="Filter by Country"
-          className="w-[180px] bg-card"
-          icon={MapPin}
-        />
-      ),
-    },
-    {
-      label: "Module",
-      component: (
-        <MultiSelect
-          options={uniqueModules.map(module => ({ value: module, label: module }))}
-          selected={selectedModules}
-          onSelectedChange={setSelectedModules}
-          placeholder="Filter by Module"
-          className="w-[180px] bg-card"
-          icon={GitFork}
-        />
-      ),
-    },
-    {
-      label: "Priority",
-      component: (
-        <MultiSelect
-          options={uniquePriorities.map(priority => ({ value: priority, label: priority }))}
-          selected={selectedPriorities}
-          onSelectedChange={setSelectedPriorities}
-          placeholder="Filter by Priority"
-          className="w-[180px] bg-card"
-          icon={Flag}
-        />
-      ),
-    },
-  ];
-
-  const getInsightSeverityClass = (severity: Insight['severity']) => {
-    switch (severity) {
-      case 'critical': return "bg-red-500 text-white";
-      case 'warning': return "bg-yellow-500 text-black";
-      case 'info': return "bg-blue-500 text-white";
-      default: return "bg-gray-500 text-white";
-    }
-  };
-
-  // Helper to generate trend tooltip content
-  const getTrendTooltip = (trend: number | undefined) => {
-    if (trend === undefined) return "No comparison data available for this period.";
-    
-    let periodLabel = "previous period";
-    if (typeof activeDateFilter === 'string' && activeDateFilter !== 'custom') {
-      periodLabel = `previous ${activeDateFilter.replace('last', '')}`;
-    } else if (effectiveStartDate && previousEffectiveStartDate) {
-      const durationDays = differenceInDays(effectiveEndDate || new Date(), effectiveStartDate) + 1;
-      periodLabel = `previous ${durationDays} days`;
-    }
-
-    return `Compared to ${periodLabel}`;
-  };
 
   return (
     <>
@@ -921,9 +803,8 @@ const Index = () => {
                   <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                     <LayoutDashboard className="h-6 w-6 text-blue-600" /> Key Performance Indicators
                   </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {/* Only the four core metrics remain */}
-                    {coreMetrics.map((metric, index) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                    {coreMetricsV2.map((metric, index) => (
                       <DashboardMetricCardV2
                         key={index}
                         {...metric}
@@ -935,7 +816,21 @@ const Index = () => {
 
                 <Separator className="my-10" />
 
-                {/* Row 2: Charts */}
+                {/* Row 2: Critical Signals Panel */}
+                <section>
+                  <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+                    <AlertCircle className="h-6 w-6 text-red-600" /> Top Critical Signals
+                  </h2>
+                  <DashboardCriticalSignals 
+                    insights={dashboardInsights || []} 
+                    allTickets={freshdeskTickets || []} 
+                    onViewTicketDetails={handleViewTicketDetails} 
+                  />
+                </section>
+
+                <Separator className="my-10" />
+
+                {/* Row 3: Charts */}
                 <section>
                   <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                     <BarChart2 className="h-6 w-6 text-indigo-600" /> Key Visualizations
@@ -983,7 +878,7 @@ const Index = () => {
 
                 <Separator className="my-10" />
 
-                {/* Row 3: Tables & Risk/Escalation Panels */}
+                {/* Row 4: Tables & Risk/Escalation Panels */}
                 <section>
                   <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
                     <Table2 className="h-6 w-6 text-orange-600" /> Detailed Views & Risk Panels
