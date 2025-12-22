@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal, ChevronUp, TrendingUp, Gauge } from "lucide-react";
+import { Search, LayoutDashboard, TicketIcon, Hourglass, CalendarDays, CheckCircle, AlertCircle, ShieldAlert, Download, Filter, Bookmark, ChevronDown, Bug, Clock, User, Percent, Users, Loader2, Table2, LayoutGrid, Info, Lightbulb, RefreshCw, BarChart2, Flag, MapPin, GitFork, SlidersHorizontal, ChevronUp, TrendingUp, Gauge, Building2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -385,12 +385,7 @@ const Index = () => {
     // Overall Counts (Unfiltered by Date/Filters)
     const totalTicketsOverall = freshdeskTickets.length;
     const totalOpenOverall = freshdeskTickets.filter(t =>
-      t.status.toLowerCase() === 'open (being processed)' ||
-      t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-      t.status.toLowerCase() === 'waiting on customer' ||
-      t.status.toLowerCase() === 'on tech' ||
-      t.status.toLowerCase() === 'on product' ||
-      t.status.toLowerCase() === 'escalated'
+      (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed')
     ).length;
     const totalBugsOverall = freshdeskTickets.filter(t => t.type?.toLowerCase() === 'bug').length;
 
@@ -398,12 +393,7 @@ const Index = () => {
     // Previous Period Counts (for trend calculation)
     const prevTotalTickets = previousPeriodTickets.length;
     const prevOpenTickets = previousPeriodTickets.filter(t =>
-      t.status.toLowerCase() === 'open (being processed)' ||
-      t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-      t.status.toLowerCase() === 'waiting on customer' ||
-      t.status.toLowerCase() === 'on tech' ||
-      t.status.toLowerCase() === 'on product' ||
-      t.status.toLowerCase() === 'escalated'
+      (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed')
     ).length;
     const prevResolvedTickets = previousPeriodTickets.filter(t =>
       t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed'
@@ -416,12 +406,7 @@ const Index = () => {
 
 
     const overdueTickets = filteredDashboardTickets.filter(t =>
-      (t.status.toLowerCase() === 'open (being processed)' ||
-       t.status.toLowerCase() === 'pending (awaiting your reply)' ||
-       t.status.toLowerCase() === 'waiting on customer' ||
-       t.status.toLowerCase() === 'on tech' ||
-       t.status.toLowerCase() === 'on product' ||
-       t.status.toLowerCase() === 'escalated') &&
+      (t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed') &&
       t.due_by && isPast(parseISO(t.due_by))
     ).length;
 
@@ -567,6 +552,110 @@ const Index = () => {
     return isActive && isUrgent && isNearDue;
   });
 
+  // --- Filter Definitions ---
+  const defaultFilters = useMemo(() => [
+    {
+      key: 'date-range',
+      component: (
+        <Select
+          value={typeof activeDateFilter === 'string' ? activeDateFilter : "custom"}
+          onValueChange={(value) => {
+            if (value === "custom") {
+              setActiveDateFilter({ from: undefined, to: undefined });
+            } else {
+              setActiveDateFilter(value);
+            }
+          }}
+        >
+          <SelectTrigger className="w-[180px] bg-card">
+            <CalendarDays className="h-4 w-4 mr-2 text-gray-500" />
+            <SelectValue placeholder="Select Date Range">
+              {dateRangeDisplay}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="last7days">Last 7 Days</SelectItem>
+            <SelectItem value="last30days">Last 30 Days</SelectItem>
+            <SelectItem value="last90days">Last 90 Days</SelectItem>
+            <SelectItem value="alltime">All Time</SelectItem>
+            <SelectItem value="custom">Custom Range</SelectItem>
+          </SelectContent>
+        </Select>
+      )
+    },
+    {
+      key: 'company',
+      component: (
+        <MultiSelect
+          options={uniqueCompanies.map(company => ({ value: company, label: company }))}
+          selected={selectedCompanies}
+          onSelectedChange={setSelectedCompanies}
+          placeholder="Filter by Company"
+          icon={Building2}
+          className="w-[200px] bg-card"
+        />
+      )
+    },
+    {
+      key: 'status',
+      component: (
+        <MultiSelect
+          options={uniqueStatuses.map(status => ({ value: status, label: status }))}
+          selected={selectedStatuses}
+          onSelectedChange={setSelectedStatuses}
+          placeholder="Filter by Status"
+          icon={Flag}
+          className="w-[200px] bg-card"
+        />
+      )
+    },
+  ], [activeDateFilter, dateRangeDisplay, uniqueCompanies, selectedCompanies, uniqueStatuses, selectedStatuses]);
+
+  const moreFilters = useMemo(() => [
+    {
+      key: 'country',
+      component: (
+        <MultiSelect
+          options={uniqueCountries.map(country => ({ value: country, label: country }))}
+          selected={selectedCountries}
+          onSelectedChange={setSelectedCountries}
+          placeholder="Filter by Country"
+          icon={MapPin}
+          className="w-[180px] bg-card"
+        />
+      )
+    },
+    {
+      key: 'module',
+      component: (
+        <MultiSelect
+          options={uniqueModules.map(module => ({ value: module, label: module }))}
+          selected={selectedModules}
+          onSelectedChange={setSelectedModules}
+          placeholder="Filter by Module"
+          icon={GitFork}
+          className="w-[180px] bg-card"
+        />
+      )
+    },
+    {
+      key: 'priority',
+      component: (
+        <MultiSelect
+          options={uniquePriorities.map(priority => ({ value: priority, label: priority }))}
+          selected={selectedPriorities}
+          onSelectedChange={setSelectedPriorities}
+          placeholder="Filter by Priority"
+          icon={AlertCircle}
+          className="w-[180px] bg-card"
+        />
+      )
+    },
+  ], [uniqueCountries, selectedCountries, uniqueModules, selectedModules, uniquePriorities, selectedPriorities]);
+  // --- End Filter Definitions ---
+
+
   // New KPI Cards for Dashboard V2
   const coreMetricsV2 = [
     {
@@ -597,7 +686,7 @@ const Index = () => {
       trend: -5, // Placeholder trend for time (negative is good)
       subtext: `Median time to resolve tickets this period.`,
       cta: "Analyze efficiency",
-      onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", medianResolutionTimeList),
+      onClick: () => handleKPIDrilldown("Resolved Tickets", "Tickets resolved or closed within the selected date range.", filteredDashboardTickets.filter(t => t.status.toLowerCase() === 'resolved' || t.status.toLowerCase() === 'closed')),
     },
     {
       title: "SLA Adherence (Res)",
@@ -607,7 +696,7 @@ const Index = () => {
       trend: 2, // Placeholder trend
       subtext: `Percentage of resolved tickets meeting SLA.`,
       cta: "View SLA breaches",
-      onClick: () => handleKPIDrilldown("SLA Met Tickets", "Tickets resolved within their SLA.", resolvedSlaMetList),
+      onClick: () => handleKPIDrilldown("SLA Met Tickets", "Tickets resolved within their SLA.", filteredDashboardTickets.filter(t => t.due_by && parseISO(t.updated_at) <= parseISO(t.due_by))),
     },
     {
       title: "Overdue Tickets",
