@@ -3,13 +3,14 @@
 import React, { useEffect } from 'react';
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Settings, Loader2, AlertCircle, Users, KeyRound } from "lucide-react";
+import { Settings, Loader2, AlertCircle, Users, KeyRound, Zap } from "lucide-react";
 import HandWaveIcon from "@/components/HandWaveIcon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrgData } from '@/hooks/use-org-user';
 import FreshdeskSettings from '@/components/settings/FreshdeskSettings';
 import UserManagement from '@/components/settings/UserManagement';
+import AutomationRuleBuilder from '@/components/settings/AutomationRuleBuilder'; // New import
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client'; // Ensure supabase client is imported
 
@@ -115,12 +116,15 @@ const SettingsPage = () => {
           {/* Settings Tabs */}
           <div className="p-8">
             <Tabs defaultValue="freshdesk" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsList className="grid w-full grid-cols-3 max-w-2xl">
                 <TabsTrigger value="freshdesk" className="flex items-center gap-2">
                   <KeyRound className="h-4 w-4" /> Freshdesk Config
                 </TabsTrigger>
                 <TabsTrigger value="users" className="flex items-center gap-2" disabled={!orgUser || orgUser.role !== 'admin'}>
                   <Users className="h-4 w-4" /> User Management
+                </TabsTrigger>
+                <TabsTrigger value="automation" className="flex items-center gap-2" disabled={!orgUser || orgUser.role !== 'admin'}>
+                  <Zap className="h-4 w-4" /> Automation Rules
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="freshdesk" className="mt-6">
@@ -128,6 +132,9 @@ const SettingsPage = () => {
               </TabsContent>
               <TabsContent value="users" className="mt-6">
                 <UserManagement />
+              </TabsContent>
+              <TabsContent value="automation" className="mt-6">
+                <AutomationRuleBuilder />
               </TabsContent>
             </Tabs>
           </div>

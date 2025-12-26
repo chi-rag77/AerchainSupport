@@ -62,3 +62,30 @@ export type OrgSettings = {
   created_at: string;
   updated_at: string;
 };
+
+// --- Automation Rule Types ---
+export type RuleField = 'status' | 'priority' | 'assignee' | 'company' | 'type' | 'age_days' | 'time_since_update_hours';
+export type RuleOperator = 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'is_past';
+export type RuleActionType = 'reassign' | 'update_priority' | 'update_status' | 'send_notification';
+
+export interface RuleCondition {
+  field: RuleField;
+  operator: RuleOperator;
+  value: string | number;
+}
+
+export interface RuleAction {
+  type: RuleActionType;
+  target_value: string; // e.g., assignee email, new priority value, status value
+}
+
+export interface AutomationRule {
+  id: string;
+  org_id: string;
+  name: string;
+  is_active: boolean;
+  trigger_conditions: RuleCondition[];
+  actions: RuleAction[];
+  last_executed_at: string | null;
+  created_at: string;
+}
