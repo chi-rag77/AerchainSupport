@@ -3,60 +3,53 @@
 import React from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { LayoutDashboard } from "lucide-react";
-import HandWaveIcon from "@/components/HandWaveIcon";
-// import WeeklySupportSummaryCard from "@/components/WeeklySupportSummaryCard"; // Removed import
+import { useExecutiveDashboard } from "@/features/dashboard/hooks/useExecutiveDashboard";
+import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
+import KPISection from "@/components/dashboard/KPISection";
+import { Loader2 } from "lucide-react";
 
 const DashboardV2 = () => {
   const { session } = useSupabase();
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
-  // Dummy data for the WeeklySupportSummaryCard - REMOVED
-  // const dummyWeeklySummaryData = {
-  //   customerName: "Acme Corp",
-  //   metrics: {
-  //     ticketsCreatedThisWeek: 42,
-  //     ticketsResolvedThisWeek: 35,
-  //     stillOpenFromThisWeek: 7,
-  //     totalOpenIncludingPrevious: 24,
-  //   },
-  //   ticketMix: {
-  //     bug: { count: 6, percentage: 14 },
-  //     query: { count: 29, percentage: 69 },
-  //     taskChange: { count: 7, percentage: 17 },
-  //   },
-  // };
+  const { data, isLoading, isFetching } = useExecutiveDashboard();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
+        <p className="text-lg font-medium text-muted-foreground">Initializing Executive Intelligence...</p>
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
-          {/* Title Bar */}
-          <div className="p-8 pb-6 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex flex-col items-start">
-                <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2">
-                  Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
-                </p>
-                <div className="flex items-center space-x-4">
-                  <LayoutDashboard className="h-8 w-8 text-primary" />
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Revamped Dashboard</h1>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  This is your new dashboard, ready for a fresh design!
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
+        {/* Section 1: Executive Hero */}
+        <ExecutiveHero 
+          userName={fullName}
+          slaRiskScore={data.slaRiskScore}
+          lastSync={data.lastSync}
+          isSyncing={isFetching}
+          onSync={() => {}} // To be implemented
+          onViewInsights={() => {}} // To be implemented
+        />
 
-          {/* Content area for your new design */}
-          <div className="flex-grow p-8 text-center text-muted-foreground flex items-center justify-center">
-            <div className="w-full max-w-md">
-              <p className="text-xl mb-8">Your new dashboard starts here!</p>
-              {/* WeeklySupportSummaryCard - REMOVED */}
-              {/* <WeeklySupportSummaryCard data={dummyWeeklySummaryData} /> */}
-            </div>
+        {/* Section 2: KPI Intelligence */}
+        <KPISection 
+          metrics={data.kpis}
+          isLoading={isLoading}
+        />
+
+        {/* Placeholder for remaining sections */}
+        <div className="grid grid-cols-1 gap-10 opacity-50 pointer-events-none">
+          <div className="h-24 bg-white dark:bg-gray-800 rounded-[24px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-medium">
+            AI Insight Strip (Coming Next)
+          </div>
+          <div className="h-96 bg-white dark:bg-gray-800 rounded-[24px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-medium">
+            Operational Intelligence (Coming Next)
           </div>
         </div>
       </div>
