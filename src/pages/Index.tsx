@@ -38,9 +38,11 @@ const Index = () => {
       });
       if (error) throw error;
       toast.success("Data synchronized!", { id: "sync-dashboard" });
+      
+      // Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] });
-      queryKey: ['trendData']
+      queryClient.invalidateQueries({ queryKey: ['trendData'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
@@ -70,6 +72,7 @@ const Index = () => {
           isSyncing={isFetching}
           onSync={handleSync}
           onViewInsights={() => {}} 
+          summary={data.executiveSummary}
         />
 
         {/* Section 2: AI Insight Strip */}
