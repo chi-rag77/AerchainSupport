@@ -22,12 +22,6 @@ const Index = () => {
 
   const { data, isLoading, isFetching } = useExecutiveDashboard();
   const [showInsight, setShowInsight] = useState(true);
-  
-  // Date Range State
-  const [dateRange, setDateRange] = useState({
-    from: subDays(new Date(), 7),
-    to: new Date()
-  });
 
   const handleSync = async () => {
     toast.loading("Syncing Freshdesk data...", { id: "sync-dashboard" });
@@ -38,11 +32,8 @@ const Index = () => {
       });
       if (error) throw error;
       toast.success("Data synchronized!", { id: "sync-dashboard" });
-      
-      // Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] });
-      queryClient.invalidateQueries({ queryKey: ['trendData'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
@@ -57,9 +48,13 @@ const Index = () => {
     );
   }
 
+  // Use real insights from the backend
   const activeInsight = (showInsight && data.insights && data.insights.length > 0) 
     ? data.insights[0] 
     : null;
+
+  const now = new Date();
+  const startDate = subDays(now, 30);
 
   return (
     <TooltipProvider>
@@ -72,7 +67,6 @@ const Index = () => {
           isSyncing={isFetching}
           onSync={handleSync}
           onViewInsights={() => {}} 
-          summary={data.executiveSummary}
         />
 
         {/* Section 2: AI Insight Strip */}
@@ -87,9 +81,12 @@ const Index = () => {
           isLoading={isLoading}
         />
 
-        {/* Section 4: Operational Intelligence (Volume & SLA) */}
+        {/* Section 4: Operational Intelligence */}
         <OperationalIntelligence 
-          dateRange={dateRange}
+          summary={data.executiveSummary}
+          tickets={[]} // VolumeSlaTrendChart handles its own filtering if needed, but we can pass all tickets
+          startDate={startDate}
+          endDate={now}
         />
 
         {/* Placeholder for remaining sections */}
