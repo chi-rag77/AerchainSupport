@@ -20,7 +20,7 @@ serve(async (req) => {
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'Environment variables not set.' }), {
+      return new Response(JSON.stringify({ error: 'Environment variables (SUPABASE_URL, SUPABASE_ANON_KEY, or GEMINI_API_KEY) not set in Supabase secrets.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -59,34 +59,50 @@ serve(async (req) => {
     }
 
     // 2. Fetch Messages
-    const { data: messages } = await supabase
+    const { data: messages, error: msgError } = await supabase
       .from('ticket_messages')
       .select('*')
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: false })
       .limit(20);
 
+    if (msgError) throw msgError;
+
     if (!messages || messages.length === 0) {
-      return new Response(JSON.stringify({ error: 'No conversation found to analyze.' }), { status: 404, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'No conversation found to analyze. Please sync messages first.' }), { status: 404, headers: corsHeaders });
     }
 
-    // 3. Call AI
+    // 3. Call AI (Using gemini-1.5-flash for better reliability and speed)
     const prompt = getAnalysisPrompt(customerName || 'Unknown', messages.reverse());
     
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+    console.log(`[analyze-ticket-ai] Calling Gemini API for ticket ${ticketId}...`);
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
     });
 
-    if (!geminiResponse.ok) throw new Error('Gemini API failed');
+    if (!geminiResponse.ok) {
+      const errorBody = await geminiResponse.text();
+      console.error(`[analyze-ticket-ai] Gemini API Error (${geminiResponse.status}):`, errorBody);
+      return new Response(JSON.stringify({ error: `Gemini API failed with status ${geminiResponse.status}. Check Supabase logs for details.` }), {
+        status: geminiResponse.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const geminiData = await geminiResponse.json();
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     
     // Clean JSON response (sometimes AI wraps in markdown)
     const jsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const analysis = JSON.parse(jsonStr);
+    let analysis;
+    try {
+      analysis = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error("[analyze-ticket-ai] Failed to parse AI response:", rawText);
+      throw new Error("AI returned an invalid data format.");
+    }
 
     // 4. Save to DB
     const dbPayload = {
@@ -109,7 +125,7 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (upsertError) console.error('Upsert error:', upsertError);
+    if (upsertError) console.error('[analyze-ticket-ai] DB Upsert error:', upsertError);
 
     return new Response(JSON.stringify(savedData || dbPayload), {
       status: 200,
@@ -117,7 +133,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('[analyze-ticket-ai] Error:', error);
+    console.error('[analyze-ticket-ai] Internal Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
