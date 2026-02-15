@@ -7,10 +7,20 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSlackIntegration } from '@/features/integrations/hooks/useSlackIntegration';
 import { SlackEventType } from '@/features/integrations/types';
-import { Loader2, Slack, CheckCircle2, AlertCircle, Send, LogOut, Zap, ShieldAlert, TrendingUp, Users, Brain } from 'lucide-react';
+import { 
+  Loader2, Slack, CheckCircle2, AlertCircle, Send, LogOut, Zap, 
+  ShieldAlert, TrendingUp, Users, Brain, Info, ShieldCheck, Settings, 
+  Lock, Code, ChevronRight 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const EVENT_CONFIG: { type: SlackEventType; label: string; description: string; icon: React.ElementType }[] = [
   { type: 'SLA_BREACH', label: 'SLA Breach Alerts', description: 'Notify when tickets are predicted to breach SLA.', icon: ShieldAlert },
@@ -24,12 +34,9 @@ const SlackIntegration = () => {
   const { integration, rules, isConnected, isLoading, updateRule, disconnect, sendTest, isTesting } = useSlackIntegration();
 
   const handleConnect = () => {
-    // In a real app, this would redirect to the Slack OAuth URL
-    // For this DIY setup, we'll point to our edge function callback
-    const clientId = "YOUR_SLACK_CLIENT_ID"; // This should be in env/secrets
+    const clientId = "YOUR_SLACK_CLIENT_ID"; 
     const redirectUri = `${window.location.origin}/functions/v1/slack-oauth-callback`;
     const scope = "chat:write,channels:read,groups:read";
-    
     window.location.href = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scope}&redirect_uri=${encodeURIComponent(redirectUri)}`;
   };
 
@@ -73,6 +80,68 @@ const SlackIntegration = () => {
           </div>
         </CardHeader>
         <CardContent className="p-8 pt-0 space-y-6">
+          
+          {/* How it works section */}
+          <div className="bg-gray-50/50 dark:bg-gray-900/50 rounded-[16px] border border-border/50 shadow-inner overflow-hidden">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="how-it-works" className="border-none">
+                <AccordionTrigger className="px-6 py-3 hover:no-underline group">
+                  <div className="flex items-center gap-2 text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                    <Info className="h-4 w-4" />
+                    Learn how Slack integration works
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-foreground">
+                        <ShieldCheck className="h-3.5 w-3.5 text-green-500" /> What gets sent to Slack
+                      </h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        When connected, your workspace receives SLA predictions, escalation risks, volume spikes, and AI summaries. <strong>No ticket content is sent</strong> unless explicitly included in the alert summary.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-foreground">
+                        <Zap className="h-3.5 w-3.5 text-amber-500" /> When alerts are triggered
+                      </h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Alerts trigger automatically when SLA breaches are predicted, risk levels become High, or agent capacity is reached. You have full control over which alerts are enabled.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-foreground">
+                        <Lock className="h-3.5 w-3.5 text-blue-500" /> Security & Permissions
+                      </h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        We request minimum permissions: posting to channels and reading channel lists. Your bot token is <strong>encrypted and securely stored</strong>. We never access private messages.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-foreground">
+                        <Settings className="h-3.5 w-3.5 text-purple-500" /> How to configure
+                      </h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        After connecting, select a default channel and toggle specific alert types. You can send a test message anytime to verify the connection is active.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <Separator className="opacity-50" />
+                  
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-foreground">
+                      <Code className="h-3.5 w-3.5 text-gray-500" /> Technical Overview (Advanced)
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Alerts are event-driven and sent via a dedicated Slack Bot. There is no continuous polling; data is synced via secure server-side APIs to ensure performance and integrity.
+                    </p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
           {isConnected ? (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-6 rounded-2xl bg-white/50 dark:bg-gray-900/50 border border-white/20">
               <div className="space-y-1">
@@ -90,16 +159,19 @@ const SlackIntegration = () => {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 space-y-6">
-              <div className="max-w-sm mx-auto space-y-2">
-                <p className="text-sm text-muted-foreground font-medium">
-                  Enable real-time operational intelligence directly in your team's Slack channels.
+            <div className="text-center py-4 space-y-6">
+              <div className="max-w-sm mx-auto space-y-3">
+                <p className="text-sm font-bold text-foreground">
+                  Deliver AI-powered operational intelligence directly to your team’s workflow.
                 </p>
+                <Button onClick={handleConnect} className="rounded-full bg-[#4A154B] hover:bg-[#3a113b] text-white h-12 px-8 font-bold gap-2 shadow-lg shadow-purple-500/20">
+                  <Slack className="h-5 w-5" />
+                  Connect with Slack
+                </Button>
+                <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  <Lock className="h-3 w-3" /> Secure OAuth 2.0 Connection
+                </div>
               </div>
-              <Button onClick={handleConnect} className="rounded-full bg-[#4A154B] hover:bg-[#3a113b] text-white h-12 px-8 font-bold gap-2 shadow-lg shadow-purple-500/20">
-                <Slack className="h-5 w-5" />
-                Connect with Slack
-              </Button>
             </div>
           )}
         </CardContent>
