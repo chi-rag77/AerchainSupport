@@ -1,28 +1,32 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { DashboardProvider, useDashboard } from "@/features/dashboard/DashboardContext";
 import { useExecutiveDashboard } from "@/features/dashboard/hooks/useExecutiveDashboard";
 import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
 import KPISection from "@/components/dashboard/KPISection";
 import AIInsightStrip from "@/components/dashboard/AIInsightStrip";
 import OperationalIntelligence from "@/components/dashboard/OperationalIntelligence";
 import ActiveRiskSection from "@/components/dashboard/ActiveRiskSection";
+import ViewModeSelector from "@/components/dashboard/ViewModeSelector";
+import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { subDays } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 
-const Index = () => {
+const DashboardContent = () => {
   const { session } = useSupabase();
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const queryClient = useQueryClient();
 
-  const { data, tickets, isLoading, isFetching } = useExecutiveDashboard();
+  const { viewMode, dateRange } = useDashboard();
+  const { data, tickets, uniqueCompanies, isLoading, isFetching } = useExecutiveDashboard();
   const [showInsight, setShowInsight] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,11 +48,6 @@ const Index = () => {
     }
   };
 
-  const handleViewTicket = (ticket: any) => {
-    setSelectedTicket(ticket);
-    setIsModalOpen(true);
-  };
-
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
@@ -62,62 +61,78 @@ const Index = () => {
     ? data.insights[0] 
     : null;
 
-  const now = new Date();
-  const startDate = subDays(now, 30);
-
   return (
-    <TooltipProvider>
-      <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
-        {/* Section 1: Executive Hero */}
-        <ExecutiveHero 
-          userName={fullName}
-          slaRiskScore={data.slaRiskScore}
-          lastSync={data.lastSync}
-          isSyncing={isFetching}
-          onSync={handleSync}
-          onViewInsights={() => {}} 
-        />
+    <div className="flex-1 flex flex-col p-8 space-y-8 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
+      {/* Section 1: Executive Hero */}
+      <ExecutiveHero 
+        userName={fullName}
+        slaRiskScore={data.slaRiskScore}
+        lastSync={data.lastSync}
+        isSyncing={isFetching}
+        onSync={handleSync}
+        onViewInsights={() => {}} 
+      />
 
-        {/* Section 2: AI Insight Strip */}
-        <AIInsightStrip 
-          insight={activeInsight}
-          onDismiss={() => setShowInsight(false)}
-        />
-
-        {/* Section 3: KPI Intelligence */}
-        <KPISection 
-          metrics={data.kpis}
-          isLoading={isLoading}
-        />
-
-        {/* Section 4: Operational Intelligence */}
-        <OperationalIntelligence 
-          summary={data.executiveSummary}
-          tickets={tickets}
-          startDate={startDate}
-          endDate={now}
-        />
-
-        {/* Section 5: Active Risk Dashboard */}
-        <ActiveRiskSection onViewTicket={handleViewTicket} />
-
-        {/* Placeholder for remaining sections */}
-        <div className="grid grid-cols-1 gap-10 opacity-50 pointer-events-none">
-          <div className="h-96 bg-white dark:bg-gray-800 rounded-[24px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-medium">
-            Team Intelligence (Coming Next)
-          </div>
-        </div>
-
-        {selectedTicket && (
-          <TicketDetailModal 
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            ticket={selectedTicket}
-          />
-        )}
+      {/* Section 2: View Mode Selector */}
+      <div className="flex justify-center">
+        <ViewModeSelector />
       </div>
-    </TooltipProvider>
+
+      {/* Section 3: AI Insight Strip */}
+      <AIInsightStrip 
+        insight={activeInsight}
+        onDismiss={() => setShowInsight(false)}
+      />
+
+      {/* Section 4: KPI Intelligence */}
+      <KPISection 
+        metrics={data.kpis}
+        isLoading={isLoading}
+      />
+
+      {/* Section 5: Global Filter Bar */}
+      <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
+
+      {/* Section 6: Dynamic Content based on View Mode */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={viewMode}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.4 }}
+          className="space-y-10"
+        >
+          {(viewMode === 'overview' || viewMode === 'performance') && (
+            <OperationalIntelligence 
+              summary={data.executiveSummary}
+              tickets={tickets}
+              startDate={dateRange.from!}
+              endDate={dateRange.to!}
+            />
+          )}
+
+          {(viewMode === 'overview' || viewMode === 'risk') && (
+            <ActiveRiskSection onViewTicket={(t) => { setSelectedTicket(t); setIsModalOpen(true); }} />
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {selectedTicket && (
+        <TicketDetailModal 
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          ticket={selectedTicket}
+        />
+      )}
+    </div>
   );
 };
+
+const Index = () => (
+  <DashboardProvider>
+    <DashboardContent />
+  </DashboardProvider>
+);
 
 export default Index;
