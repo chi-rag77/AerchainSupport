@@ -19,7 +19,7 @@ export function useExecutiveDashboard() {
     }
   });
 
-  // 2. Fetch AI Insights & Summary (Passing filters to backend)
+  // 2. Fetch AI Insights & Summary
   const { data: aiData, isLoading: isLoadingAI } = useQuery({
     queryKey: ['dashboardInsights', dateRange, filters],
     queryFn: async () => {
@@ -32,22 +32,32 @@ export function useExecutiveDashboard() {
     }
   });
 
+  // 3. Fetch Operational Intelligence (New)
+  const { data: opIntel, isLoading: isLoadingOp } = useQuery({
+    queryKey: ['operationalIntelligence', dateRange, filters],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-operational-intelligence', { 
+        method: 'POST',
+        body: { dateRange, filters }
+      });
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const dashboardData: DashboardData = useMemo(() => {
     const now = new Date();
     
-    // Apply Global Filters to local calculations
     let filtered = tickets;
     if (filters.company) filtered = filtered.filter(t => t.cf_company === filters.company);
     if (filters.status) filtered = filtered.filter(t => t.status === filters.status);
     if (filters.priority) filtered = filtered.filter(t => t.priority === filters.priority);
 
-    // Apply Date Range
     const currentTickets = filtered.filter(t => {
       const created = parseISO(t.created_at);
       return isWithinInterval(created, { start: dateRange.from!, end: dateRange.to! });
     });
 
-    // Previous period for trends
     const duration = dateRange.to!.getTime() - dateRange.from!.getTime();
     const prevStart = new Date(dateRange.from!.getTime() - duration);
     const prevEnd = new Date(dateRange.to!.getTime() - duration);
@@ -98,12 +108,19 @@ export function useExecutiveDashboard() {
       executiveSummary: aiData?.executiveSummary || null,
       kpis,
       risks: aiData?.risks || [],
-      team: [],
-      slaRiskScore,
+      bottlenecks: opIntel?.bottlenecks || [],
+      forecast: opIntel?.forecast || { forecastVolume: 0, forecastSLA: 0, breachProbability: 0, aiNarrative: "" },
+      customerRisks: opIntel?.customerRisks || [],
+      agentCapacity: opIntel?.agentCapacity || [],
+      clusters: [],
+      slaTimeline: [],
+      actions: opIntel?.actions || [],
+      systemHealth: opIntel?.systemHealth || { aiConfidence: 0, dataFreshness: "", syncIntegrity: "Healthy" },
       lastSync: tickets.length > 0 ? tickets[0].updated_at : now.toISOString(),
-      insights: aiData?.insights || []
+      insights: aiData?.insights || [],
+      slaRiskScore
     };
-  }, [tickets, aiData, dateRange, filters]);
+  }, [tickets, aiData, opIntel, dateRange, filters]);
 
   const uniqueCompanies = useMemo(() => {
     const cos = new Set<string>();
@@ -115,7 +132,7 @@ export function useExecutiveDashboard() {
     data: dashboardData,
     tickets,
     uniqueCompanies,
-    isLoading: isLoadingTickets || isLoadingAI,
+    isLoading: isLoadingTickets || isLoadingAI || isLoadingOp,
     isFetching,
   };
 }

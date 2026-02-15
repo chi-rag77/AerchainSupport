@@ -12,12 +12,17 @@ import OperationalIntelligence from "@/components/dashboard/OperationalIntellige
 import ActiveRiskSection from "@/components/dashboard/ActiveRiskSection";
 import ViewModeSelector from "@/components/dashboard/ViewModeSelector";
 import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
+import OperationalBottlenecks from "@/components/dashboard/OperationalBottlenecks";
+import PredictiveForecast from "@/components/dashboard/PredictiveForecast";
+import ExecutiveActionCenter from "@/components/dashboard/ExecutiveActionCenter";
+import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { Separator } from "@/components/ui/separator";
 
 const DashboardContent = () => {
   const { session } = useSupabase();
@@ -43,6 +48,7 @@ const DashboardContent = () => {
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] });
       queryClient.invalidateQueries({ queryKey: ['activeRisks'] });
+      queryClient.invalidateQueries({ queryKey: ['operationalIntelligence'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
@@ -62,7 +68,7 @@ const DashboardContent = () => {
     : null;
 
   return (
-    <div className="flex-1 flex flex-col p-8 space-y-8 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
+    <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
       {/* Section 1: Executive Hero */}
       <ExecutiveHero 
         userName={fullName}
@@ -101,22 +107,36 @@ const DashboardContent = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4 }}
-          className="space-y-10"
+          className="space-y-12"
         >
           {(viewMode === 'overview' || viewMode === 'performance') && (
-            <OperationalIntelligence 
-              summary={data.executiveSummary}
-              tickets={tickets}
-              startDate={dateRange.from!}
-              endDate={dateRange.to!}
-            />
+            <>
+              <OperationalIntelligence 
+                summary={data.executiveSummary}
+                tickets={tickets}
+                startDate={dateRange.from!}
+                endDate={dateRange.to!}
+              />
+              <OperationalBottlenecks data={data.bottlenecks} />
+              <PredictiveForecast data={data.forecast} />
+            </>
           )}
 
           {(viewMode === 'overview' || viewMode === 'risk') && (
             <ActiveRiskSection onViewTicket={(t) => { setSelectedTicket(t); setIsModalOpen(true); }} />
           )}
+
+          {viewMode === 'overview' && (
+            <>
+              <Separator className="bg-gray-200 dark:bg-gray-800" />
+              <ExecutiveActionCenter actions={data.actions} />
+            </>
+          )}
         </motion.div>
       </AnimatePresence>
+
+      {/* Section 7: System Health & Confidence */}
+      <SystemHealthPanel data={data.systemHealth} />
 
       {selectedTicket && (
         <TicketDetailModal 
