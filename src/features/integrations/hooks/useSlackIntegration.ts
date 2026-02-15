@@ -12,12 +12,16 @@ export function useSlackIntegration() {
     queryKey: ['slackIntegration', orgId],
     queryFn: () => fetchSlackIntegration(orgId!),
     enabled: !!orgId,
+    staleTime: 10 * 60 * 1000, // 10 minutes - prevents constant refreshing
+    retry: 1, // Don't retry too many times if table is missing
   });
 
   const { data: rules = [], isLoading: isLoadingRules } = useQuery({
     queryKey: ['slackRules', orgId],
     queryFn: () => fetchSlackRules(orgId!),
     enabled: !!orgId,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 1,
   });
 
   const updateRuleMutation = useMutation({
