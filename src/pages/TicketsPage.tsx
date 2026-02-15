@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { useTickets } from "@/features/tickets/hooks/useTickets";
 import { useQueueState } from "@/features/queue/hooks/useQueueState";
@@ -8,10 +8,11 @@ import QueueCommandBar from "@/features/queue/components/QueueCommandBar";
 import AIPriorityStrip from "@/features/queue/components/AIPriorityStrip";
 import TicketRow from "@/features/queue/components/TicketRow";
 import BulkActionBar from "@/features/queue/components/BulkActionBar";
+import QueueFilters from "@/features/queue/components/QueueFilters";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import DashboardMetricCardV2 from "@/components/DashboardMetricCardV2";
 import { 
-  Table, TableBody, TableHead, TableHeader, TableRow 
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { 
   TicketIcon, Hourglass, Bug, Clock, ShieldAlert, 
@@ -24,6 +25,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { TicketFilters } from "@/features/tickets/types";
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -36,16 +38,8 @@ const TicketsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const queueState = useQueueState();
-  
-  const { 
-    tickets, 
-    isLoading, 
-    isFetching, 
-    metrics, 
-    queryKey 
-  } = useTickets({
-    searchTerm,
+  const [filters, setFilters] = useState<TicketFilters>({
+    searchTerm: "",
     status: "All",
     priority: "All",
     assignees: [],
@@ -58,10 +52,24 @@ const TicketsPage = () => {
     dateField: 'created_at',
   });
 
-  // Reset to page 1 when search changes
+  const queueState = useQueueState();
+  
+  const { 
+    tickets, 
+    isLoading, 
+    isFetching, 
+    metrics, 
+    uniqueFilters,
+    queryKey 
+  } = useTickets({
+    ...filters,
+    searchTerm,
+  });
+
+  // Reset to page 1 when search or filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, filters]);
 
   const handleSync = async () => {
     toast.loading("Syncing Freshdesk...", { id: "sync-queue" });
@@ -78,6 +86,38 @@ const TicketsPage = () => {
     }
   };
 
+  const handleResetFilters = () => {
+    setFilters({
+      searchTerm: "",
+      status: "All",
+      priority: "All",
+      assignees: [],
+      companies: [],
+      types: [],
+      dependencies: [],
+      myTickets: false,
+      highPriority: false,
+      slaBreached: false,
+      dateField: 'created_at',
+    });
+    setSearchTerm("");
+    toast.success("Filters reset to default.");
+  };
+
+  const activeFilterCount = useMemo(() => {
+    return [
+      filters.status !== "All",
+      filters.priority !== "All",
+      filters.assignees.length > 0,
+      filters.companies.length > 0,
+      filters.types.length > 0,
+      filters.dependencies.length > 0,
+      filters.myTickets,
+      filters.highPriority,
+      filters.slaBreached,
+    ].filter(Boolean).length;
+  }, [filters]);
+
   const criticalTickets = tickets.filter(t => t.priority.toLowerCase() === 'urgent' || t.status.toLowerCase() === 'escalated');
   
   // Pagination Logic
@@ -93,7 +133,7 @@ const TicketsPage = () => {
         viewMode={queueState.viewMode}
         onViewModeChange={queueState.setViewMode}
         onOpenFilters={() => setIsFilterOpen(true)}
-        activeFilterCount={0}
+        activeFilterCount={activeFilterCount}
         isSyncing={isFetching}
         onSync={handleSync}
       />
@@ -201,7 +241,6 @@ const TicketsPage = () => {
               </Button>
               <div className="flex items-center gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  // Simple pagination logic to show a few pages
                   let pageNum = i + 1;
                   if (totalPages > 5 && currentPage > 3) {
                     pageNum = currentPage - 3 + i + 1;
@@ -253,18 +292,21 @@ const TicketsPage = () => {
       />
 
       <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
+          <SheetHeader className="p-6 border-b border-border">
             <SheetTitle className="flex items-center gap-2">
               <SlidersHorizontal className="h-5 w-5 text-indigo-600" />
               Advanced Filters
             </SheetTitle>
             <SheetDescription>Refine your operational view.</SheetDescription>
           </SheetHeader>
-          <ScrollArea className="h-[calc(100vh-120px)] mt-6">
-            <div className="p-4 text-center text-muted-foreground italic">
-              Filter components would be rendered here.
-            </div>
+          <ScrollArea className="flex-grow p-6">
+            <QueueFilters 
+              filters={filters}
+              onFilterChange={setFilters}
+              uniqueFilters={uniqueFilters}
+              onReset={handleResetFilters}
+            />
           </ScrollArea>
         </SheetContent>
       </Sheet>
