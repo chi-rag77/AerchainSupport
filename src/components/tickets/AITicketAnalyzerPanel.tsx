@@ -76,6 +76,16 @@ const AITicketAnalyzerPanel = ({ analysis, isLoading, onRefresh, error }: AITick
     }
   };
 
+  // Robustly handle suggested actions whether they come as a string or an array
+  const actionsList = React.useMemo(() => {
+    if (!analysis.suggested_action) return [];
+    if (Array.isArray(analysis.suggested_action)) return analysis.suggested_action;
+    if (typeof analysis.suggested_action === 'string') {
+      return analysis.suggested_action.split('\n').filter(line => line.trim().length > 0);
+    }
+    return [];
+  }, [analysis.suggested_action]);
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="flex items-center justify-between">
@@ -172,14 +182,18 @@ const AITicketAnalyzerPanel = ({ analysis, isLoading, onRefresh, error }: AITick
           <MessageSquare className="h-4 w-4 text-purple-500" /> Suggested Next Actions
         </h4>
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-border">
-          <ul className="space-y-2">
-            {analysis.suggested_action.split('\n').map((action, i) => (
-              <li key={i} className="text-sm flex items-start gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
-                {action.replace(/^- /, '')}
-              </li>
-            ))}
-          </ul>
+          {actionsList.length > 0 ? (
+            <ul className="space-y-2">
+              {actionsList.map((action, i) => (
+                <li key={i} className="text-sm flex items-start gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
+                  {action.replace(/^- /, '')}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No specific actions suggested.</p>
+          )}
         </div>
       </div>
     </div>
