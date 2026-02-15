@@ -1,0 +1,19 @@
+import { Ticket } from "@/features/tickets/types";
+
+export type QueueViewMode = 'list' | 'compact' | 'kanban';
+
+export interface QueueTicket extends Ticket {
+  riskScore: number;
+  slaRemainingMinutes: number;
+  aiTags: string[];
+  sentimentTrend: 'improving' | 'worsening' | 'stable';
+  escalationLikelihood: number;
+  suggestedNextAction: string;
+}
+
+export interface QueueState {
+  viewMode: QueueViewMode;
+  selectedTicketIds: string[];
+  isInsightsOpen: boolean;
+  sortBy: 'risk' | 'sla' | 'aging' | 'created';
+}
