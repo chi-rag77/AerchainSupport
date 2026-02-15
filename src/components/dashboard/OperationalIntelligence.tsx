@@ -7,6 +7,7 @@ import { Ticket } from '@/types';
 import VolumeSlaTrendChart from '@/components/VolumeSlaTrendChart';
 import { Brain, Sparkles, TrendingUp, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface OperationalIntelligenceProps {
