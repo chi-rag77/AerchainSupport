@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { 
   Brain, Sparkles, AlertTriangle, TrendingUp, MessageSquare, 
-  CheckCircle2, RefreshCw, Loader2, Info, ShieldAlert
+  CheckCircle2, RefreshCw, Loader2, Info, ShieldAlert, XCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TicketAIAnalysis } from '@/features/ticket-ai/types';
@@ -16,9 +16,10 @@ interface AITicketAnalyzerPanelProps {
   analysis: TicketAIAnalysis | undefined;
   isLoading: boolean;
   onRefresh: () => void;
+  error?: Error | null;
 }
 
-const AITicketAnalyzerPanel = ({ analysis, isLoading, onRefresh }: AITicketAnalyzerPanelProps) => {
+const AITicketAnalyzerPanel = ({ analysis, isLoading, onRefresh, error }: AITicketAnalyzerPanelProps) => {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-4 text-muted-foreground">
@@ -28,11 +29,33 @@ const AITicketAnalyzerPanel = ({ analysis, isLoading, onRefresh }: AITicketAnaly
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+        <XCircle className="h-12 w-12 text-red-500 opacity-50" />
+        <div className="space-y-2">
+          <p className="text-sm font-bold text-red-600">Analysis Failed</p>
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+            {error.message.includes("Environment variables not set") 
+              ? "The Gemini API key is missing in Supabase secrets. Please add GEMINI_API_KEY to your project settings."
+              : error.message}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={onRefresh} className="gap-2">
+          <RefreshCw className="h-3 w-3" /> Try Again
+        </Button>
+      </div>
+    );
+  }
+
   if (!analysis) {
     return (
-      <div className="text-center py-8">
-        <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-20" />
-        <p className="text-sm text-muted-foreground">No analysis available. Click the button to start.</p>
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+        <Brain className="h-12 w-12 text-muted-foreground mb-3 opacity-20" />
+        <p className="text-sm text-muted-foreground">No analysis available for this ticket yet.</p>
+        <Button onClick={onRefresh} className="bg-purple-600 hover:bg-purple-700 gap-2">
+          <Sparkles className="h-4 w-4" /> Start AI Analysis
+        </Button>
       </div>
     );
   }

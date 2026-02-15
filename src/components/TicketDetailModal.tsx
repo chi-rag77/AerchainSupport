@@ -43,7 +43,7 @@ const copyToClipboard = (text: string) => {
 const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) => {
   const [showAI, setShowAI] = useState(false);
   const { conversationMessages, isLoadingMessages, syncMessages } = useTicketMessages(ticket?.id || null);
-  const { analysis, isLoading: isAnalyzing, refreshAnalysis } = useTicketAIAnalysis(
+  const { analysis, isLoading: isAnalyzing, refreshAnalysis, error: aiError } = useTicketAIAnalysis(
     ticket?.id || null, 
     ticket?.cf_company || 'Unknown'
   );
@@ -157,6 +157,7 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
               analysis={analysis} 
               isLoading={isAnalyzing} 
               onRefresh={refreshAnalysis} 
+              error={aiError}
             />
           ) : (
             <div className="space-y-6">
