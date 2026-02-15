@@ -5,7 +5,6 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import { useTickets } from "@/features/tickets/hooks/useTickets";
 import { useQueueState } from "@/features/queue/hooks/useQueueState";
 import QueueCommandBar from "@/features/queue/components/QueueCommandBar";
-import AIPriorityStrip from "@/features/queue/components/AIPriorityStrip";
 import TicketRow from "@/features/queue/components/TicketRow";
 import BulkActionBar from "@/features/queue/components/BulkActionBar";
 import QueueFilters from "@/features/queue/components/QueueFilters";
@@ -174,14 +173,7 @@ const TicketsPage = () => {
         />
       </div>
 
-      {/* Section 3: AI Priority Strip */}
-      <AIPriorityStrip 
-        criticalCount={criticalTickets.length}
-        onViewCritical={() => setSearchTerm("urgent")}
-        onSmartReassign={() => toast.info("AI is calculating optimal workload distribution...")}
-      />
-
-      {/* Section 4: Ticket Workspace */}
+      {/* Section 3: Ticket Workspace */}
       <div className="flex flex-col gap-4">
         <div className="bg-white dark:bg-gray-900 rounded-[28px] shadow-glass border border-white/20 dark:border-gray-800/30 overflow-hidden">
           {isLoading ? (
