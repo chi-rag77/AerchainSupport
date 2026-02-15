@@ -137,7 +137,7 @@ const AITicketAnalyzerPanel = ({ analysis, isLoading, onRefresh }: AITicketAnaly
             <div className="w-full bg-gray-200 dark:bg-gray-700 h-1 rounded-full mt-2">
               <div 
                 className="bg-purple-500 h-1 rounded-full transition-all duration-1000" 
-                style={{ width: \`\${analysis.confidence_score}%\` }} 
+                style={{ width: `${analysis.confidence_score}%` }} 
               />
             </div>
           </CardContent>
