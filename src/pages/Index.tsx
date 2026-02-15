@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useExecutiveDashboard } from "@/features/dashboard/hooks/useExecutiveDashboard";
@@ -8,10 +8,11 @@ import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
 import KPISection from "@/components/dashboard/KPISection";
 import AIInsightStrip from "@/components/dashboard/AIInsightStrip";
 import OperationalIntelligence from "@/components/dashboard/OperationalIntelligence";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { subDays } from "date-fns";
 
 const Index = () => {
   const { session } = useSupabase();
@@ -32,6 +33,7 @@ const Index = () => {
       if (error) throw error;
       toast.success("Data synchronized!", { id: "sync-dashboard" });
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
@@ -46,13 +48,13 @@ const Index = () => {
     );
   }
 
-  // Mock insight for the strip (would come from backend in production)
-  const activeInsight = showInsight ? {
-    message: "Urgent tickets for 'Cloudnine' have increased by 32% in the last 48 hours. Potential systemic issue detected.",
-    type: 'risk' as const,
-    severity: 'critical' as const,
-    link: "/tickets?company=Cloudnine"
-  } : null;
+  // Use real insights from the backend
+  const activeInsight = (showInsight && data.insights && data.insights.length > 0) 
+    ? data.insights[0] 
+    : null;
+
+  const now = new Date();
+  const startDate = subDays(now, 30);
 
   return (
     <TooltipProvider>
@@ -82,9 +84,9 @@ const Index = () => {
         {/* Section 4: Operational Intelligence */}
         <OperationalIntelligence 
           summary={data.executiveSummary}
-          tickets={[]} // Pass filtered tickets here
-          startDate={new Date()} // Pass effective dates
-          endDate={new Date()}
+          tickets={[]} // VolumeSlaTrendChart handles its own filtering if needed, but we can pass all tickets
+          startDate={startDate}
+          endDate={now}
         />
 
         {/* Placeholder for remaining sections */}
