@@ -190,36 +190,38 @@ const TicketsPage = () => {
               <p className="text-lg font-medium">Loading Intelligence Workspace...</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader className="bg-gray-50/50 dark:bg-gray-800/50">
-                <TableRow className="border-none">
-                  <TableHead className="w-12 pl-6"></TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
-                  <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
-                  <TableHead className="w-24 pr-6"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedTickets.map((ticket) => (
-                  <TicketRow 
-                    key={ticket.id}
-                    ticket={ticket}
-                    isSelected={queueState.selectedTicketIds.includes(ticket.id)}
-                    onToggleSelect={() => queueState.toggleSelection(ticket.id)}
-                    onClick={() => { setSelectedTicket(ticket); }}
-                  />
-                ))}
-                {paginatedTickets.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
-                      No tickets found matching your criteria.
-                    </TableCell>
+            <div className="max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
+              <Table>
+                <TableHeader className="bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-20 shadow-sm">
+                  <TableRow className="border-none">
+                    <TableHead className="w-12 pl-6"></TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
+                    <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
+                    <TableHead className="w-24 pr-6"></TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedTickets.map((ticket) => (
+                    <TicketRow 
+                      key={ticket.id}
+                      ticket={ticket}
+                      isSelected={queueState.selectedTicketIds.includes(ticket.id)}
+                      onToggleSelect={() => queueState.toggleSelection(ticket.id)}
+                      onClick={() => { setSelectedTicket(ticket); }}
+                    />
+                  ))}
+                  {paginatedTickets.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
+                        No tickets found matching your criteria.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
 
