@@ -8,6 +8,8 @@ import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
 import KPISection from "@/components/dashboard/KPISection";
 import AIInsightStrip from "@/components/dashboard/AIInsightStrip";
 import OperationalIntelligence from "@/components/dashboard/OperationalIntelligence";
+import ActiveRiskSection from "@/components/dashboard/ActiveRiskSection";
+import TicketDetailModal from "@/components/TicketDetailModal";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +24,8 @@ const Index = () => {
 
   const { data, tickets, isLoading, isFetching } = useExecutiveDashboard();
   const [showInsight, setShowInsight] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSync = async () => {
     toast.loading("Syncing Freshdesk data...", { id: "sync-dashboard" });
@@ -34,9 +38,15 @@ const Index = () => {
       toast.success("Data synchronized!", { id: "sync-dashboard" });
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] });
+      queryClient.invalidateQueries({ queryKey: ['activeRisks'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
+  };
+
+  const handleViewTicket = (ticket: any) => {
+    setSelectedTicket(ticket);
+    setIsModalOpen(true);
   };
 
   if (isLoading) {
@@ -48,7 +58,6 @@ const Index = () => {
     );
   }
 
-  // Use real insights from the backend
   const activeInsight = (showInsight && data.insights && data.insights.length > 0) 
     ? data.insights[0] 
     : null;
@@ -84,20 +93,28 @@ const Index = () => {
         {/* Section 4: Operational Intelligence */}
         <OperationalIntelligence 
           summary={data.executiveSummary}
-          tickets={tickets} // Passing real tickets here
+          tickets={tickets}
           startDate={startDate}
           endDate={now}
         />
 
+        {/* Section 5: Active Risk Dashboard */}
+        <ActiveRiskSection onViewTicket={handleViewTicket} />
+
         {/* Placeholder for remaining sections */}
         <div className="grid grid-cols-1 gap-10 opacity-50 pointer-events-none">
-          <div className="h-48 bg-white dark:bg-gray-800 rounded-[24px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-medium">
-            Active Risk Dashboard (Coming Next)
-          </div>
           <div className="h-96 bg-white dark:bg-gray-800 rounded-[24px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-medium">
             Team Intelligence (Coming Next)
           </div>
         </div>
+
+        {selectedTicket && (
+          <TicketDetailModal 
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            ticket={selectedTicket}
+          />
+        )}
       </div>
     </TooltipProvider>
   );
