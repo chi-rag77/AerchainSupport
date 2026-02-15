@@ -60,7 +60,7 @@ const Login = () => {
         setError("password", { type: "manual", message: error.message });
       } else {
         toast.success("Logged in successfully!");
-        // SupabaseProvider handles navigation to '/' on successful sign-in
+        navigate('/'); // Explicitly navigate to home after successful login
       }
     } catch (err: any) {
       toast.error(`An unexpected error occurred: ${err.message}`);
@@ -70,16 +70,15 @@ const Login = () => {
   };
 
   const handleAuthSuccess = () => {
-    // This function is called after social login redirects,
-    // the SupabaseProvider will handle the navigation to '/'
     toast.success("Successfully signed in!");
+    navigate('/'); // Explicitly navigate to home after social login success
   };
 
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <TooltipProvider>
         <div className="min-h-screen flex flex-col lg:flex-row bg-background text-foreground">
-          {/* Left Section: Visuals (similar to Signup page) */}
+          {/* Left Section: Visuals */}
           <div className="relative lg:w-1/2 flex items-center justify-center p-8 lg:p-16 bg-gradient-to-br from-blue-600 to-purple-700 text-white overflow-hidden">
             <div className="absolute inset-0 z-0 opacity-20">
               <div className="absolute top-1/4 left-1/4 w-48 h-48 bg-white rounded-full mix-blend-overlay filter blur-xl animate-pulse-slow"></div>

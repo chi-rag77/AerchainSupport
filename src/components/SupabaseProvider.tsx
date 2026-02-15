@@ -27,11 +27,12 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      
+      // Only redirect to login if the user explicitly signs out
       if (_event === 'SIGNED_OUT') {
         navigate('/login');
-      } else if (_event === 'SIGNED_IN' && session) {
-        navigate('/');
       }
+      // Removed the 'SIGNED_IN' -> navigate('/') block which caused redirects on tab focus
     });
 
     return () => subscription.unsubscribe();
