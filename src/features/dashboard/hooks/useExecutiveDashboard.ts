@@ -84,6 +84,7 @@ export function useExecutiveDashboard() {
 
   return {
     data: dashboardData,
+    tickets, // Exposing raw tickets for charts
     isLoading: isLoadingTickets || isLoadingAI,
     isFetching,
     refresh: () => {}

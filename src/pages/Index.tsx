@@ -20,7 +20,7 @@ const Index = () => {
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isFetching } = useExecutiveDashboard();
+  const { data, tickets, isLoading, isFetching } = useExecutiveDashboard();
   const [showInsight, setShowInsight] = useState(true);
 
   const handleSync = async () => {
@@ -84,7 +84,7 @@ const Index = () => {
         {/* Section 4: Operational Intelligence */}
         <OperationalIntelligence 
           summary={data.executiveSummary}
-          tickets={[]} // VolumeSlaTrendChart handles its own filtering if needed, but we can pass all tickets
+          tickets={tickets} // Passing real tickets here
           startDate={startDate}
           endDate={now}
         />
