@@ -48,7 +48,7 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
     ticket?.cf_company || 'Unknown'
   );
 
-  // Prepend the initial ticket description as the first message
+  // Combine messages: Newest replies first, initial description at the very bottom
   const allMessages = useMemo(() => {
     if (!ticket) return [];
     
@@ -61,7 +61,8 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
       is_agent: false,
     };
 
-    return [initialMessage, ...conversationMessages];
+    // conversationMessages are already sorted DESC (newest first) from the service
+    return [...conversationMessages, initialMessage];
   }, [ticket, conversationMessages]);
 
   useEffect(() => {

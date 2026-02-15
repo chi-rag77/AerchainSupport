@@ -23,7 +23,7 @@ export async function fetchTicketMessages(ticketId: string): Promise<TicketMessa
     .from('ticket_messages')
     .select('*')
     .eq('ticket_id', ticketId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false }); // Changed to descending for newest first
 
   if (error) throw error;
   return data as TicketMessage[];
