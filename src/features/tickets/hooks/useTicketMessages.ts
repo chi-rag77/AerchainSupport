@@ -3,8 +3,8 @@ import { TicketMessage } from '../types';
 import { fetchTicketMessages } from '../services/ticket.service';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { invokeEdgeFunction } from '@/lib/apiClient'; // Corrected import
-import { ApiError } from '@/lib/errorHandler'; // Added missing import
+import { invokeEdgeFunction } from '@/lib/apiClient';
+import { ApiError } from '@/lib/errorHandler';
 
 const MESSAGE_QUERY_KEY = "ticketMessages";
 
@@ -12,7 +12,12 @@ export function useTicketMessages(ticketId: string | null) {
   const queryClient = useQueryClient();
 
   // 1. Fetch messages from our DB
-  const { data: conversationMessages = [], isLoading: isLoadingMessages, error: fetchError } = useQuery<TicketMessage[], Error>({
+  const { 
+    data: conversationMessages = [], 
+    isLoading: isLoadingMessages, 
+    isFetching: isFetchingMessages,
+    error: fetchError 
+  } = useQuery<TicketMessage[], Error>({
     queryKey: [MESSAGE_QUERY_KEY, ticketId],
     queryFn: () => fetchTicketMessages(ticketId!),
     enabled: !!ticketId,
@@ -48,6 +53,7 @@ export function useTicketMessages(ticketId: string | null) {
   return {
     conversationMessages,
     isLoadingMessages,
+    isFetchingMessages,
     fetchError,
     syncMessages,
   };

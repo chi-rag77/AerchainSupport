@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -42,11 +42,27 @@ const copyToClipboard = (text: string) => {
 
 const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) => {
   const [showAI, setShowAI] = useState(false);
-  const { conversationMessages, isLoadingMessages, syncMessages } = useTicketMessages(ticket?.id || null);
+  const { conversationMessages, isLoadingMessages, isFetchingMessages, syncMessages } = useTicketMessages(ticket?.id || null);
   const { analysis, isLoading: isAnalyzing, refreshAnalysis, error: aiError } = useTicketAIAnalysis(
     ticket?.id || null, 
     ticket?.cf_company || 'Unknown'
   );
+
+  // Prepend the initial ticket description as the first message
+  const allMessages = useMemo(() => {
+    if (!ticket) return [];
+    
+    const initialMessage = {
+      id: 'initial-description',
+      ticket_id: ticket.id,
+      sender: ticket.requester_email,
+      body_html: ticket.description_html || ticket.description_text || 'No description provided.',
+      created_at: ticket.created_at,
+      is_agent: false,
+    };
+
+    return [initialMessage, ...conversationMessages];
+  }, [ticket, conversationMessages]);
 
   useEffect(() => {
     if (isOpen && ticket?.id) {
@@ -197,9 +213,9 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
                 <h3 className="text-lg font-bold flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-blue-500" /> Conversation
                 </h3>
-                <Button variant="ghost" size="sm" onClick={syncMessages} disabled={isLoadingMessages}>
-                  <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingMessages && "animate-spin")} />
-                  Sync
+                <Button variant="ghost" size="sm" onClick={syncMessages} disabled={isFetchingMessages}>
+                  <RefreshCw className={cn("h-4 w-4 mr-2", isFetchingMessages && "animate-spin")} />
+                  {isFetchingMessages ? "Syncing..." : "Sync"}
                 </Button>
               </div>
 
@@ -208,9 +224,9 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
                   <Loader2 className="h-8 w-8 animate-spin mb-2" />
                   <p className="text-sm">Fetching messages...</p>
                 </div>
-              ) : conversationMessages.length > 0 ? (
+              ) : allMessages.length > 0 ? (
                 <div className="space-y-6 relative before:absolute before:left-4 before:top-0 before:h-full before:w-0.5 before:bg-gray-100 dark:before:bg-gray-800">
-                  {conversationMessages.map((message) => (
+                  {allMessages.map((message) => (
                     <div key={message.id} className={cn("flex gap-3 relative", message.is_agent ? "flex-row-reverse" : "flex-row")}>
                       <div className="absolute left-3.5 top-2 h-2 w-2 rounded-full bg-primary z-10" />
                       <Avatar className="h-8 w-8 flex-shrink-0 border">
@@ -220,10 +236,14 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
                       </Avatar>
                       <div className={cn(
                         "p-4 rounded-2xl shadow-sm max-w-[85%] border",
-                        message.is_agent ? "bg-blue-50/50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800" : "bg-white dark:bg-gray-900 border-border"
+                        message.is_agent ? "bg-blue-50/50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800" : "bg-white dark:bg-gray-900 border-border",
+                        message.id === 'initial-description' && "border-l-4 border-l-blue-500"
                       )}>
                         <div className="flex justify-between items-center mb-2 gap-4">
-                          <span className="font-bold text-xs truncate">{message.sender}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs truncate">{message.sender}</span>
+                            {message.id === 'initial-description' && <Badge variant="outline" className="text-[8px] h-4 px-1">Initial Description</Badge>}
+                          </div>
                           <span className="text-[10px] text-muted-foreground whitespace-nowrap">{format(new Date(message.created_at), 'MMM dd, HH:mm')}</span>
                         </div>
                         <div dangerouslySetInnerHTML={{ __html: message.body_html || '' }} className="text-sm prose prose-sm dark:prose-invert max-w-none break-words" />
