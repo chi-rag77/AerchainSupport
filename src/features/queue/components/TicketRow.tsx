@@ -8,22 +8,20 @@ import { Button } from "@/components/ui/button";
 import { 
   Brain, Sparkles, ChevronDown, ChevronUp, Clock, 
   AlertCircle, MessageSquare, Building2, User, ArrowRight,
-  TrendingUp, ShieldAlert, CheckCircle2, Eye, StickyNote, UserPlus, Zap
+  TrendingUp, ShieldAlert, CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNowStrict, parseISO, differenceInMinutes, differenceInHours } from 'date-fns';
+import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TicketRowProps {
   ticket: any;
   isSelected: boolean;
   onToggleSelect: () => void;
   onClick: () => void;
-  viewMode: 'list' | 'compact' | 'kanban';
 }
 
-const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick, viewMode }: TicketRowProps) => {
+const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getStatusStyles = (status: string) => {
@@ -34,64 +32,38 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick, viewMode }: Ti
     return "bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200";
   };
 
-  const riskScore = ticket.riskScore || 45;
-  const getRiskLevel = (score: number) => {
-    if (score > 80) return { label: 'High', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500' };
-    if (score > 50) return { label: 'Medium', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500' };
-    return { label: 'Low', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500' };
+  const getRiskColor = (score: number) => {
+    if (score > 80) return "text-red-600 dark:text-red-400";
+    if (score > 50) return "text-amber-600 dark:text-amber-400";
+    return "text-green-600 dark:text-green-400";
   };
-
-  const risk = getRiskLevel(riskScore);
-
-  const getSlaCountdown = () => {
-    if (!ticket.due_by) return null;
-    const due = parseISO(ticket.due_by);
-    const now = new Date();
-    const diffMin = differenceInMinutes(due, now);
-    
-    if (diffMin < 0) return <span className="text-red-600 font-black">BREACHED</span>;
-    
-    const hours = Math.floor(diffMin / 60);
-    const mins = diffMin % 60;
-    return <span className={cn("font-bold", diffMin < 120 ? "text-orange-600" : "text-muted-foreground")}>
-      {hours}h {mins}m left
-    </span>;
-  };
-
-  const isCompact = viewMode === 'compact';
 
   return (
     <>
       <TableRow 
         className={cn(
-          "group transition-all duration-300 border-none hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10 relative",
+          "group transition-all duration-300 border-none hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10",
           isSelected && "bg-indigo-50/50 dark:bg-indigo-950/20",
-          isExpanded && "bg-white dark:bg-gray-800 shadow-md z-10",
-          riskScore > 80 && "bg-red-50/10 dark:bg-red-950/5"
+          isExpanded && "bg-white dark:bg-gray-800 shadow-md z-10 relative"
         )}
       >
-        {/* Mini Risk Indicator Bar */}
-        <div className={cn("absolute left-0 top-1 bottom-1 w-1 rounded-r-full z-20", risk.bg)} />
-
         <TableCell className="w-12 pl-6">
           <Checkbox checked={isSelected} onCheckedChange={onToggleSelect} className="rounded-md border-gray-300" />
         </TableCell>
         
-        <TableCell className="w-24 font-black text-[10px] tracking-widest text-muted-foreground uppercase sticky left-0 bg-inherit z-10">
+        <TableCell className="w-24 font-black text-[10px] tracking-widest text-muted-foreground uppercase">
           #{ticket.id}
         </TableCell>
 
-        <TableCell className={cn("max-w-md", isCompact ? "py-2" : "py-4")}>
+        <TableCell className="max-w-md">
           <div className="flex flex-col gap-1">
-            <span className={cn("font-bold text-foreground group-hover:text-indigo-600 transition-colors cursor-pointer", isCompact ? "text-sm" : "text-base")} onClick={onClick}>
+            <span className="font-bold text-foreground group-hover:text-indigo-600 transition-colors cursor-pointer" onClick={onClick}>
               {ticket.subject}
             </span>
-            {!isCompact && (
-              <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
-                <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {ticket.cf_company || 'N/A'}</span>
-                <span className="flex items-center gap-1"><User className="h-3 w-3" /> {ticket.assignee || 'Unassigned'}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
+              <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {ticket.cf_company || 'N/A'}</span>
+              <span className="flex items-center gap-1"><User className="h-3 w-3" /> {ticket.assignee || 'Unassigned'}</span>
+            </div>
           </div>
         </TableCell>
 
@@ -101,49 +73,20 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick, viewMode }: Ti
           </Badge>
         </TableCell>
 
-        <TableCell className="sticky right-0 bg-inherit z-10 shadow-[-10px_0_15px_-10px_rgba(0,0,0,0.1)]">
+        <TableCell>
           <div className="flex flex-col items-end gap-1">
-            <div className={cn("text-sm font-black flex items-center gap-1.5", risk.color)}>
-              <div className={cn("h-1.5 w-1.5 rounded-full", risk.bg)} />
-              {risk.label} ({riskScore}%)
+            <div className={cn("text-sm font-black", getRiskColor(ticket.riskScore || 45))}>
+              {ticket.riskScore || 45}% Risk
             </div>
-            <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {getSlaCountdown() || formatDistanceToNowStrict(parseISO(ticket.created_at))}
+              {formatDistanceToNowStrict(parseISO(ticket.created_at))}
             </div>
           </div>
         </TableCell>
 
-        <TableCell className="pr-6 text-right w-40">
-          <div className="flex items-center justify-end gap-1">
-            {/* Row Hover Action Bar */}
-            <div className="hidden group-hover:flex items-center gap-1 mr-2 animate-in fade-in slide-in-from-right-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white dark:hover:bg-gray-700 shadow-sm" onClick={onClick}>
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Quick View</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white dark:hover:bg-gray-700 shadow-sm">
-                    <StickyNote className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Add Note</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white dark:hover:bg-gray-700 shadow-sm">
-                    <UserPlus className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Reassign</TooltipContent>
-              </Tooltip>
-            </div>
-
+        <TableCell className="pr-6 text-right">
+          <div className="flex items-center justify-end gap-2">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -151,6 +94,9 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick, viewMode }: Ti
               className={cn("h-8 w-8 rounded-full transition-transform", isExpanded && "bg-indigo-100 dark:bg-indigo-900")}
             >
               <Brain className={cn("h-4 w-4", isExpanded ? "text-indigo-600" : "text-muted-foreground")} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClick} className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </TableCell>
