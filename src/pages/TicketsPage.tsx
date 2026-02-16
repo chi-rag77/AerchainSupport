@@ -63,7 +63,7 @@ const TicketsPage = () => {
   } = useTickets({
     ...filters,
     searchTerm,
-  });
+  }, currentPage);
 
   // Reset to page 1 when search or filters change
   useEffect(() => {
@@ -79,7 +79,7 @@ const TicketsPage = () => {
       });
       if (error) throw error;
       toast.success("Queue updated!", { id: "sync-queue" });
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-queue" });
     }
@@ -121,7 +121,7 @@ const TicketsPage = () => {
   
   // Pagination Logic
   const totalPages = Math.ceil(tickets.length / itemsPerPage);
-  const paginatedTickets = tickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedTickets = tickets; // Already paginated by the hook
 
   return (
     <div className="flex-1 flex flex-col p-8 space-y-8 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
@@ -141,11 +141,12 @@ const TicketsPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardMetricCardV2 
           title="Active Queue"
-          value={metrics.totalActiveTickets}
+          value={metrics?.totalActiveTickets || 0}
           icon={TicketIcon}
           archetype="volume"
           subtext="Total tickets in progress"
           onClick={() => {}}
+          isLoading={isLoading}
         />
         <DashboardMetricCardV2 
           title="SLA Risk"
@@ -154,22 +155,25 @@ const TicketsPage = () => {
           archetype="attention"
           subtext="Tickets near breach"
           onClick={() => {}}
+          isLoading={isLoading}
         />
         <DashboardMetricCardV2 
           title="Open Backlog"
-          value={metrics.openTicketsSpecific}
+          value={metrics?.openTicketsSpecific || 0}
           icon={Clock}
           archetype="health"
           subtext="Awaiting initial response"
           onClick={() => {}}
+          isLoading={isLoading}
         />
         <DashboardMetricCardV2 
           title="Bug Reports"
-          value={metrics.bugsReceivedOverall}
+          value={metrics?.bugsReceivedOverall || 0}
           icon={Bug}
           archetype="volume"
           subtext="Technical issues reported"
           onClick={() => {}}
+          isLoading={isLoading}
         />
       </div>
 
@@ -218,57 +222,31 @@ const TicketsPage = () => {
         </div>
 
         {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-2 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm rounded-2xl border border-white/20">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-              Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, tickets.length)} of {tickets.length}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="rounded-xl h-9 w-9 p-0 hover:bg-white dark:hover:bg-gray-800 shadow-sm"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum = i + 1;
-                  if (totalPages > 5 && currentPage > 3) {
-                    pageNum = currentPage - 3 + i + 1;
-                    if (pageNum > totalPages) pageNum = totalPages - (4 - i);
-                  }
-                  
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={cn(
-                        "h-9 w-9 rounded-xl font-bold text-xs",
-                        currentPage === pageNum ? "bg-indigo-600 shadow-lg shadow-indigo-500/20" : "hover:bg-white dark:hover:bg-gray-800"
-                      )}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="rounded-xl h-9 w-9 p-0 hover:bg-white dark:hover:bg-gray-800 shadow-sm"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+        <div className="flex items-center justify-between px-4 py-2 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm rounded-2xl border border-white/20">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            Page {currentPage}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="rounded-xl h-9 w-9 p-0 hover:bg-white dark:hover:bg-gray-800 shadow-sm"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              disabled={paginatedTickets.length < itemsPerPage}
+              className="rounded-xl h-9 w-9 p-0 hover:bg-white dark:hover:bg-gray-800 shadow-sm"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Section 5: Bulk Actions */}
