@@ -1,17 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
-  Brain, Sparkles, ChevronDown, ChevronUp, Clock, 
-  AlertCircle, MessageSquare, Building2, User, ArrowRight,
-  TrendingUp, ShieldAlert, CheckCircle2
+  Brain, Sparkles, Clock, Building2, User, ArrowRight,
+  TrendingUp, ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { formatDistanceToNowStrict, parseISO, differenceInDays, isPast } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TicketRowProps {
@@ -24,6 +23,28 @@ interface TicketRowProps {
 const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const { riskScore, ageDays } = useMemo(() => {
+    const created = parseISO(ticket.created_at);
+    const days = differenceInDays(new Date(), created);
+    
+    let score = 0;
+    // Priority weight
+    const p = ticket.priority.toLowerCase();
+    if (p === 'urgent') score += 40;
+    else if (p === 'high') score += 30;
+    else if (p === 'medium') score += 20;
+    else score += 10;
+
+    // Age weight
+    if (days > 7) score += 40;
+    else if (days > 3) score += 20;
+
+    // SLA weight
+    if (ticket.due_by && isPast(parseISO(ticket.due_by))) score += 20;
+
+    return { riskScore: Math.min(100, score), ageDays: days };
+  }, [ticket]);
+
   const getStatusStyles = (status: string) => {
     const s = status.toLowerCase();
     if (s.includes('open')) return "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-100";
@@ -33,8 +54,8 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
   };
 
   const getRiskColor = (score: number) => {
-    if (score > 80) return "text-red-600 dark:text-red-400";
-    if (score > 50) return "text-amber-600 dark:text-amber-400";
+    if (score > 75) return "text-red-600 dark:text-red-400";
+    if (score > 40) return "text-amber-600 dark:text-amber-400";
     return "text-green-600 dark:text-green-400";
   };
 
@@ -75,12 +96,12 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
 
         <TableCell>
           <div className="flex flex-col items-end gap-1">
-            <div className={cn("text-sm font-black", getRiskColor(ticket.riskScore || 45))}>
-              {ticket.riskScore || 45}% Risk
+            <div className={cn("text-sm font-black", getRiskColor(riskScore))}>
+              {riskScore}% Risk
             </div>
             <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {formatDistanceToNowStrict(parseISO(ticket.created_at))}
+              {ageDays} days old
             </div>
           </div>
         </TableCell>
@@ -102,7 +123,6 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
         </TableCell>
       </TableRow>
 
-      {/* AI Intelligence Layer */}
       <AnimatePresence>
         {isExpanded && (
           <TableRow className="bg-white dark:bg-gray-800 border-none hover:bg-white dark:hover:bg-gray-800">
@@ -116,40 +136,33 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
                 <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-gray-100 dark:border-gray-700">
                   <div className="space-y-3 p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/10 border border-purple-100 dark:border-purple-900/50">
                     <h5 className="text-[10px] font-black uppercase tracking-widest text-purple-600 flex items-center gap-2">
-                      <TrendingUp className="h-3 w-3" /> Sentiment Intelligence
+                      <TrendingUp className="h-3 w-3" /> Intelligence
                     </h5>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold">Trend: {ticket.sentimentTrend || 'Stable'}</span>
-                      <Badge className="bg-purple-600 text-white">88% Confidence</Badge>
-                    </div>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Customer tone is currently professional but showing signs of frustration regarding resolution time.
+                      Ticket is {ageDays} days old with {ticket.priority} priority. 
+                      {ticket.due_by && isPast(parseISO(ticket.due_by)) ? " SLA has been breached." : " SLA is still active."}
                     </p>
                   </div>
 
                   <div className="space-y-3 p-4 rounded-2xl bg-red-50/50 dark:bg-red-950/10 border border-red-100 dark:border-red-900/50">
                     <h5 className="text-[10px] font-black uppercase tracking-widest text-red-600 flex items-center gap-2">
-                      <ShieldAlert className="h-3 w-3" /> Escalation Risk
+                      <ShieldAlert className="h-3 w-3" /> Risk Score
                     </h5>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black">{ticket.escalationLikelihood || 12}%</span>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Likelihood</span>
+                      <span className="text-2xl font-black">{riskScore}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-red-500" style={{ width: `${ticket.escalationLikelihood || 12}%` }} />
+                      <div className="h-full bg-red-500" style={{ width: `${riskScore}%` }} />
                     </div>
                   </div>
 
                   <div className="space-y-3 p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/50">
                     <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 flex items-center gap-2">
-                      <Sparkles className="h-3 w-3" /> Suggested Next Action
+                      <Sparkles className="h-3 w-3" /> Suggested Action
                     </h5>
                     <p className="text-sm font-bold leading-snug">
-                      {ticket.suggestedNextAction || "Provide a technical update on the module dependency to stabilize sentiment."}
+                      {riskScore > 70 ? "Immediate manager intervention required." : "Provide a technical update to the customer."}
                     </p>
-                    <Button size="sm" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs">
-                      Execute Action
-                    </Button>
                   </div>
                 </div>
               </motion.div>

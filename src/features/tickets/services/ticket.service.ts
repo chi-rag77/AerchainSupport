@@ -1,29 +1,30 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Ticket, TicketMessage } from '../types';
 
-// Fetches all tickets (up to 10000 limit set in the query)
-export async function fetchAllTickets(): Promise<Ticket[]> {
-  const { data, error } = await supabase
+export async function fetchTicketsPaginated(page: number = 1, pageSize: number = 50): Promise<{ data: Ticket[], count: number }> {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
     .from('freshdesk_tickets')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('updated_at', { ascending: false })
-    .limit(10000);
+    .range(from, to);
 
   if (error) throw error;
   
-  // Map freshdesk_id to id for consistency
-  return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
+  return {
+    data: data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[],
+    count: count || 0
+  };
 }
 
-// Fetches conversation messages for a single ticket
 export async function fetchTicketMessages(ticketId: string): Promise<TicketMessage[]> {
-  // Note: The actual sync is triggered via Edge Function in the component, 
-  // but this function fetches the already synced data from the DB.
   const { data, error } = await supabase
     .from('ticket_messages')
     .select('*')
     .eq('ticket_id', ticketId)
-    .order('created_at', { ascending: false }); // Changed to descending for newest first
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
   return data as TicketMessage[];
