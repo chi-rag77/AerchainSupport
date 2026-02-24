@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from 'sonner';
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils"; // Added missing import
 
 // Components
 import CustomerOverviewCard from "@/components/customer360/CustomerOverviewCard";

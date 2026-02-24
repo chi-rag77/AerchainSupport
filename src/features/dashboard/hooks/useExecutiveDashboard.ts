@@ -42,17 +42,17 @@ export function useExecutiveDashboard() {
     }
   });
 
-  // 4. Fetch Unique Companies for filters
+  // 4. Fetch Unique Companies for filters (Removed non-existent RPC call)
   const { data: uniqueCompanies = [] } = useQuery<string[]>({
     queryKey: ['uniqueCompaniesList'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_unique_companies'); // Assuming an RPC or just a limited select
-      if (error) {
-        // Fallback if RPC doesn't exist
-        const { data: fallbackData } = await supabase.from('freshdesk_tickets').select('cf_company').limit(1000);
-        return Array.from(new Set((fallbackData || []).map(t => t.cf_company).filter(Boolean))) as string[];
-      }
-      return data as string[];
+      const { data, error } = await supabase
+        .from('freshdesk_tickets')
+        .select('cf_company')
+        .limit(1000);
+      
+      if (error) throw error;
+      return Array.from(new Set((data || []).map(t => t.cf_company).filter(Boolean))) as string[];
     }
   });
 
