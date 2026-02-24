@@ -38,86 +38,65 @@ serve(async (req) => {
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.error('Error getting user from JWT:', userError);
-      return new Response(JSON.stringify({ error: 'Unauthorized: Could not get user from token.' }), {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    let requestBody;
-    if (req.headers.get('content-type')?.includes('application/json')) {
-      requestBody = await req.json();
-    } else {
-      return new Response(JSON.stringify({ error: 'Invalid Content-Type. Expected application/json.' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { customerName, ticketsData } = requestBody;
+    const { customerName, ticketsData } = await req.json();
 
     if (!customerName || !ticketsData || !Array.isArray(ticketsData)) {
-      return new Response(JSON.stringify({ error: 'Missing customerName or ticketsData in request body.' }), {
+      return new Response(JSON.stringify({ error: 'Missing customerName or ticketsData' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const formattedTickets = ticketsData.map((ticket: any) => ({
-      id: ticket.id,
-      subject: ticket.subject,
-      status: ticket.status,
-      priority: ticket.priority,
-      type: ticket.type,
-      createdAt: ticket.created_at,
-      updatedAt: ticket.updated_at,
-      assignee: ticket.assignee,
-      company: ticket.cf_company,
-      module: ticket.cf_module,
-      dependency: ticket.cf_dependency,
-      recurrence: ticket.cf_recurrence,
-    }));
+    const prompt = `As an enterprise customer success intelligence AI, analyze the following ticket metadata for "${customerName}".
+    
+    Return a STRICT JSON object with this structure:
+    {
+      "summary": "3-sentence executive overview.",
+      "sentiment": "Positive | Neutral | Frustrated | Critical",
+      "sentimentScore": -1.0 to 1.0,
+      "persona": "Power User | High-Touch | Bug Hunter | Silent Risk",
+      "personaDescription": "1-sentence explanation of why this persona fits.",
+      "topPainPoints": ["Point 1", "Point 2", "Point 3"],
+      "churnRisk": "Low | Medium | High",
+      "nextBestActions": [
+        { "title": "Action Title", "reason": "Why this is needed", "priority": "high | medium | low" }
+      ]
+    }
 
-    const prompt = `As an experienced customer success manager, analyze the following ticket metadata for customer "${customerName}". Identify common themes, recurring issues, overall sentiment (e.g., "frequently reports bugs," "generally smooth interactions," "escalated issues"), and any noticeable trends (e.g., "increased activity in the last month"). Provide a concise, paragraph-style summary (3-5 sentences). Do not invent information or refer to specific conversation details not present in the metadata.
+    Customer: ${customerName}
+    Tickets: ${JSON.stringify(ticketsData.slice(0, 30))}
 
-Customer: ${customerName}
-Tickets:
-${JSON.stringify(formattedTickets, null, 2)}
+    JSON Output:`;
 
-Summary:`;
-
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }],
-        }],
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { response_mime_type: "application/json" }
       }),
     });
 
     if (!geminiResponse.ok) {
-      const errorBody = await geminiResponse.json();
-      console.error('Gemini API Error:', errorBody);
-      return new Response(JSON.stringify({ error: `Gemini API error: ${geminiResponse.status} - ${JSON.stringify(errorBody)}` }), {
-        status: geminiResponse.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      throw new Error(`Gemini API error: ${geminiResponse.status}`);
     }
 
     const geminiData = await geminiResponse.json();
-    const summary = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "No summary could be generated.";
+    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    const analysis = JSON.parse(rawText);
 
-    return new Response(JSON.stringify({ summary }), {
+    return new Response(JSON.stringify(analysis), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: any) {
-    console.error('Error in Edge Function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

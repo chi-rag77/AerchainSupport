@@ -4,9 +4,8 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { cn } from '@/lib/utils';
-import { TicketIcon, Clock, CheckCircle, AlertCircle, Hourglass, Users, Tag, ArrowUpRight, ArrowDownRight, TrendingUp } from 'lucide-react';
-import { differenceInDays, parseISO, subDays, isPast } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TicketIcon, Hourglass, Users, ArrowUpRight, ArrowDownRight, TrendingUp, AlertCircle, Clock, Tag } from 'lucide-react';
+import { parseISO, subDays } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
@@ -17,134 +16,106 @@ interface CustomerOverviewCardProps {
 
 const CustomerOverviewCard = ({ customerName, tickets }: CustomerOverviewCardProps) => {
   const metrics = useMemo(() => {
-    if (!tickets || tickets.length === 0) {
-      return {
-        totalTicketsLast30: 0,
-        totalTicketsLast90: 0,
-        ticketVolumeTrend: 0,
-        openTicketsCount: 0,
-        openTicketsBreakdown: { urgent: 0, high: 0, medium: 0, low: 0, other: 0 },
-      };
-    }
+    if (!tickets || tickets.length === 0) return null;
 
     const now = new Date();
     const last30DaysStart = subDays(now, 30);
-    const last90DaysStart = subDays(now, 90);
-    const prev30DaysStart = subDays(now, 60); // For trend calculation
+    const prev30DaysStart = subDays(now, 60);
 
     const ticketsLast30 = tickets.filter(t => parseISO(t.created_at) >= last30DaysStart);
-    const ticketsLast90 = tickets.filter(t => parseISO(t.created_at) >= last90DaysStart);
     const ticketsPrev30 = tickets.filter(t => parseISO(t.created_at) >= prev30DaysStart && parseISO(t.created_at) < last30DaysStart);
 
-    let ticketVolumeTrend = 0;
+    let trend = 0;
     if (ticketsPrev30.length > 0) {
-      ticketVolumeTrend = ((ticketsLast30.length - ticketsPrev30.length) / ticketsPrev30.length) * 100;
-    } else if (ticketsLast30.length > 0) {
-      ticketVolumeTrend = 100; // All new tickets in current period
+      trend = ((ticketsLast30.length - ticketsPrev30.length) / ticketsPrev30.length) * 100;
     }
 
-    const openTickets = tickets.filter(t =>
-      t.status.toLowerCase() !== 'resolved' && t.status.toLowerCase() !== 'closed'
-    );
-    const openTicketsCount = openTickets.length;
-
-    const openTicketsBreakdown = { urgent: 0, high: 0, medium: 0, low: 0, other: 0 };
-    openTickets.forEach(ticket => {
-      const priorityLower = ticket.priority.toLowerCase();
-      if (priorityLower === 'urgent') openTicketsBreakdown.urgent++;
-      else if (priorityLower === 'high') openTicketsBreakdown.high++;
-      else if (priorityLower === 'medium') openTicketsBreakdown.medium++;
-      else if (priorityLower === 'low') openTicketsBreakdown.low++;
-      else openTicketsBreakdown.other++;
+    const openTickets = tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()));
+    
+    const breakdown = { urgent: 0, high: 0, medium: 0, low: 0 };
+    openTickets.forEach(t => {
+      const p = t.priority.toLowerCase();
+      if (p === 'urgent') breakdown.urgent++;
+      else if (p === 'high') breakdown.high++;
+      else if (p === 'medium') breakdown.medium++;
+      else breakdown.low++;
     });
 
     return {
-      totalTicketsLast30: ticketsLast30.length,
-      totalTicketsLast90: ticketsLast90.length,
-      ticketVolumeTrend: parseFloat(ticketVolumeTrend.toFixed(1)),
-      openTicketsCount,
-      openTicketsBreakdown,
+      total30: ticketsLast30.length,
+      trend: parseFloat(trend.toFixed(1)),
+      openCount: openTickets.length,
+      breakdown
     };
   }, [tickets]);
 
-  // Placeholder for Customer Tier (would come from a custom field or external data)
-  const customerTier = "Gold"; 
-
-  const trendColorClass = metrics.ticketVolumeTrend > 0 ? "text-red-500" : metrics.ticketVolumeTrend < 0 ? "text-green-500" : "text-gray-500";
-  const TrendIcon = metrics.ticketVolumeTrend > 0 ? ArrowUpRight : ArrowDownRight;
+  if (!metrics) return null;
 
   return (
-    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-full bg-card border border-border shadow-sm">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-2xl font-bold text-foreground flex items-center gap-2">
-          {customerName}
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-            Tier: {customerTier}
-          </Badge>
-          <Users className="h-6 w-6 text-muted-foreground" />
+    <Card className="relative overflow-hidden rounded-[24px] border-none bg-white dark:bg-gray-800 shadow-glass group">
+      <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600">
+            <Users className="h-6 w-6" />
+          </div>
+          <div>
+            <CardTitle className="text-xl font-black tracking-tight">Account Snapshot</CardTitle>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Volume & Priority</p>
+          </div>
         </div>
+        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-none font-black text-[10px] uppercase tracking-widest px-3 py-1">
+          Gold Tier
+        </Badge>
       </CardHeader>
-      <CardContent className="text-sm space-y-5">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-          <div className="flex flex-col">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1"><TicketIcon className="h-4 w-4" /> Total Tickets (30D):</span>
-            <span className="text-3xl font-bold text-foreground">{metrics.totalTicketsLast30}</span>
+
+      <CardContent className="p-8 pt-0 space-y-8">
+        <div className="grid grid-cols-2 gap-8">
+          <div className="space-y-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tickets (30D)</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-black tracking-tighter">{metrics.total30}</span>
+              <div className={cn(
+                "flex items-center text-xs font-bold",
+                metrics.trend > 0 ? "text-red-500" : "text-green-500"
+              )}>
+                {metrics.trend > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {Math.abs(metrics.trend)}%
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1"><TicketIcon className="h-4 w-4" /> Total Tickets (90D):</span>
-            <span className="text-3xl font-bold text-foreground">{metrics.totalTicketsLast90}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1"><TrendingUp className="h-4 w-4" /> Volume Trend (30D):</span>
-            <span className={cn("text-3xl font-bold flex items-center", trendColorClass)}>
-              {metrics.ticketVolumeTrend !== 0 && <TrendIcon className="h-6 w-6 mr-1" />}
-              {metrics.ticketVolumeTrend}%
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-muted-foreground flex items-center gap-1 mb-1"><Hourglass className="h-4 w-4 text-blue-500" /> Current Open Tickets:</span>
-            <span className="text-3xl font-bold text-foreground">{metrics.openTicketsCount}</span>
+
+          <div className="space-y-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Active Backlog</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-black tracking-tighter text-indigo-600">{metrics.openCount}</span>
+              <span className="text-xs font-bold text-muted-foreground">Open</span>
+            </div>
           </div>
         </div>
 
-        {metrics.openTicketsCount > 0 && (
-          <>
-            <Separator />
-            <div className="mt-4 pt-3">
-              <h4 className="font-semibold text-foreground mb-3">Open Tickets Breakdown:</h4>
-              <div className="flex flex-wrap gap-2 text-xs">
-                {metrics.openTicketsBreakdown.urgent > 0 && (
-                  <Badge variant="destructive" className="flex items-center gap-1 px-2 py-1">
-                    <AlertCircle className="h-3 w-3" /> Urgent: {metrics.openTicketsBreakdown.urgent}
-                  </Badge>
-                )}
-                {metrics.openTicketsBreakdown.high > 0 && (
-                  <Badge className="bg-orange-500 text-white flex items-center gap-1 px-2 py-1">
-                    <AlertCircle className="h-3 w-3" /> High: {metrics.openTicketsBreakdown.high}
-                  </Badge>
-                )}
-                {metrics.openTicketsBreakdown.medium > 0 && (
-                  <Badge className="bg-yellow-500 text-black flex items-center gap-1 px-2 py-1">
-                    <Hourglass className="h-3 w-3" /> Medium: {metrics.openTicketsBreakdown.medium}
-                  </Badge>
-                )}
-                {metrics.openTicketsBreakdown.low > 0 && (
-                  <Badge className="bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 flex items-center gap-1 px-2 py-1">
-                    <Clock className="h-3 w-3" /> Low: {metrics.openTicketsBreakdown.low}
-                  </Badge>
-                )}
-                {metrics.openTicketsBreakdown.other > 0 && (
-                  <Badge className="bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200 flex items-center gap-1 px-2 py-1">
-                    <Tag className="h-3 w-3" /> Other: {metrics.openTicketsBreakdown.other}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </>
-        )}
+        <Separator className="opacity-50" />
+
+        <div className="space-y-4">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Priority Distribution (Open)</h4>
+          <div className="flex flex-wrap gap-3">
+            {metrics.breakdown.urgent > 0 && (
+              <Badge className="bg-red-50 text-red-700 border-red-100 font-bold gap-1.5 px-3 py-1.5 rounded-xl">
+                <AlertCircle className="h-3.5 w-3.5" /> Urgent: {metrics.breakdown.urgent}
+              </Badge>
+            )}
+            {metrics.breakdown.high > 0 && (
+              <Badge className="bg-orange-50 text-orange-700 border-orange-100 font-bold gap-1.5 px-3 py-1.5 rounded-xl">
+                <AlertCircle className="h-3.5 w-3.5" /> High: {metrics.breakdown.high}
+              </Badge>
+            )}
+            <Badge variant="outline" className="font-bold gap-1.5 px-3 py-1.5 rounded-xl border-2">
+              <Clock className="h-3.5 w-3.5" /> Medium: {metrics.breakdown.medium}
+            </Badge>
+            <Badge variant="outline" className="font-bold gap-1.5 px-3 py-1.5 rounded-xl border-2">
+              <Tag className="h-3.5 w-3.5" /> Low: {metrics.breakdown.low}
+            </Badge>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
