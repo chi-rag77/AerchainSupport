@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 const Analytics = () => {
   const { session } = useSupabase();
