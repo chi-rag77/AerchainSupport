@@ -6,6 +6,8 @@ import { useTickets } from "@/features/tickets/hooks/useTickets";
 import { useQueueState } from "@/features/queue/hooks/useQueueState";
 import QueueCommandBar from "@/features/queue/components/QueueCommandBar";
 import TicketRow from "@/features/queue/components/TicketRow";
+import CompactTicketCard from "@/features/queue/components/CompactTicketCard";
+import KanbanBoard from "@/features/queue/components/KanbanBoard";
 import BulkActionBar from "@/features/queue/components/BulkActionBar";
 import QueueFilters from "@/features/queue/components/QueueFilters";
 import TicketDetailModal from "@/components/TicketDetailModal";
@@ -24,7 +26,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { TicketFilters } from "@/features/tickets/types";
+import { TicketFilters, Ticket } from "@/features/tickets/types";
+import { motion, AnimatePresence } from "framer-motion";
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -33,7 +36,7 @@ const TicketsPage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
@@ -119,10 +122,6 @@ const TicketsPage = () => {
 
   const criticalTickets = tickets.filter(t => t.priority.toLowerCase() === 'urgent' || t.status.toLowerCase() === 'escalated');
   
-  // Pagination Logic
-  const totalPages = Math.ceil(tickets.length / itemsPerPage);
-  const paginatedTickets = tickets; // Already paginated by the hook
-
   return (
     <div className="flex-1 flex flex-col p-8 space-y-8 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
       {/* Section 1: Command Bar */}
@@ -179,74 +178,110 @@ const TicketsPage = () => {
 
       {/* Section 3: Ticket Workspace */}
       <div className="flex flex-col gap-4">
-        <div className="bg-white dark:bg-gray-900 rounded-[28px] shadow-glass border border-white/20 dark:border-gray-800/30 overflow-hidden">
+        <AnimatePresence mode="wait">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-32 text-muted-foreground">
+            <motion.div 
+              key="loading"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center py-32 text-muted-foreground bg-white dark:bg-gray-900 rounded-[28px] shadow-glass border border-white/20"
+            >
               <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
               <p className="text-lg font-medium">Loading Intelligence Workspace...</p>
-            </div>
+            </motion.div>
           ) : (
-            <div className="max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
-              <Table>
-                <TableHeader className="bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-20 shadow-sm">
-                  <TableRow className="border-none">
-                    <TableHead className="w-12 pl-6"></TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
-                    <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
-                    <TableHead className="w-24 pr-6"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedTickets.map((ticket) => (
-                    <TicketRow 
-                      key={ticket.id}
-                      ticket={ticket}
-                      isSelected={queueState.selectedTicketIds.includes(ticket.id)}
-                      onToggleSelect={() => queueState.toggleSelection(ticket.id)}
-                      onClick={() => { setSelectedTicket(ticket); }}
+            <motion.div
+              key={queueState.viewMode}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              {queueState.viewMode === 'list' && (
+                <div className="bg-white dark:bg-gray-900 rounded-[28px] shadow-glass border border-white/20 dark:border-gray-800/30 overflow-hidden">
+                  <div className="max-h-[65vh] overflow-y-auto">
+                    <Table>
+                      <TableHeader className="bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-20 shadow-sm">
+                        <TableRow className="border-none">
+                          <TableHead className="w-12 pl-6"></TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
+                          <TableHead className="w-24 pr-6"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {tickets.map((ticket) => (
+                          <TicketRow 
+                            key={ticket.id}
+                            ticket={ticket}
+                            isSelected={queueState.selectedTicketIds.includes(ticket.id)}
+                            onToggleSelect={() => queueState.toggleSelection(ticket.id)}
+                            onClick={() => { setSelectedTicket(ticket); }}
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {queueState.viewMode === 'compact' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {tickets.map((ticket) => (
+                    <CompactTicketCard 
+                      key={ticket.id} 
+                      ticket={ticket} 
+                      onClick={() => setSelectedTicket(ticket)} 
                     />
                   ))}
-                  {paginatedTickets.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
-                        No tickets found matching your criteria.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                </div>
+              )}
+
+              {queueState.viewMode === 'kanban' && (
+                <KanbanBoard 
+                  tickets={tickets} 
+                  onTicketClick={setSelectedTicket} 
+                />
+              )}
+
+              {tickets.length === 0 && (
+                <div className="py-32 text-center text-muted-foreground italic bg-white dark:bg-gray-900 rounded-[28px] border border-dashed">
+                  No tickets found matching your criteria.
+                </div>
+              )}
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
         {/* Pagination Controls */}
-        <div className="flex items-center justify-between px-4 py-2 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm rounded-2xl border border-white/20">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-            Page {currentPage}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="rounded-xl h-9 w-9 p-0 hover:bg-white dark:hover:bg-gray-800 shadow-sm"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentPage(prev => prev + 1)}
-              disabled={paginatedTickets.length < itemsPerPage}
-              className="rounded-xl h-9 w-9 p-0 hover:bg-white dark:hover:bg-gray-800 shadow-sm"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {queueState.viewMode !== 'kanban' && (
+          <div className="flex items-center justify-between px-4 py-2 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm rounded-2xl border border-white/20">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+              Page {currentPage}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="rounded-xl h-9 w-9 p-0 hover:bg-white dark:hover:bg-gray-800 shadow-sm"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                disabled={tickets.length < itemsPerPage}
+                className="rounded-xl h-9 w-9 p-0 hover:bg-white dark:hover:bg-gray-800 shadow-sm"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Section 5: Bulk Actions */}
