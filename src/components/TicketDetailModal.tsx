@@ -11,10 +11,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Ticket } from "@/features/tickets/types";
-import { format, isPast, parseISO } from 'date-fns';
+import { format, isPast, parseISO, formatDistanceToNowStrict } from 'date-fns';
 import {
   Loader2, AlertCircle, Copy, CheckCircle, Hourglass, Clock, Users, Shield, Laptop, XCircle,
-  Tag, Building2, MessageSquare, CalendarDays, User, Info, RefreshCw, Brain, Sparkles
+  Tag, Building2, MessageSquare, CalendarDays, User, Info, RefreshCw, Brain, Sparkles, Timer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -134,6 +134,9 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
 
   const isOverdue = ticket.due_by && isPast(parseISO(ticket.due_by)) && ticket.status.toLowerCase() !== 'resolved' && ticket.status.toLowerCase() !== 'closed';
 
+  // Calculate duration in current status
+  const statusDuration = formatDistanceToNowStrict(parseISO(ticket.updated_at));
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col p-0">
@@ -178,7 +181,7 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
             />
           ) : (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="shadow-sm">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -204,6 +207,18 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
                         <span className="text-muted-foreground">Due:</span> {format(new Date(ticket.due_by), 'MMM dd, HH:mm')}
                       </p>
                     )}
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm border-indigo-100 bg-indigo-50/30 dark:bg-indigo-950/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                      <Timer className="h-4 w-4" /> Status Ageing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm space-y-1">
+                    <p className="font-bold text-indigo-700 dark:text-indigo-300">{ticket.status}</p>
+                    <p className="text-muted-foreground">for <span className="font-black text-foreground">{statusDuration}</span></p>
                   </CardContent>
                 </Card>
               </div>
