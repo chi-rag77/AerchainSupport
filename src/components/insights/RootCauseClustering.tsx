@@ -1,12 +1,13 @@
 "use client";
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { IssueCluster } from '@/features/insights/types';
-import { AlertCircle, Zap, ArrowRight, Sparkles, Target } from 'lucide-react';
+import { AlertCircle, ArrowRight, Target } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 
 const RootCauseClustering = ({ clusters }: { clusters: IssueCluster[] }) => {
   return (
@@ -19,7 +20,7 @@ const RootCauseClustering = ({ clusters }: { clusters: IssueCluster[] }) => {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {clusters.map((cluster, i) => (
+        {clusters.map((cluster) => (
           <motion.div key={cluster.id} whileHover={{ x: 4 }}>
             <Card className={cn(
               "border-none shadow-sm rounded-[24px] overflow-hidden group transition-all",

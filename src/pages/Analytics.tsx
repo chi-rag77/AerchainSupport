@@ -10,7 +10,7 @@ import PredictiveForecasting from "@/components/insights/PredictiveForecasting";
 import AutomationOpportunity from "@/components/insights/AutomationOpportunity";
 import SentimentRiskMonitor from "@/components/insights/SentimentRiskMonitor";
 import AgentIntelligence from "@/components/insights/AgentIntelligence";
-import { Loader2, RefreshCw, BarChart3, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { Loader2, RefreshCw, BarChart3, LayoutDashboard, ShieldCheck, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
