@@ -197,8 +197,8 @@ const TicketsPage = () => {
               transition={{ duration: 0.3 }}
             >
               {queueState.viewMode === 'list' && (
-                <div className="bg-white dark:bg-gray-900 rounded-[28px] shadow-glass border border-white/20 dark:border-gray-800/30 overflow-hidden">
-                  <div className="max-h-[65vh] overflow-y-auto relative">
+                <div className="rounded-[28px] border border-white/20 dark:border-gray-800/30 bg-white dark:bg-gray-900 shadow-glass overflow-hidden">
+                  <div className="max-h-[600px] overflow-y-auto relative">
                     <Table>
                       <TableHeader className="sticky top-0 z-20 shadow-sm">
                         <TableRow className="border-none bg-gray-50 dark:bg-gray-800">
