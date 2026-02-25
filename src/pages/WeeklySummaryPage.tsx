@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Loader2, CalendarDays, Sparkles, Brain, BarChart3, ShieldCheck, LayoutDashboard } from "lucide-react";
+import { Loader2, CalendarDays, Sparkles, Brain, BarChart3, ShieldCheck, LayoutDashboard, AlertCircle, RefreshCw } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/types";
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { invokeEdgeFunction } from "@/lib/apiClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 
 // Components
 import WeeklyHero from "@/components/weekly-summary/WeeklyHero";
@@ -51,6 +52,7 @@ const WeeklySummaryPage = () => {
     },
     enabled: !!selectedCustomer,
     staleTime: 1000 * 60 * 30, // 30 mins
+    retry: 1,
   });
 
   const handleSync = async () => {
@@ -100,6 +102,23 @@ const WeeklySummaryPage = () => {
               <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
               <p className="text-lg font-black animate-pulse uppercase tracking-widest">Synthesizing Intelligence Brief...</p>
             </motion.div>
+          ) : error || !intelligence ? (
+            <motion.div 
+              key="error"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-32 text-red-500 text-center space-y-4"
+            >
+              <AlertCircle className="h-16 w-16 opacity-50" />
+              <div className="space-y-1">
+                <p className="text-xl font-bold">Intelligence Synthesis Failed</p>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  {error instanceof Error ? error.message : "The AI engine encountered an error while processing this week's data."}
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ["weeklyIntelligence", selectedCustomer] })} className="gap-2">
+                <RefreshCw className="h-4 w-4" /> Retry Analysis
+              </Button>
+            </motion.div>
           ) : (
             <motion.div
               key={selectedCustomer}
@@ -119,21 +138,23 @@ const WeeklySummaryPage = () => {
               </section>
 
               {/* Section 2: AI Narrative Brief */}
-              <WeeklyAISummary 
-                analysis={intelligence.aiNarrative} 
-                isLoading={false} 
-              />
+              {intelligence.aiNarrative && (
+                <WeeklyAISummary 
+                  analysis={intelligence.aiNarrative} 
+                  isLoading={false} 
+                />
+              )}
 
               {/* Section 3: Trend Movement & Signals */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <TrendMovementGrid trends={intelligence.trends} />
-                <RiskSignalSection signals={intelligence.riskSignals} />
+                <TrendMovementGrid trends={intelligence.trends || []} />
+                <RiskSignalSection signals={intelligence.riskSignals || []} />
               </div>
 
               <Separator className="bg-gray-200 dark:bg-gray-800" />
 
               {/* Section 4: Customer Impact Radar */}
-              <CustomerImpactRadar radar={intelligence.customerRadar} />
+              <CustomerImpactRadar radar={intelligence.customerRadar || []} />
 
               {/* Section 5: Advanced Metrics & Forecast */}
               <StabilityForecast 
@@ -143,7 +164,7 @@ const WeeklySummaryPage = () => {
               />
 
               {/* Section 6: Action Center */}
-              <WeeklyActionCenter actions={intelligence.actions} />
+              <WeeklyActionCenter actions={intelligence.actions || []} />
 
               {/* Footer: System Health */}
               <div className="pt-12 pb-6 flex items-center justify-center gap-8 opacity-50">

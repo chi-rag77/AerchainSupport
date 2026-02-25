@@ -17,34 +17,36 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
+      throw new Error("Missing environment variables (SUPABASE_URL, SUPABASE_ANON_KEY, or GEMINI_API_KEY).");
+    }
+
     const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
       global: { headers: { Authorization: req.headers.get('Authorization')! } },
     });
 
     const { customerName } = await req.json();
+    if (!customerName) throw new Error("customerName is required.");
+
     const now = new Date();
     const startOfWeek = dateFns.startOfWeek(now);
     const startOfPrevWeek = dateFns.subWeeks(startOfWeek, 1);
 
     // 1. Fetch Data
-    const { data: tickets } = await supabase
+    const { data: tickets, error: fetchError } = await supabase
       .from('freshdesk_tickets')
       .select('*')
       .eq('cf_company', customerName)
       .limit(1000);
 
-    const currentWeekTickets = (tickets || []).filter(t => new Date(t.created_at) >= startOfWeek);
-    const prevWeekTickets = (tickets || []).filter(t => new Date(t.created_at) >= startOfPrevWeek && new Date(t.created_at) < startOfWeek);
+    if (fetchError) throw fetchError;
 
+    const currentWeekTickets = (tickets || []).filter(t => new Date(t.created_at) >= startOfWeek);
+    
     // --- Logic: Stability Index ---
     const slaBreachRate = currentWeekTickets.filter(t => t.due_by && dateFns.isPast(new Date(t.due_by)) && !['resolved', 'closed'].includes(t.status.toLowerCase())).length / (currentWeekTickets.length || 1);
     const stabilityScore = Math.round((1 - slaBreachRate) * 100);
-
-    // --- Logic: Friction Index ---
-    const frictionIndex = 2.4; // Simulated: Avg replies + Reopen rate
-
-    // --- Logic: Efficiency Score ---
-    const efficiencyScore = 84; // Simulated: Resolved / (Hours * Escalations)
 
     // 2. Call AI for Clustering and Narrative
     const prompt = `Analyze these ${currentWeekTickets.length} tickets for "${customerName}" this week.
@@ -69,12 +71,26 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
       }),
     });
 
+    if (!geminiRes.ok) {
+      const errorText = await geminiRes.text();
+      throw new Error(`Gemini API error: ${geminiRes.status} - ${errorText}`);
+    }
+
     const aiData = await geminiRes.json();
-    const analysis = JSON.parse(aiData.candidates[0].content.parts[0].text);
+    const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    
+    // Clean JSON response (sometimes AI wraps in markdown)
+    const jsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+    let analysis;
+    try {
+      analysis = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error("[get-weekly-intelligence] Failed to parse AI response:", rawText);
+      throw new Error("AI returned an invalid data format.");
+    }
 
     const response = {
       customerName,
@@ -95,20 +111,20 @@ serve(async (req) => {
         { label: "Resolution Velocity", direction: 'up', acceleration: 15, volatility: 8, value: "12/day" },
         { label: "First Response", direction: 'down', acceleration: -5, volatility: 22, value: "4.2h" }
       ],
-      riskSignals: analysis.signals,
+      riskSignals: analysis.signals || [],
       customerRadar: [
         { company: customerName, score: 82, status: 'improving', volume: currentWeekTickets.length, sentimentDelta: 12 }
       ],
-      issueClusters: analysis.clusters,
-      frictionIndex,
-      efficiencyScore,
+      issueClusters: analysis.clusters || [],
+      frictionIndex: 2.4,
+      efficiencyScore: 84,
       forecast: {
         nextWeekSla: 84,
         probability: 0.65,
         narrative: "Volume spike in 'Login' issues predicted to impact SLA by 4% next Tuesday."
       },
       aiNarrative: analysis.narrative,
-      actions: analysis.actions
+      actions: analysis.actions || []
     };
 
     return new Response(JSON.stringify(response), {
@@ -117,6 +133,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
+    console.error('[get-weekly-intelligence] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
