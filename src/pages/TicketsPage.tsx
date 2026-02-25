@@ -198,16 +198,16 @@ const TicketsPage = () => {
             >
               {queueState.viewMode === 'list' && (
                 <div className="bg-white dark:bg-gray-900 rounded-[28px] shadow-glass border border-white/20 dark:border-gray-800/30 overflow-hidden">
-                  <div className="max-h-[65vh] overflow-y-auto">
+                  <div className="max-h-[65vh] overflow-y-auto relative">
                     <Table>
-                      <TableHeader className="bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-20 shadow-sm">
-                        <TableRow className="border-none">
-                          <TableHead className="w-12 pl-6"></TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
-                          <TableHead className="w-24 pr-6"></TableHead>
+                      <TableHeader className="sticky top-0 z-20 shadow-sm">
+                        <TableRow className="border-none bg-gray-50 dark:bg-gray-800">
+                          <TableHead className="w-12 pl-6 bg-inherit"></TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest bg-inherit">Code</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest bg-inherit">Subject & Context</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest bg-inherit">Status</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right bg-inherit">Risk & Age</TableHead>
+                          <TableHead className="w-24 pr-6 bg-inherit"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

@@ -9,13 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Ticket } from '@/features/tickets/types'; // Updated import path
-import { format, formatDistanceToNowStrict, differenceInDays } from 'date-fns'; // Import differenceInDays
+import { Ticket } from '@/features/tickets/types';
+import { format, formatDistanceToNowStrict, differenceInDays } from 'date-fns';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle, Hourglass, Laptop, AlertCircle, XCircle, Clock, Users, Shield, MessageSquare, Tag, ArrowUpDown, Filter, ChevronLeft, ChevronRight } from 'lucide-react'; // Added ChevronLeft, ChevronRight for pagination
-import { Badge } from "@/components/ui/badge"; // Import Badge component
-import { Button } from "@/components/ui/button"; // Import Button for clickable ID
+import { CheckCircle, Hourglass, Laptop, AlertCircle, XCircle, Clock, Users, Shield, MessageSquare, Tag, ArrowUpDown, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface TicketTableProps {
   tickets: Ticket[];
@@ -49,21 +49,6 @@ const TicketTable = ({ tickets, onRowClick, currentPage, totalPages, onPageChang
     }
   };
 
-  const getPriorityBadgeClasses = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case 'urgent':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'high':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'low':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case 'resolved':
@@ -85,26 +70,6 @@ const TicketTable = ({ tickets, onRowClick, currentPage, totalPages, onPageChang
       default:
         return null;
     }
-  };
-
-  const getPriorityIcon = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case 'urgent':
-        return <AlertCircle className="h-3 w-3 mr-1" />;
-      case 'high':
-        return <AlertCircle className="h-3 w-3 mr-1" />;
-      case 'medium':
-        return <MessageSquare className="h-3 w-3 mr-1" />;
-      case 'low':
-        return <Clock className="h-3 w-3 mr-1" />;
-      default:
-        return null;
-    }
-  };
-
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    return formatDistanceToNowStrict(date, { addSuffix: true });
   };
 
   const calculateAgeing = (ticket: Ticket) => {
@@ -129,32 +94,32 @@ const TicketTable = ({ tickets, onRowClick, currentPage, totalPages, onPageChang
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="flex-grow overflow-y-auto"> {/* This makes the table body scrollable */}
+      <div className="flex-grow overflow-y-auto relative">
         <Table className="min-w-full">
-          <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
-            <TableRow>
-              <TableHead className="w-[100px] py-2 whitespace-nowrap">
+          <TableHeader className="sticky top-0 z-10 shadow-sm">
+            <TableRow className="bg-gray-100 dark:bg-gray-700">
+              <TableHead className="w-[100px] py-2 whitespace-nowrap bg-inherit">
                 <div className="flex items-center">Code {renderSortAndFilterIcons()}</div>
               </TableHead>
-              <TableHead className="py-2 whitespace-nowrap">
+              <TableHead className="py-2 whitespace-nowrap bg-inherit">
                 <div className="flex items-center">Subject {renderSortAndFilterIcons()}</div>
               </TableHead>
-              <TableHead className="py-2 whitespace-nowrap">
+              <TableHead className="py-2 whitespace-nowrap bg-inherit">
                 <div className="flex items-center">Created By {renderSortAndFilterIcons()}</div>
               </TableHead>
-              <TableHead className="py-2 whitespace-nowrap">
+              <TableHead className="py-2 whitespace-nowrap bg-inherit">
                 <div className="flex items-center">Status {renderSortAndFilterIcons()}</div>
               </TableHead>
-              <TableHead className="py-2 whitespace-nowrap">
+              <TableHead className="py-2 whitespace-nowrap bg-inherit">
                 <div className="flex items-center">Approver Role(s) {renderSortAndFilterIcons()}</div>
               </TableHead>
-              <TableHead className="py-2 whitespace-nowrap">
+              <TableHead className="py-2 whitespace-nowrap bg-inherit">
                 <div className="flex items-center">Approver(s) {renderSortAndFilterIcons()}</div>
               </TableHead>
-              <TableHead className="py-2 text-right whitespace-nowrap">
+              <TableHead className="py-2 text-right whitespace-nowrap bg-inherit">
                 <div className="flex items-center justify-end">Ageing {renderSortAndFilterIcons()}</div>
               </TableHead>
-              <TableHead className="py-2 text-right whitespace-nowrap">
+              <TableHead className="py-2 text-right whitespace-nowrap bg-inherit">
                 <div className="flex items-center justify-end">Created {renderSortAndFilterIcons()}</div>
               </TableHead>
             </TableRow>
@@ -177,27 +142,20 @@ const TicketTable = ({ tickets, onRowClick, currentPage, totalPages, onPageChang
                   </TableCell>
                   <TableCell className="py-2">{ticket.subject}</TableCell>
                   <TableCell className="py-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center">
-                          {ticket.assignee && ticket.assignee !== "Unassigned" ? (
-                            <>
-                              <Avatar className="h-6 w-6 mr-2 border border-gray-200 dark:border-gray-600 shadow-sm">
-                                <AvatarFallback className="text-xs bg-gray-200 dark:bg-gray-700">
-                                  {ticket.assignee.split(' ').map(n => n[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              {ticket.assignee}
-                            </>
-                          ) : (
-                            <span className="text-gray-500 dark:text-gray-400">Unassigned</span>
-                          )}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {ticket.assignee || "Unassigned"}
-                      </TooltipContent>
-                    </Tooltip>
+                    <div className="flex items-center">
+                      {ticket.assignee && ticket.assignee !== "Unassigned" ? (
+                        <>
+                          <Avatar className="h-6 w-6 mr-2 border border-gray-200 dark:border-gray-600 shadow-sm">
+                            <AvatarFallback className="text-xs bg-gray-200 dark:bg-gray-700">
+                              {ticket.assignee.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          {ticket.assignee}
+                        </>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">Unassigned</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="py-2">
                     <Badge className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getStatusBadgeClasses(ticket.status)}`}>
@@ -205,20 +163,13 @@ const TicketTable = ({ tickets, onRowClick, currentPage, totalPages, onPageChang
                       {ticket.status === 'Pending (Awaiting your Reply)' ? 'In Progress' : ticket.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-2 text-muted-foreground">N/A</TableCell> {/* Placeholder for Approver Role(s) */}
-                  <TableCell className="py-2 text-muted-foreground">N/A</TableCell> {/* Placeholder for Approver(s) */}
+                  <TableCell className="py-2 text-muted-foreground">N/A</TableCell>
+                  <TableCell className="py-2 text-muted-foreground">N/A</TableCell>
                   <TableCell className="py-2 text-right font-semibold">
                     {calculateAgeing(ticket)} days
                   </TableCell>
                   <TableCell className="py-2 text-right text-xs text-muted-foreground">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>{format(new Date(ticket.created_at), 'dd MMM · hh:mm a')}</span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {formatTimeAgo(ticket.created_at)}
-                      </TooltipContent>
-                    </Tooltip>
+                    {format(new Date(ticket.created_at), 'dd MMM · hh:mm a')}
                   </TableCell>
                 </TableRow>
               ))
@@ -232,7 +183,6 @@ const TicketTable = ({ tickets, onRowClick, currentPage, totalPages, onPageChang
           </TableBody>
         </Table>
       </div>
-      {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex justify-end items-center space-x-2 mt-4">
           <Button
