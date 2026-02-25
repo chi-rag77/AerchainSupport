@@ -3,8 +3,8 @@
 import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Loader2, CalendarDays, Sparkles, Brain, BarChart3, ShieldCheck, LayoutDashboard, AlertCircle, RefreshCw, Clock, CheckCircle2 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, CalendarDays, Sparkles, Brain, LayoutDashboard, AlertCircle, RefreshCw, Clock, CheckCircle2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 import { invokeEdgeFunction } from "@/lib/apiClient";
@@ -41,38 +41,38 @@ const WeeklySummaryPage = () => {
     }
   });
 
-  const { data: intelligence, isLoading, isFetching, error } = useQuery({
+  // Deterministic Metrics (Always available)
+  const { data: intelligence, isLoading, isFetching } = useQuery({
     queryKey: ["weeklyIntelligence", selectedCustomer],
     queryFn: async () => {
       return await invokeEdgeFunction<any>('get-weekly-intelligence', {
         method: 'POST',
-        body: { customerName: selectedCustomer },
+        body: { customerName: selectedCustomer, skipAI: true }, // Tell backend to skip AI
       });
     },
     enabled: !!selectedCustomer,
     staleTime: 1000 * 60 * 30,
   });
 
-  const handleSync = async () => {
-    toast.loading("Regenerating Intelligence...", { id: "sync-weekly" });
-    queryClient.invalidateQueries({ queryKey: ["weeklyIntelligence", selectedCustomer] });
-    setTimeout(() => toast.success("Intelligence updated!", { id: "sync-weekly" }), 1000);
-  };
+  // AI Narrative (Manual Trigger)
+  const generateAIMutation = useMutation({
+    mutationFn: async () => {
+      return await invokeEdgeFunction<any>('get-weekly-intelligence', {
+        method: 'POST',
+        body: { customerName: selectedCustomer, forceRefresh: true },
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["weeklyIntelligence", selectedCustomer], data);
+      toast.success("AI Narrative synthesized!");
+    },
+    onError: (err: any) => toast.error(`AI failed: ${err.message}`)
+  });
 
-  const AIStatusBadge = () => {
-    if (!intelligence) return null;
-    const status = intelligence.aiStatus;
-    return (
-      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-gray-800 shadow-sm border border-border">
-        {status === 'synced' ? (
-          <><CheckCircle2 className="h-3 w-3 text-green-500" /><span className="text-[10px] font-black uppercase tracking-widest">AI Synced</span></>
-        ) : status === 'pending' ? (
-          <><Loader2 className="h-3 w-3 text-indigo-500 animate-spin" /><span className="text-[10px] font-black uppercase tracking-widest">AI Generating</span></>
-        ) : (
-          <><AlertCircle className="h-3 w-3 text-amber-500" /><span className="text-[10px] font-black uppercase tracking-widest">AI Delayed (Metrics Live)</span></>
-        )}
-      </div>
-    );
+  const handleSync = async () => {
+    toast.loading("Refreshing metrics...", { id: "sync-weekly" });
+    queryClient.invalidateQueries({ queryKey: ["weeklyIntelligence", selectedCustomer] });
+    setTimeout(() => toast.success("Metrics updated!", { id: "sync-weekly" }), 1000);
   };
 
   return (
@@ -93,17 +93,16 @@ const WeeklySummaryPage = () => {
           {!selectedCustomer ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-32 text-muted-foreground">
               <CalendarDays className="h-20 w-20 mb-6 opacity-20" />
-              <p className="text-xl font-bold">Select an account to generate the Weekly Intelligence Brief</p>
+              <p className="text-xl font-bold">Select an account to view the Weekly Brief</p>
             </motion.div>
           ) : isLoading ? (
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-32 text-muted-foreground">
               <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
-              <p className="text-lg font-black animate-pulse uppercase tracking-widest">Synthesizing Intelligence Brief...</p>
+              <p className="text-lg font-black animate-pulse uppercase tracking-widest">Loading Metrics...</p>
             </motion.div>
           ) : (
             <motion.div key={selectedCustomer} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-16">
               
-              {/* Section 1: Executive Snapshot & Status */}
               <section className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -117,25 +116,32 @@ const WeeklySummaryPage = () => {
                       <Clock className="h-3 w-3" />
                       Generated {format(new Date(intelligence.generatedAt), 'HH:mm')}
                     </div>
-                    <AIStatusBadge />
                   </div>
                 </div>
                 <ExecutiveSnapshotStrip data={intelligence} />
               </section>
 
-              {/* Section 2: AI Narrative Brief (Graceful Degradation) */}
-              <AnimatePresence>
-                {intelligence.aiNarrative ? (
-                  <WeeklyAISummary analysis={intelligence.aiNarrative} isLoading={false} />
-                ) : (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 rounded-[32px] border-2 border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center gap-3 text-muted-foreground">
-                    <Sparkles className="h-5 w-5 opacity-50" />
-                    <p className="text-sm font-medium italic">AI Narrative temporarily unavailable. Deterministic metrics shown below are fully operational.</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* AI Narrative Trigger */}
+              {!intelligence.aiNarrative ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-10 rounded-[32px] border-2 border-dashed border-indigo-200 bg-indigo-50/30 flex flex-col items-center gap-4 text-center">
+                  <Brain className="h-12 w-12 text-indigo-400" />
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-bold text-indigo-900">Synthesize AI Narrative</h3>
+                    <p className="text-sm text-indigo-700/70 max-w-md">Generate a deep-dive behavioral analysis and executive summary for this week's activity.</p>
+                  </div>
+                  <Button 
+                    onClick={() => generateAIMutation.mutate()} 
+                    disabled={generateAIMutation.isPending}
+                    className="bg-indigo-600 hover:bg-indigo-700 gap-2 rounded-full px-10 h-12 font-bold shadow-lg shadow-indigo-500/20"
+                  >
+                    {generateAIMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+                    Generate AI Brief
+                  </Button>
+                </motion.div>
+              ) : (
+                <WeeklyAISummary analysis={intelligence.aiNarrative} isLoading={false} />
+              )}
 
-              {/* Section 3: Trend Movement & Signals */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                 <TrendMovementGrid trends={intelligence.trends || []} />
                 <RiskSignalSection signals={intelligence.riskSignals || []} />
@@ -143,34 +149,15 @@ const WeeklySummaryPage = () => {
 
               <Separator className="bg-gray-200 dark:bg-gray-800" />
 
-              {/* Section 4: Customer Impact Radar */}
               <CustomerImpactRadar radar={intelligence.customerRadar || []} />
 
-              {/* Section 5: Advanced Metrics & Forecast */}
               <StabilityForecast 
                 data={intelligence.forecast} 
                 friction={intelligence.frictionIndex}
                 efficiency={intelligence.efficiencyScore}
               />
 
-              {/* Section 6: Action Center */}
               <WeeklyActionCenter actions={intelligence.actions || []} />
-
-              {/* Footer: System Health */}
-              <div className="pt-12 pb-6 flex items-center justify-center gap-8 opacity-50">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Data Integrity: High</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Brain className="h-3 w-3" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">AI Confidence: 94%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-3 w-3 text-green-500" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">SOC2 Compliant</span>
-                </div>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>

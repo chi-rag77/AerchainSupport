@@ -10,7 +10,7 @@ import PredictiveForecasting from "@/components/insights/PredictiveForecasting";
 import AutomationOpportunity from "@/components/insights/AutomationOpportunity";
 import SentimentRiskMonitor from "@/components/insights/SentimentRiskMonitor";
 import AgentIntelligence from "@/components/insights/AgentIntelligence";
-import { Loader2, RefreshCw, BarChart3, LayoutDashboard, ShieldCheck, Brain } from "lucide-react";
+import { Loader2, RefreshCw, BarChart3, ShieldCheck, Brain, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,37 +23,20 @@ const Analytics = () => {
   const user = session?.user;
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isFetching, error } = useInsightsV2();
+  // Use refetch instead of automatic query
+  const { data, isLoading, isFetching, error, refetch } = useInsightsV2();
 
   const handleRefresh = () => {
-    toast.loading("Refreshing AI Intelligence...", { id: "refresh-insights" });
-    queryClient.invalidateQueries({ queryKey: ['insightsV2'] });
-    setTimeout(() => toast.success("Intelligence updated!", { id: "refresh-insights" }), 1000);
+    toast.loading("Synthesizing Intelligence...", { id: "refresh-insights" });
+    refetch().then(() => {
+      toast.success("Intelligence updated!", { id: "refresh-insights" });
+    });
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
-        <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
-        <p className="text-lg font-bold text-muted-foreground animate-pulse">Synthesizing Insights 2.0...</p>
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-red-500">
-        <p className="font-bold">Failed to load intelligence engine.</p>
-        <Button onClick={handleRefresh} variant="outline" className="mt-4">Try Again</Button>
-      </div>
-    );
-  }
 
   return (
     <TooltipProvider>
       <div className="flex-1 flex flex-col p-8 space-y-12 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
         
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
@@ -68,69 +51,55 @@ const Analytics = () => {
               <ShieldCheck className="h-4 w-4 text-green-500" />
               <span className="text-[10px] font-black uppercase tracking-widest">SOC2 Compliant Architecture</span>
             </div>
-            <Button 
-              onClick={handleRefresh} 
-              disabled={isFetching}
-              className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-12 px-6 font-bold"
-            >
-              <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
-              Refresh Engine
+            {data && (
+              <Button 
+                onClick={handleRefresh} 
+                disabled={isFetching}
+                className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-12 px-6 font-bold"
+              >
+                <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
+                Refresh Engine
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {!data && !isLoading ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-32 text-center space-y-6">
+            <div className="p-6 rounded-full bg-indigo-50 dark:bg-indigo-900/20">
+              <Brain className="h-16 w-16 text-indigo-600" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black text-foreground">AI Intelligence Engine is Offline</h2>
+              <p className="text-muted-foreground max-w-md mx-auto">Insights 2.0 requires a manual trigger to synthesize cross-account patterns, root causes, and predictive forecasts.</p>
+            </div>
+            <Button onClick={() => handleRefresh()} className="bg-indigo-600 hover:bg-indigo-700 h-14 px-10 rounded-full font-black text-lg gap-3 shadow-xl shadow-indigo-500/20">
+              <Sparkles className="h-6 w-6" />
+              Start Intelligence Engine
             </Button>
+          </motion.div>
+        ) : isLoading ? (
+          <div className="flex flex-col items-center justify-center py-32">
+            <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
+            <p className="text-lg font-bold text-muted-foreground animate-pulse">Synthesizing Insights 2.0...</p>
           </div>
-        </div>
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+            <ExecutiveAISummary data={data.summary} />
+            
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <RootCauseClustering clusters={data.clusters} />
+              <PredictiveForecasting points={data.forecast.points} recommendation={data.forecast.recommendation} />
+            </section>
 
-        {/* Section 1: Executive Overview */}
-        <motion.section 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <ExecutiveAISummary data={data.summary} />
-        </motion.section>
-
-        {/* Section 2: Operational Intelligence & Root Cause */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <RootCauseClustering clusters={data.clusters} />
-          <PredictiveForecasting points={data.forecast.points} recommendation={data.forecast.recommendation} />
-        </section>
-
-        <Separator className="bg-gray-200 dark:bg-gray-800" />
-
-        {/* Section 3: Automation ROI */}
-        <section>
-          <AutomationOpportunity data={data.automation} />
-        </section>
-
-        <Separator className="bg-gray-200 dark:bg-gray-800" />
-
-        {/* Section 4: Risk & Sentiment Monitor */}
-        <section>
-          <SentimentRiskMonitor risks={data.accountRisks} />
-        </section>
-
-        <Separator className="bg-gray-200 dark:bg-gray-800" />
-
-        {/* Section 5: Agent Intelligence */}
-        <section>
-          <AgentIntelligence insights={data.agentIntelligence} />
-        </section>
-
-        {/* Footer: System Health */}
-        <div className="pt-12 pb-6 flex items-center justify-center gap-8 opacity-50">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-green-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Data Freshness: Live</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Brain className="h-3 w-3" />
-            <span className="text-[10px] font-black uppercase tracking-widest">AI Confidence: 92%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <LayoutDashboard className="h-3 w-3" />
-            <span className="text-[10px] font-black uppercase tracking-widest">GDPR Ready</span>
-          </div>
-        </div>
-
+            <Separator className="bg-gray-200 dark:bg-gray-800" />
+            <AutomationOpportunity data={data.automation} />
+            <Separator className="bg-gray-200 dark:bg-gray-800" />
+            <SentimentRiskMonitor risks={data.accountRisks} />
+            <Separator className="bg-gray-200 dark:bg-gray-800" />
+            <AgentIntelligence insights={data.agentIntelligence} />
+          </motion.div>
+        )}
       </div>
     </TooltipProvider>
   );

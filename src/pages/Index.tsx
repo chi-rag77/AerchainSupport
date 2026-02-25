@@ -17,7 +17,8 @@ import PredictiveForecast from "@/components/dashboard/PredictiveForecast";
 import ExecutiveActionCenter from "@/components/dashboard/ExecutiveActionCenter";
 import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import { Loader2 } from "lucide-react";
+import { Loader2, Brain, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,7 +32,7 @@ const DashboardContent = () => {
   const queryClient = useQueryClient();
 
   const { viewMode, dateRange } = useDashboard();
-  const { data, tickets, uniqueCompanies, isLoading, isFetching } = useExecutiveDashboard();
+  const { data, tickets, uniqueCompanies, isLoading, isGeneratingAI, generateAI, hasAI } = useExecutiveDashboard();
   const [showInsight, setShowInsight] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,9 +47,6 @@ const DashboardContent = () => {
       if (error) throw error;
       toast.success("Data synchronized!", { id: "sync-dashboard" });
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] });
-      queryClient.invalidateQueries({ queryKey: ['activeRisks'] });
-      queryClient.invalidateQueries({ queryKey: ['operationalIntelligence'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
@@ -69,46 +67,46 @@ const DashboardContent = () => {
 
   return (
     <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
-      {/* Section 1: Executive Hero */}
       <ExecutiveHero 
         userName={fullName}
         slaRiskScore={data.slaRiskScore}
         lastSync={data.lastSync}
-        isSyncing={isFetching}
+        isSyncing={isLoading}
         onSync={handleSync}
-        onViewInsights={() => {}} 
+        onViewInsights={generateAI} 
       />
 
-      {/* Section 2: View Mode Selector */}
       <div className="flex justify-center">
         <ViewModeSelector />
       </div>
 
-      {/* Section 3: AI Insight Strip */}
-      <AIInsightStrip 
-        insight={activeInsight}
-        onDismiss={() => setShowInsight(false)}
-      />
+      {!hasAI && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 rounded-[24px] border-2 border-dashed border-indigo-200 bg-indigo-50/30 flex flex-col items-center gap-4 text-center">
+          <Brain className="h-10 w-10 text-indigo-400" />
+          <div className="space-y-1">
+            <h3 className="font-bold text-indigo-900">AI Intelligence is Ready</h3>
+            <p className="text-sm text-indigo-700/70">Generate executive summaries and predictive insights on demand.</p>
+          </div>
+          <Button onClick={() => generateAI()} disabled={isGeneratingAI} className="bg-indigo-600 hover:bg-indigo-700 gap-2 rounded-full px-8">
+            {isGeneratingAI ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Generate AI Insights
+          </Button>
+        </motion.div>
+      )}
 
-      {/* Section 4: KPI Intelligence */}
-      <KPISection 
-        metrics={data.kpis}
-        isLoading={isLoading}
-      />
+      {hasAI && showInsight && (
+        <AIInsightStrip 
+          insight={activeInsight}
+          onDismiss={() => setShowInsight(false)}
+        />
+      )}
 
-      {/* Section 5: Global Filter Bar */}
+      <KPISection metrics={data.kpis} isLoading={isLoading} />
+
       <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
 
-      {/* Section 6: Dynamic Content based on View Mode */}
       <AnimatePresence mode="wait">
-        <motion.div
-          key={viewMode}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4 }}
-          className="space-y-12"
-        >
+        <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
           {(viewMode === 'overview' || viewMode === 'performance') && (
             <>
               <OperationalIntelligence 
@@ -117,8 +115,8 @@ const DashboardContent = () => {
                 startDate={dateRange.from!}
                 endDate={dateRange.to!}
               />
-              <OperationalBottlenecks data={data.bottlenecks} />
-              <PredictiveForecast data={data.forecast} />
+              {hasAI && <OperationalBottlenecks data={data.bottlenecks} />}
+              {hasAI && <PredictiveForecast data={data.forecast} />}
             </>
           )}
 
@@ -126,7 +124,7 @@ const DashboardContent = () => {
             <ActiveRiskSection onViewTicket={(t) => { setSelectedTicket(t); setIsModalOpen(true); }} />
           )}
 
-          {viewMode === 'overview' && (
+          {viewMode === 'overview' && hasAI && (
             <>
               <Separator className="bg-gray-200 dark:bg-gray-800" />
               <ExecutiveActionCenter actions={data.actions} />
@@ -135,15 +133,10 @@ const DashboardContent = () => {
         </motion.div>
       </AnimatePresence>
 
-      {/* Section 7: System Health & Confidence */}
       <SystemHealthPanel data={data.systemHealth} />
 
       {selectedTicket && (
-        <TicketDetailModal 
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          ticket={selectedTicket}
-        />
+        <TicketDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ticket={selectedTicket} />
       )}
     </div>
   );

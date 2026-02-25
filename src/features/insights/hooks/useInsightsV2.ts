@@ -10,6 +10,7 @@ export function useInsightsV2() {
       if (error) throw error;
       return data;
     },
-    staleTime: 15 * 60 * 1000, // 15 minutes
+    enabled: false, // DO NOT CALL AUTOMATICALLY
+    staleTime: 15 * 60 * 1000,
   });
 }

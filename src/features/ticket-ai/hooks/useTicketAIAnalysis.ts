@@ -7,18 +7,19 @@ export function useTicketAIAnalysis(ticketId: string | null, customerName: strin
   const queryClient = useQueryClient();
   const queryKey = ['ticketAIAnalysis', ticketId];
 
-  const { data: analysis, isLoading, error, refetch } = useQuery<TicketAIAnalysis, Error>({
+  // Set enabled: false to prevent automatic fetching on mount
+  const { data: analysis, isLoading, error } = useQuery<TicketAIAnalysis, Error>({
     queryKey,
     queryFn: () => analyzeTicket(ticketId!, customerName!),
-    enabled: !!ticketId && !!customerName,
-    staleTime: 24 * 60 * 60 * 1000, // 24 hours
+    enabled: false, 
+    staleTime: 24 * 60 * 60 * 1000,
   });
 
   const analyzeMutation = useMutation({
     mutationFn: () => analyzeTicket(ticketId!, customerName!, true),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKey, data);
-      toast.success("AI Analysis updated!");
+      toast.success("AI Analysis complete!");
     },
     onError: (err: any) => {
       toast.error(`Analysis failed: ${err.message}`);
@@ -30,5 +31,6 @@ export function useTicketAIAnalysis(ticketId: string | null, customerName: strin
     isLoading: isLoading || analyzeMutation.isPending,
     error,
     refreshAnalysis: analyzeMutation.mutate,
+    isInitial: !analysis && !analyzeMutation.isPending && !isLoading,
   };
 }

@@ -1,14 +1,16 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardData, KPIMetric, ExecutiveSummary } from '../types';
 import { useDashboard } from '../DashboardContext';
 import { Ticket } from '@/types';
+import { toast } from 'sonner';
 
 export function useExecutiveDashboard() {
+  const queryClient = useQueryClient();
   const { dateRange, filters } = useDashboard();
 
-  // 1. Fetch Aggregated Metrics (Fast)
+  // 1. Fetch Aggregated Metrics (Deterministic - Always runs)
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
@@ -18,17 +20,30 @@ export function useExecutiveDashboard() {
     }
   });
 
-  // 2. Fetch AI Insights (Cached)
+  // 2. Fetch AI Insights (Manual - enabled: false)
   const { data: aiRaw, isLoading: isLoadingAI } = useQuery({
     queryKey: ['dashboardInsights'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { method: 'POST' });
       if (error) throw error;
       return data;
+    },
+    enabled: false, // DO NOT CALL AUTOMATICALLY
+  });
+
+  const generateAIMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { method: 'POST' });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] });
+      toast.success("AI Insights generated!");
     }
   });
 
-  // 3. Fetch a small subset of recent tickets for the trend charts (Avoids 10k fetch)
+  // 3. Fetch recent tickets
   const { data: recentTickets = [], isLoading: isLoadingTickets } = useQuery<Ticket[]>({
     queryKey: ['recentTicketsForDashboard'],
     queryFn: async () => {
@@ -36,28 +51,22 @@ export function useExecutiveDashboard() {
         .from('freshdesk_tickets')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100); // Only fetch 100 for the dashboard overview
+        .limit(100);
       if (error) throw error;
       return data.map(t => ({ ...t, id: t.freshdesk_id })) as Ticket[];
     }
   });
 
-  // 4. Fetch Unique Companies for filters (Removed non-existent RPC call)
   const { data: uniqueCompanies = [] } = useQuery<string[]>({
     queryKey: ['uniqueCompaniesList'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('freshdesk_tickets')
-        .select('cf_company')
-        .limit(1000);
-      
+      const { data, error } = await supabase.from('freshdesk_tickets').select('cf_company').limit(1000);
       if (error) throw error;
       return Array.from(new Set((data || []).map(t => t.cf_company).filter(Boolean))) as string[];
     }
   });
 
   const dashboardData: DashboardData = useMemo(() => {
-    // Map snake_case from API to camelCase for the UI
     const executiveSummary: ExecutiveSummary | null = aiRaw ? {
       summary: aiRaw.summary,
       riskLevel: aiRaw.risk_level,
@@ -68,34 +77,10 @@ export function useExecutiveDashboard() {
     } : null;
 
     const kpis: KPIMetric[] = [
-      {
-        title: "Total Tickets",
-        value: metrics?.totalTickets || 0,
-        trend: 12,
-        microInsight: "Volume is trending up.",
-        archetype: 'volume'
-      },
-      {
-        title: "Open Backlog",
-        value: metrics?.openTickets || 0,
-        trend: -5,
-        microInsight: "Backlog clearing steadily.",
-        archetype: 'health'
-      },
-      {
-        title: "Resolved",
-        value: metrics?.resolvedTickets || 0,
-        trend: 15,
-        microInsight: "Efficiency improved.",
-        archetype: 'health'
-      },
-      {
-        title: "Bugs",
-        value: metrics?.bugTickets || 0,
-        trend: 8,
-        microInsight: "Normal range.",
-        archetype: 'attention'
-      }
+      { title: "Total Tickets", value: metrics?.totalTickets || 0, trend: 12, microInsight: "Volume trend", archetype: 'volume' },
+      { title: "Open Backlog", value: metrics?.openTickets || 0, trend: -5, microInsight: "Backlog status", archetype: 'health' },
+      { title: "Resolved", value: metrics?.resolvedTickets || 0, trend: 15, microInsight: "Efficiency", archetype: 'health' },
+      { title: "Bugs", value: metrics?.bugTickets || 0, trend: 8, microInsight: "Stability", archetype: 'attention' }
     ];
 
     return {
@@ -124,7 +109,9 @@ export function useExecutiveDashboard() {
     data: dashboardData,
     tickets: recentTickets,
     uniqueCompanies,
-    isLoading: isLoadingMetrics || isLoadingAI || isLoadingTickets,
-    isFetching: isLoadingMetrics || isLoadingAI || isLoadingTickets,
+    isLoading: isLoadingMetrics || isLoadingTickets,
+    isGeneratingAI: generateAIMutation.isPending,
+    generateAI: generateAIMutation.mutate,
+    hasAI: !!aiRaw,
   };
 }
