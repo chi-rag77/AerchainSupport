@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Loader2 } from "lucide-react";
+import { Loader2, CalendarDays, Sparkles } from "lucide-react"; // Added CalendarDays
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/types";

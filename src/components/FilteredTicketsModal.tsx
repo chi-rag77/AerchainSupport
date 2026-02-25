@@ -9,7 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import TicketTable from './TicketTable'; // Reusing the existing TicketTable
+import TicketTable from './TicketTable';
 import { Ticket } from '@/types';
 import { Download } from 'lucide-react';
 import { exportToCsv } from '@/utils/export';
@@ -29,9 +29,8 @@ const FilteredTicketsModal = ({ isOpen, onClose, title, description, tickets, on
     exportToCsv(tickets, `${title.replace(/\s/g, '_').toLowerCase()}_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
   };
 
-  // Pagination for the modal's ticket table
   const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 10; // Fixed items per page for modal
+  const itemsPerPage = 10;
   const totalPages = Math.ceil(tickets.length / itemsPerPage);
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -44,7 +43,7 @@ const FilteredTicketsModal = ({ isOpen, onClose, title, description, tickets, on
 
   React.useEffect(() => {
     if (isOpen) {
-      setCurrentPage(1); // Reset to first page when modal opens
+      setCurrentPage(1);
     }
   }, [isOpen]);
 
@@ -54,7 +53,7 @@ const FilteredTicketsModal = ({ isOpen, onClose, title, description, tickets, on
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
           <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
-            {description}
+            {description || "Viewing filtered ticket results."}
           </DialogDescription>
         </DialogHeader>
 
