@@ -197,17 +197,17 @@ const TicketsPage = () => {
               transition={{ duration: 0.3 }}
             >
               {queueState.viewMode === 'list' && (
-                <div className="rounded-[28px] border border-white/20 dark:border-gray-800/30 bg-white dark:bg-gray-900 shadow-glass overflow-hidden">
+                <div className="rounded-[28px] border border-white/20 dark:border-gray-800/30 bg-white dark:bg-gray-900 shadow-glass">
                   <div className="max-h-[600px] overflow-y-auto relative">
                     <Table>
-                      <TableHeader className="sticky top-0 z-20 shadow-sm">
-                        <TableRow className="border-none bg-gray-50 dark:bg-gray-800">
-                          <TableHead className="w-12 pl-6 bg-inherit"></TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest bg-inherit">Code</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest bg-inherit">Subject & Context</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest bg-inherit">Status</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right bg-inherit">Risk & Age</TableHead>
-                          <TableHead className="w-24 pr-6 bg-inherit"></TableHead>
+                      <TableHeader>
+                        <TableRow className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-none shadow-sm">
+                          <TableHead className="w-12 pl-6"></TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
+                          <TableHead className="w-24 pr-6"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

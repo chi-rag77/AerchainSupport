@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react'; // Added useMemo
+import React, { useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -136,39 +136,37 @@ const TopRiskTicketsTable = ({ tickets, onRowClick }: TopRiskTicketsTableProps) 
     );
 
     return openTickets.sort((a, b) => {
-      // Sort by priority (Urgent > High > Medium > Low)
       const priorityOrder: { [key: string]: number } = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1 };
       const priorityA = priorityOrder[a.priority.toLowerCase()] || 0;
       const priorityB = priorityOrder[b.priority.toLowerCase()] || 0;
-      if (priorityA !== priorityB) return priorityB - priorityA; // Descending priority
+      if (priorityA !== priorityB) return priorityB - priorityA;
 
-      // Then by due_by (nearest or most overdue first)
       if (a.due_by && b.due_by) {
         const dueA = parseISO(a.due_by);
         const dueB = parseISO(b.due_by);
-        return dueA.getTime() - dueB.getTime(); // Ascending due date
+        return dueA.getTime() - dueB.getTime();
       }
-      if (a.due_by) return -1; // a has due_by, b doesn't
-      if (b.due_by) return 1;  // b has due_by, a doesn't
+      if (a.due_by) return -1;
+      if (b.due_by) return 1;
 
       return 0;
-    }).slice(0, 20); // Limit to top 20 risk tickets
+    }).slice(0, 20);
   }, [tickets]);
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto relative">
         <Table className="min-w-full">
-          <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
-            <TableRow>
+          <TableHeader>
+            <TableRow className="sticky top-0 z-30 bg-gray-100 dark:bg-gray-700 border-b shadow-sm">
               <TableHead className="w-[100px] py-2 whitespace-nowrap">Ticket ID</TableHead>
               <TableHead className="py-2 whitespace-nowrap">Subject</TableHead>
               <TableHead className="py-2 whitespace-nowrap">Company</TableHead>
               <TableHead className="py-2 whitespace-nowrap">Priority</TableHead>
-              <TableHead className className="py-2 whitespace-nowrap">Status</TableHead>
+              <TableHead className="py-2 whitespace-nowrap">Status</TableHead>
               <TableHead className="py-2 text-right whitespace-nowrap">Age</TableHead>
               <TableHead className="py-2 text-right whitespace-nowrap">SLA Due</TableHead>
-              <TableHead className="py-2 whitespace-nowrap">Assignee</TableHead> {/* Added Assignee column */}
+              <TableHead className="py-2 whitespace-nowrap">Assignee</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

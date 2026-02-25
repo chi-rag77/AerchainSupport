@@ -12,7 +12,7 @@ import {
 import { Ticket } from '@/types';
 import { differenceInMinutes, parseISO, isPast } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle, AlertCircle, Clock, Users, Heart, HelpCircle } from 'lucide-react'; // Added HelpCircle
+import { CheckCircle, AlertCircle, Clock, Users, Heart, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +70,6 @@ const CompanyHealthTable = ({ tickets }: CompanyHealthTableProps) => {
     });
 
     const processedData = Array.from(companyMap.values()).map(data => {
-      // Calculate Avg/Median Resolution Time
       let avgResolutionTime: string = "N/A";
       let medianResolutionTime: string = "N/A";
       if (data.resolvedTickets.length > 0) {
@@ -88,10 +87,8 @@ const CompanyHealthTable = ({ tickets }: CompanyHealthTableProps) => {
         medianResolutionTime = medianResolutionTime.toFixed(1) + " hrs";
       }
 
-      // Calculate SLA Met %
       const slaMetPercentage = data.slaTotalCount > 0 ? (data.slaMetCount / data.slaTotalCount) * 100 : 100;
 
-      // Determine Health Status
       let healthStatus: 'Healthy' | 'At-risk' | 'Critical' | 'No Data' = 'No Data';
       if (data.openTickets === 0 && data.slaTotalCount === 0) {
         healthStatus = 'No Data';
@@ -114,11 +111,9 @@ const CompanyHealthTable = ({ tickets }: CompanyHealthTableProps) => {
       };
     });
 
-    // Sort: Critical > At-risk > Healthy > No Data. Within status, sort by overdue tickets descending.
     const statusOrder = { 'Critical': 3, 'At-risk': 2, 'Healthy': 1, 'No Data': 0 };
 
     return processedData.sort((a, b) => {
-      // Pin 'Unknown Company' to the top if it's critical/at-risk
       if (a.company === 'Unknown Company' && statusOrder[a.healthStatus] > 0) return -1;
       if (b.company === 'Unknown Company' && statusOrder[b.healthStatus] > 0) return 1;
 
@@ -126,9 +121,8 @@ const CompanyHealthTable = ({ tickets }: CompanyHealthTableProps) => {
       const orderB = statusOrder[b.healthStatus];
 
       if (orderA !== orderB) {
-        return orderB - orderA; // Sort by status priority
+        return orderB - orderA;
       }
-      // Secondary sort: Overdue tickets descending
       return b.overdueTickets - a.overdueTickets;
     });
   }, [tickets]);
@@ -150,10 +144,10 @@ const CompanyHealthTable = ({ tickets }: CompanyHealthTableProps) => {
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto relative">
         <Table className="min-w-full">
-          <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
-            <TableRow>
+          <TableHeader>
+            <TableRow className="sticky top-0 z-30 bg-gray-100 dark:bg-gray-700 border-b shadow-sm">
               <TableHead className="py-2 whitespace-nowrap">Company</TableHead>
               <TableHead className="py-2 text-center whitespace-nowrap">Health Status</TableHead>
               <TableHead className="py-2 text-center whitespace-nowrap">Open Tickets</TableHead>

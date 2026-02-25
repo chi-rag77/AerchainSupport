@@ -69,7 +69,6 @@ const TeamLoadTable = ({ tickets }: TeamLoadTableProps) => {
         avgTicketAge = `${(avgTicketAgeHours / 24).toFixed(1)} days`;
       }
 
-      // Capacity Indicator Logic
       let capacityStatus: 'Normal' | 'At Risk' | 'Overloaded';
       let capacityBadgeClass: string;
       
@@ -92,7 +91,7 @@ const TeamLoadTable = ({ tickets }: TeamLoadTableProps) => {
         capacityStatus,
         capacityBadgeClass,
       };
-    }).sort((a, b) => b.openTickets - a.openTickets); // Sort by open tickets descending
+    }).sort((a, b) => b.openTickets - a.openTickets);
   }, [tickets]);
 
   const getCapacityIcon = (status: string) => {
@@ -106,10 +105,10 @@ const TeamLoadTable = ({ tickets }: TeamLoadTableProps) => {
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto relative">
         <Table className="min-w-full">
-          <TableHeader className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
-            <TableRow>
+          <TableHeader>
+            <TableRow className="sticky top-0 z-30 bg-gray-100 dark:bg-gray-700 border-b shadow-sm">
               <TableHead className="py-2 whitespace-nowrap">Assignee</TableHead>
               <TableHead className="py-2 text-center whitespace-nowrap">Capacity</TableHead>
               <TableHead className="py-2 text-center whitespace-nowrap">Open Tickets</TableHead>

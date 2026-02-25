@@ -94,33 +94,33 @@ const TicketTable = ({ tickets, onRowClick, currentPage, totalPages, onPageChang
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="rounded-xl border bg-white dark:bg-gray-900 overflow-hidden">
+      <div className="rounded-xl border bg-white dark:bg-gray-900">
         <div className="max-h-[500px] overflow-y-auto relative">
           <Table className="min-w-full">
-            <TableHeader className="sticky top-0 z-20 shadow-sm">
-              <TableRow className="bg-gray-100 dark:bg-gray-800 border-b">
-                <TableHead className="w-[100px] py-3 whitespace-nowrap bg-inherit font-semibold">
+            <TableHeader>
+              <TableRow className="sticky top-0 z-30 bg-gray-100 dark:bg-gray-800 border-b shadow-sm">
+                <TableHead className="w-[100px] py-3 whitespace-nowrap font-semibold">
                   <div className="flex items-center">Code {renderSortAndFilterIcons()}</div>
                 </TableHead>
-                <TableHead className="py-3 whitespace-nowrap bg-inherit font-semibold">
+                <TableHead className="py-3 whitespace-nowrap font-semibold">
                   <div className="flex items-center">Subject {renderSortAndFilterIcons()}</div>
                 </TableHead>
-                <TableHead className="py-3 whitespace-nowrap bg-inherit font-semibold">
+                <TableHead className="py-3 whitespace-nowrap font-semibold">
                   <div className="flex items-center">Created By {renderSortAndFilterIcons()}</div>
                 </TableHead>
-                <TableHead className="py-3 whitespace-nowrap bg-inherit font-semibold">
+                <TableHead className="py-3 whitespace-nowrap font-semibold">
                   <div className="flex items-center">Status {renderSortAndFilterIcons()}</div>
                 </TableHead>
-                <TableHead className="py-3 whitespace-nowrap bg-inherit font-semibold">
+                <TableHead className="py-3 whitespace-nowrap font-semibold">
                   <div className="flex items-center">Approver Role(s) {renderSortAndFilterIcons()}</div>
                 </TableHead>
-                <TableHead className="py-3 whitespace-nowrap bg-inherit font-semibold">
+                <TableHead className="py-3 whitespace-nowrap font-semibold">
                   <div className="flex items-center">Approver(s) {renderSortAndFilterIcons()}</div>
                 </TableHead>
-                <TableHead className="py-3 text-right whitespace-nowrap bg-inherit font-semibold">
+                <TableHead className="py-3 text-right whitespace-nowrap font-semibold">
                   <div className="flex items-center justify-end">Ageing {renderSortAndFilterIcons()}</div>
                 </TableHead>
-                <TableHead className="py-3 text-right whitespace-nowrap bg-inherit font-semibold">
+                <TableHead className="py-3 text-right whitespace-nowrap font-semibold">
                   <div className="flex items-center justify-end">Created {renderSortAndFilterIcons()}</div>
                 </TableHead>
               </TableRow>
