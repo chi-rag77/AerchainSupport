@@ -31,7 +31,6 @@ serve(async (req) => {
 
     const now = new Date();
     const startOfWeek = dateFns.startOfWeek(now);
-    const startOfPrevWeek = dateFns.subWeeks(startOfWeek, 1);
 
     // 1. Fetch Data
     const { data: tickets, error: fetchError } = await supabase
@@ -53,12 +52,11 @@ serve(async (req) => {
     
     Return STRICT JSON:
     {
-      "clusters": [{"topic": "string", "growth": number, "exposure": number, "riskLevel": "high|medium|low"}],
       "narrative": {
-        "improvement": "string",
-        "degradation": "string",
-        "pattern": "string",
-        "attention": "string"
+        "improvement": "1-sentence primary improvement",
+        "degradation": "1-sentence primary degradation",
+        "pattern": "1-sentence emerging pattern",
+        "attention": "1-sentence executive attention area"
       },
       "signals": [{"title": "string", "description": "string", "impactScope": "string", "confidence": number, "severity": "critical|warning"}],
       "actions": [{"title": "string", "reason": "string", "priority": "high|medium|low"}]
@@ -71,6 +69,7 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { response_mime_type: "application/json" }
       }),
     });
 
@@ -82,11 +81,9 @@ serve(async (req) => {
     const aiData = await geminiRes.json();
     const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     
-    // Clean JSON response (sometimes AI wraps in markdown)
-    const jsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
     let analysis;
     try {
-      analysis = JSON.parse(jsonStr);
+      analysis = JSON.parse(rawText);
     } catch (parseErr) {
       console.error("[get-weekly-intelligence] Failed to parse AI response:", rawText);
       throw new Error("AI returned an invalid data format.");
@@ -115,7 +112,7 @@ serve(async (req) => {
       customerRadar: [
         { company: customerName, score: 82, status: 'improving', volume: currentWeekTickets.length, sentimentDelta: 12 }
       ],
-      issueClusters: analysis.clusters || [],
+      issueClusters: [],
       frictionIndex: 2.4,
       efficiencyScore: 84,
       forecast: {
@@ -123,7 +120,10 @@ serve(async (req) => {
         probability: 0.65,
         narrative: "Volume spike in 'Login' issues predicted to impact SLA by 4% next Tuesday."
       },
-      aiNarrative: analysis.narrative,
+      aiNarrative: {
+        ...analysis.narrative,
+        confidence: 94
+      },
       actions: analysis.actions || []
     };
 

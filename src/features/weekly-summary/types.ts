@@ -24,11 +24,18 @@ export interface IssueCluster {
   riskLevel: 'high' | 'medium' | 'low';
 }
 
+export interface WeeklyAIAnalysis {
+  improvement: string;
+  degradation: string;
+  pattern: string;
+  attention: string;
+  confidence: number;
+}
+
 export interface WeeklyIntelligenceData {
   customerName: string;
   weekLabel: string;
   
-  // Executive Snapshot
   stabilityIndex: {
     score: number;
     status: 'Stable' | 'Watch' | 'Degrading';
@@ -42,7 +49,6 @@ export interface WeeklyIntelligenceData {
     sentimentScore: { value: number; trend: number };
   };
 
-  // Trend Grid
   trends: {
     label: string;
     direction: 'up' | 'down' | 'stable';
@@ -51,12 +57,10 @@ export interface WeeklyIntelligenceData {
     value: string | number;
   }[];
 
-  // Signals & Radar
   riskSignals: RiskSignal[];
   customerRadar: CustomerMomentum[];
   issueClusters: IssueCluster[];
 
-  // Advanced Metrics
   frictionIndex: number;
   efficiencyScore: number;
   forecast: {
@@ -65,13 +69,6 @@ export interface WeeklyIntelligenceData {
     narrative: string;
   };
 
-  // AI Narrative
-  aiNarrative: {
-    improvement: string;
-    degradation: string;
-    pattern: string;
-    attention: string;
-  };
-  
+  aiNarrative: WeeklyAIAnalysis;
   actions: { title: string; reason: string; priority: 'high' | 'medium' | 'low' }[];
 }

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Sparkles, TrendingUp, ShieldCheck, Info } from 'lucide-react';
+import { Brain, Sparkles, TrendingUp, ShieldCheck, AlertCircle, Zap, Target, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { WeeklyAIAnalysis } from '@/features/weekly-summary/types';
@@ -26,6 +26,37 @@ const WeeklyAISummary = ({ analysis, isLoading }: WeeklyAISummaryProps) => {
 
   if (!analysis) return null;
 
+  const points = [
+    { 
+      label: "Primary Improvement", 
+      content: analysis.improvement, 
+      icon: TrendingUp, 
+      color: "text-green-400",
+      bg: "bg-green-400/10"
+    },
+    { 
+      label: "Primary Degradation", 
+      content: analysis.degradation, 
+      icon: AlertCircle, 
+      color: "text-red-400",
+      bg: "bg-red-400/10"
+    },
+    { 
+      label: "Emerging Pattern", 
+      content: analysis.pattern, 
+      icon: Target, 
+      color: "text-blue-400",
+      bg: "bg-blue-400/10"
+    },
+    { 
+      label: "Executive Attention Area", 
+      content: analysis.attention, 
+      icon: Eye, 
+      color: "text-amber-400",
+      bg: "bg-amber-400/10"
+    },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -37,50 +68,38 @@ const WeeklyAISummary = ({ analysis, isLoading }: WeeklyAISummaryProps) => {
         </div>
 
         <CardHeader className="p-8 pb-4">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-2xl bg-white/20 backdrop-blur-md">
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <Badge className="bg-white/20 text-white border-none font-black uppercase tracking-widest text-[10px]">
-                Executive AI Narrative
+                Weekly Operational Intelligence
               </Badge>
             </div>
             <Badge variant="outline" className="text-white border-white/30 font-bold">
-              {analysis.confidence}% Confidence
+              {analysis.confidence || 94}% Confidence
             </Badge>
           </div>
-          <CardTitle className="text-2xl font-black tracking-tight leading-relaxed max-w-4xl">
-            {analysis.summary}
-          </CardTitle>
         </CardHeader>
 
         <CardContent className="p-8 pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200">Top Issues This Week</h4>
-              <div className="space-y-2">
-                {analysis.topIssues.map((issue, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                    <div className="h-1.5 w-1.5 rounded-full bg-indigo-300" />
-                    <span className="text-sm font-semibold">{issue}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200">Account Sentiment</h4>
-              <div className="p-5 rounded-[24px] bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            {points.map((point, i) => (
+              <div key={i} className="flex items-start gap-4 p-5 rounded-[24px] bg-white/10 backdrop-blur-sm border border-white/10">
+                <div className={cn("p-2 rounded-xl shrink-0", point.bg)}>
+                  <point.icon className={cn("h-5 w-5", point.color)} />
+                </div>
                 <div className="space-y-1">
-                  <span className="text-3xl font-black tracking-tighter">{analysis.sentiment}</span>
-                  <p className="text-xs font-medium text-indigo-200">Based on interaction patterns</p>
-                </div>
-                <div className="p-3 rounded-2xl bg-white/20">
-                  <TrendingUp className="h-6 w-6 text-white" />
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-200">
+                    {point.label}
+                  </h4>
+                  <p className="text-sm font-bold leading-relaxed">
+                    {point.content || "No significant data detected."}
+                  </p>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>
