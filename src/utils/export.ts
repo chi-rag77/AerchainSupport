@@ -26,7 +26,7 @@ export const exportToCsv = (data: any[], filename: string) => {
   const csvString = csvRows.join('\n');
   const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  if (link.download !== undefined) { // Feature detection for download attribute
+  if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', `${filename}.csv`);
@@ -50,4 +50,27 @@ export const exportCsvTemplate = (headers: string[], filename: string) => {
     link.click();
     document.body.removeChild(link);
   }
+};
+
+export const downloadTicketTemplate = () => {
+  const headers = [
+    'freshdesk_id',
+    'subject',
+    'priority',
+    'status',
+    'type',
+    'requester_email',
+    'created_at',
+    'updated_at',
+    'due_by',
+    'fr_due_by',
+    'description_text',
+    'assignee',
+    'cf_company',
+    'cf_country',
+    'cf_module',
+    'cf_dependency',
+    'cf_recurrence'
+  ];
+  exportCsvTemplate(headers, 'ticket_import_template');
 };

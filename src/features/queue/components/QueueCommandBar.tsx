@@ -11,6 +11,7 @@ import { QueueViewMode } from '../types';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
+import CsvUploadAction from '@/components/tickets/CsvUploadAction';
 
 interface QueueCommandBarProps {
   searchTerm: string;
@@ -99,6 +100,7 @@ const QueueCommandBar = ({
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
+          <CsvUploadAction />
           <Button variant="outline" size="icon" onClick={onOpenFilters} className="rounded-xl relative border-none bg-white/50 dark:bg-gray-800/50 shadow-sm">
             <SlidersHorizontal className="h-4 w-4" />
             {activeFilterCount > 0 && (
