@@ -32,6 +32,7 @@ import CustomerActionCenter from "@/components/customer360/CustomerActionCenter"
 import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Customer360 = () => {
   const { session } = useSupabase();
