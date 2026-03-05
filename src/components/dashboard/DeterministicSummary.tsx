@@ -16,52 +16,77 @@ interface DeterministicSummaryProps {
   isGeneratingAI: boolean;
 }
 
-const COLORS = [
-  '#4f46e5', // Indigo 600
-  '#7c3aed', // Violet 600
-  '#db2777', // Pink 600
-  '#e11d48', // Rose 600
-  '#d97706', // Amber 600
-  '#059669', // Emerald 600
-  '#2563eb', // Blue 600
-  '#0891b2', // Cyan 600
-];
+const COLOR_MAP: Record<string, string> = {
+  'Query': '#6366F1',
+  'CS Task': '#8B5CF6',
+  'Not Relevant': '#F43F5E',
+  'Uncategorized': '#EF4444',
+  'Duplicate': '#F59E0B',
+  'Bug': '#10B981',
+  'Tech Task': '#3B82F6',
+  'Requirement': '#14B8A6',
+};
+
+const DEFAULT_COLOR = '#94a3b8';
 
 const CustomTreemapContent = (props: any) => {
-  const { x, y, width, height, index, name, percent } = props;
+  const { x, y, width, height, index, name, percent, root } = props;
+  
+  const color = COLOR_MAP[name] || COLOR_MAP[Object.keys(COLOR_MAP)[index % Object.keys(COLOR_MAP).length]] || DEFAULT_COLOR;
 
-  // Only show text if the box is large enough
-  const showText = width > 60 && height > 40;
+  // Padding for text
+  const padding = 8;
+  const isLargeEnoughForPercent = height > 60 && width > 80;
+  const isLargeEnoughForText = height > 30 && width > 50;
 
   return (
     <g>
+      <defs>
+        <linearGradient id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={1} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.85} />
+        </linearGradient>
+      </defs>
       <rect
         x={x}
         y={y}
         width={width}
         height={height}
+        rx={6}
+        ry={6}
         style={{
-          fill: COLORS[index % COLORS.length],
+          fill: `url(#gradient-${index})`,
           stroke: '#fff',
-          strokeWidth: 2,
-          strokeOpacity: 0.3,
+          strokeWidth: 1,
+          strokeOpacity: 0.1,
         }}
-        className="hover:opacity-90 transition-opacity cursor-pointer"
+        className="hover:brightness-110 transition-all cursor-pointer"
       />
-      {showText && (
+      {isLargeEnoughForText && (
         <text
           x={x + width / 2}
-          y={y + height / 2}
+          y={isLargeEnoughForPercent ? y + height / 2 - 8 : y + height / 2}
           textAnchor="middle"
           dominantBaseline="middle"
           fill="#fff"
-          className="text-xs font-black uppercase tracking-tight pointer-events-none"
-          style={{ 
-            textShadow: '0px 1px 2px rgba(0,0,0,0.5)',
-            filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.3))'
-          }}
+          className="text-[12px] font-semibold uppercase tracking-wider pointer-events-none"
+          style={{ fontFamily: 'Inter, sans-serif' }}
         >
-          {name} ({percent}%)
+          {name}
+        </text>
+      )}
+      {isLargeEnoughForPercent && (
+        <text
+          x={x + width / 2}
+          y={y + height / 2 + 12}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#fff"
+          fillOpacity={0.9}
+          className="text-[14px] font-medium pointer-events-none"
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
+          {percent}%
         </text>
       )}
     </g>
@@ -72,11 +97,25 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white dark:bg-gray-900 p-3 rounded-xl shadow-xl border border-border">
-        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">{data.name}</p>
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-black">{data.count}</span>
-          <span className="text-xs font-bold text-indigo-600">{data.percent}% of total</span>
+      <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-2xl border border-border/50 backdrop-blur-md">
+        <div className="flex items-center gap-2 mb-2">
+          <div 
+            className="w-3 h-3 rounded-full" 
+            style={{ backgroundColor: COLOR_MAP[data.name] || DEFAULT_COLOR }} 
+          />
+          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+            {data.name}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-baseline justify-between gap-8">
+            <span className="text-sm font-medium text-muted-foreground">Tickets</span>
+            <span className="text-lg font-black text-foreground">{data.count}</span>
+          </div>
+          <div className="flex items-baseline justify-between gap-8">
+            <span className="text-sm font-medium text-muted-foreground">Proportion</span>
+            <span className="text-sm font-bold text-indigo-600">{data.percent}%</span>
+          </div>
         </div>
       </div>
     );
@@ -148,7 +187,7 @@ const DeterministicSummary = ({ tickets, dateRange, onTriggerAI, isGeneratingAI 
             <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Ticket Distribution Treemap</h4>
           </div>
           
-          <div className="h-[300px] w-full rounded-[24px] overflow-hidden border border-border bg-gray-50/30 dark:bg-gray-900/30">
+          <div className="h-[350px] w-full rounded-[24px] overflow-hidden border border-border bg-gray-50/30 dark:bg-gray-900/30 p-1">
             {stats.typeBreakdown.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <Treemap
