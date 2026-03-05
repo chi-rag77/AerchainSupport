@@ -1,11 +1,29 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DashboardData, KPIMetric, ExecutiveSummary } from '../types';
+import { DashboardData, KPIMetric, ExecutiveSummary, GeographySummary, GeographicData } from '../types';
 import { useDashboard } from '../DashboardContext';
 import { Ticket } from '@/types';
 import { toast } from 'sonner';
 import { isWithinInterval, parseISO, isToday, isYesterday } from 'date-fns';
+
+// Helper to map country names to ISO codes (simplified for demo)
+const COUNTRY_TO_ISO: Record<string, string> = {
+  'United States': 'USA',
+  'USA': 'USA',
+  'India': 'IND',
+  'Germany': 'DEU',
+  'United Arab Emirates': 'ARE',
+  'UAE': 'ARE',
+  'Singapore': 'SGP',
+  'United Kingdom': 'GBR',
+  'UK': 'GBR',
+  'Canada': 'CAN',
+  'Australia': 'AUS',
+  'France': 'FRA',
+  'Japan': 'JPN',
+  'Brazil': 'BRA',
+};
 
 export function useExecutiveDashboard() {
   const queryClient = useQueryClient();
@@ -89,14 +107,55 @@ export function useExecutiveDashboard() {
   }, [recentTickets]);
 
   const filteredTickets = useMemo(() => {
-    if (!dateRange.from || !dateRange.to) return recentTickets;
-    return recentTickets.filter(ticket => {
-      try {
-        const createdAt = parseISO(ticket.created_at);
-        return isWithinInterval(createdAt, { start: dateRange.from!, end: dateRange.to! });
-      } catch (e) { return false; }
+    let current = recentTickets;
+    
+    if (dateRange.from && dateRange.to) {
+      current = current.filter(ticket => {
+        try {
+          const createdAt = parseISO(ticket.created_at);
+          return isWithinInterval(createdAt, { start: dateRange.from!, end: dateRange.to! });
+        } catch (e) { return false; }
+      });
+    }
+
+    if (filters.company) {
+      current = current.filter(t => t.cf_company === filters.company);
+    }
+
+    return current;
+  }, [recentTickets, dateRange, filters.company]);
+
+  // Calculate Geography Data
+  const geographyData = useMemo((): GeographySummary => {
+    const countryMap = new Map<string, { total: number; resolved: number; open: number }>();
+    
+    filteredTickets.forEach(t => {
+      const country = t.cf_country || 'Unidentified Region';
+      if (!countryMap.has(country)) {
+        countryMap.set(country, { total: 0, resolved: 0, open: 0 });
+      }
+      const stats = countryMap.get(country)!;
+      stats.total++;
+      if (['resolved', 'closed'].includes(t.status.toLowerCase())) {
+        stats.resolved++;
+      } else {
+        stats.open++;
+      }
     });
-  }, [recentTickets, dateRange]);
+
+    const distribution: GeographicData[] = Array.from(countryMap.entries()).map(([name, stats]) => ({
+      countryName: name,
+      countryCode: COUNTRY_TO_ISO[name] || 'UNKNOWN',
+      ...stats
+    })).sort((a, b) => b.total - a.total);
+
+    return {
+      activeCountries: countryMap.size,
+      totalGlobalTickets: filteredTickets.length,
+      topRegion: distribution[0]?.countryName || 'N/A',
+      distribution
+    };
+  }, [filteredTickets]);
 
   const dashboardData: DashboardData = useMemo(() => {
     const executiveSummary: ExecutiveSummary | null = aiRaw ? {
@@ -149,6 +208,7 @@ export function useExecutiveDashboard() {
     return {
       executiveSummary,
       kpis,
+      geography: geographyData,
       risks: aiRaw?.risks || [],
       bottlenecks: aiRaw?.bottlenecks || [],
       forecast: aiRaw?.forecast || { forecastVolume: 0, forecastSLA: 0, breachProbability: 0, aiNarrative: "" },
@@ -163,7 +223,7 @@ export function useExecutiveDashboard() {
       slaRiskScore: (metrics?.urgentTickets || 0) > 5 ? 85 : 20,
       tickerMetrics
     };
-  }, [metrics, aiRaw, tickerMetrics]);
+  }, [metrics, aiRaw, tickerMetrics, geographyData]);
 
   return {
     data: dashboardData,

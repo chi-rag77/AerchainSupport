@@ -9,6 +9,21 @@ export interface KPIMetric {
   sparklineData: { value: number }[];
 }
 
+export interface GeographicData {
+  countryCode: string;
+  countryName: string;
+  total: number;
+  resolved: number;
+  open: number;
+}
+
+export interface GeographySummary {
+  activeCountries: number;
+  totalGlobalTickets: number;
+  topRegion: string;
+  distribution: GeographicData[];
+}
+
 export interface Bottleneck {
   category: string;
   count: number;
@@ -70,6 +85,7 @@ export interface ExecutiveSummary {
 export interface DashboardData {
   executiveSummary: ExecutiveSummary | null;
   kpis: KPIMetric[];
+  geography: GeographySummary;
   risks: any[];
   bottlenecks: Bottleneck[];
   forecast: ForecastData;

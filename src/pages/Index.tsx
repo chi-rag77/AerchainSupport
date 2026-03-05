@@ -20,6 +20,7 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
 import DeterministicSummary from "@/components/dashboard/DeterministicSummary";
+import GeographyInsights from "@/components/dashboard/GeographyInsights";
 import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -124,6 +125,11 @@ const DashboardContent = () => {
       )}
 
       <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
+
+      {/* Geography Insights Section */}
+      <GeographyInsights data={data.geography} />
+
+      <Separator className="bg-gray-200 dark:bg-gray-800" />
 
       <section className="space-y-6">
         <div className="flex items-center justify-between">
