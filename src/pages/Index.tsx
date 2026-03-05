@@ -114,42 +114,41 @@ const DashboardContent = () => {
 
       <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
 
+      {/* Customer Intelligence Section - Always Visible */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+            <Users2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <h2 className="text-2xl font-black tracking-tight">Customer Intelligence</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
+            <CardHeader className="p-8 pb-0">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-500" />
+                Ticket Type Distribution by Customer
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 h-[400px]">
+              <TicketTypeByCustomerChart 
+                tickets={tickets} 
+                selectedCustomer={selectedCustomer}
+                topNCustomers={10}
+              />
+            </CardContent>
+          </Card>
+
+          <CustomerTypeSummary 
+            customerName={selectedCustomer} 
+            tickets={filteredTicketsForSummary} 
+          />
+        </div>
+      </section>
+
       <AnimatePresence mode="wait">
         <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
-          
-          {/* New Customer Intelligence Section */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-                <Users2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <h2 className="text-2xl font-black tracking-tight">Customer Intelligence</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
-                <CardHeader className="p-8 pb-0">
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-blue-500" />
-                    Ticket Type Distribution by Customer
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-8 h-[400px]">
-                  <TicketTypeByCustomerChart 
-                    tickets={tickets} 
-                    selectedCustomer={selectedCustomer}
-                    topNCustomers={10}
-                  />
-                </CardContent>
-              </Card>
-
-              <CustomerTypeSummary 
-                customerName={selectedCustomer} 
-                tickets={filteredTicketsForSummary} 
-              />
-            </div>
-          </section>
-
           {(viewMode === 'overview' || viewMode === 'performance') && (
             <>
               <OperationalIntelligence 
