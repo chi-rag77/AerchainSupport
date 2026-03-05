@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useDashboard } from '@/features/dashboard/DashboardContext';
 import LiveActivityTicker from './LiveActivityTicker';
+import { motion } from 'framer-motion';
 
 interface ExecutiveHeroProps {
   userName: string;
@@ -25,14 +26,27 @@ interface ExecutiveHeroProps {
   onViewInsights: () => void;
 }
 
-const ExecutiveHero = ({ userName, tickerMetrics, lastSync, isSyncing, onSync, onViewInsights }: ExecutiveHeroProps) => {
+const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsights }: ExecutiveHeroProps) => {
   const { dateRange, setDateRange, datePreset, setDatePreset } = useDashboard();
 
-  const greeting = useMemo(() => {
+  const timeContext = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
+    if (hour >= 5 && hour < 12) {
+      return {
+        greeting: "☀️ Good Morning",
+        tagline: "Let's start the day with a clear view of today's support operations."
+      };
+    } else if (hour >= 12 && hour < 18) {
+      return {
+        greeting: "🌤️ Good Afternoon",
+        tagline: "Take a moment to review the latest ticket activity and team performance."
+      };
+    } else {
+      return {
+        greeting: "🌙 Good Evening",
+        tagline: "Here's a quick summary of today's support activity."
+      };
+    }
   }, []);
 
   return (
@@ -42,12 +56,19 @@ const ExecutiveHero = ({ userName, tickerMetrics, lastSync, isSyncing, onSync, o
 
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
         <div className="space-y-4">
-          <div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="space-y-1"
+          >
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-              {greeting}
+              {timeContext.greeting}
             </h1>
-            <p className="text-lg text-muted-foreground font-medium">Executive Intelligence Overview</p>
-          </div>
+            <p className="text-base text-muted-foreground font-normal">
+              {timeContext.tagline}
+            </p>
+          </motion.div>
           
           <div className="flex flex-wrap gap-3">
             <Badge variant="outline" className="bg-green-50/50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200/50 py-1 px-3 gap-1.5">
@@ -61,7 +82,7 @@ const ExecutiveHero = ({ userName, tickerMetrics, lastSync, isSyncing, onSync, o
           </div>
         </div>
 
-        {/* Live Activity Ticker replaces the SLA Risk Bar */}
+        {/* Live Activity Ticker */}
         <div className="flex-1 max-w-md">
           <LiveActivityTicker metrics={tickerMetrics} />
         </div>
