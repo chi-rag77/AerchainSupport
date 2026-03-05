@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,13 @@ interface ExecutiveHeroProps {
 const ExecutiveHero = ({ userName, tickerMetrics, lastSync, isSyncing, onSync, onViewInsights }: ExecutiveHeroProps) => {
   const { dateRange, setDateRange, datePreset, setDatePreset } = useDashboard();
 
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  }, []);
+
   return (
     <div className="relative w-full p-8 rounded-[24px] bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 shadow-glass overflow-hidden">
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
@@ -37,7 +44,7 @@ const ExecutiveHero = ({ userName, tickerMetrics, lastSync, isSyncing, onSync, o
         <div className="space-y-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-              Good morning, {userName}
+              {greeting}
             </h1>
             <p className="text-lg text-muted-foreground font-medium">Executive Intelligence Overview</p>
           </div>
