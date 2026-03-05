@@ -5,6 +5,7 @@ import { DashboardData, KPIMetric, ExecutiveSummary } from '../types';
 import { useDashboard } from '../DashboardContext';
 import { Ticket } from '@/types';
 import { toast } from 'sonner';
+import { isWithinInterval, parseISO } from 'date-fns';
 
 export function useExecutiveDashboard() {
   const queryClient = useQueryClient();
@@ -43,7 +44,7 @@ export function useExecutiveDashboard() {
     }
   });
 
-  // 3. Fetch recent tickets
+  // 3. Fetch recent tickets (Increased limit to ensure we have enough data for filtering)
   const { data: recentTickets = [], isLoading: isLoadingTickets } = useQuery<Ticket[]>({
     queryKey: ['recentTicketsForDashboard'],
     queryFn: async () => {
@@ -51,7 +52,7 @@ export function useExecutiveDashboard() {
         .from('freshdesk_tickets')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(500); // Increased limit for better range filtering
       if (error) throw error;
       return data.map(t => ({ ...t, id: t.freshdesk_id })) as Ticket[];
     }
@@ -65,6 +66,23 @@ export function useExecutiveDashboard() {
       return Array.from(new Set((data || []).map(t => t.cf_company).filter(Boolean))) as string[];
     }
   });
+
+  // Filter tickets by date range
+  const filteredTickets = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return recentTickets;
+    
+    return recentTickets.filter(ticket => {
+      try {
+        const createdAt = parseISO(ticket.created_at);
+        return isWithinInterval(createdAt, { 
+          start: dateRange.from!, 
+          end: dateRange.to! 
+        });
+      } catch (e) {
+        return false;
+      }
+    });
+  }, [recentTickets, dateRange]);
 
   const dashboardData: DashboardData = useMemo(() => {
     const executiveSummary: ExecutiveSummary | null = aiRaw ? {
@@ -107,7 +125,7 @@ export function useExecutiveDashboard() {
 
   return {
     data: dashboardData,
-    tickets: recentTickets,
+    tickets: filteredTickets, // Return the filtered tickets
     uniqueCompanies,
     isLoading: isLoadingMetrics || isLoadingTickets,
     isGeneratingAI: generateAIMutation.isPending,
