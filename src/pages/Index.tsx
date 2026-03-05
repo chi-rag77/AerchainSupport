@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DashboardProvider, useDashboard } from "@/features/dashboard/DashboardContext";
@@ -17,13 +17,16 @@ import PredictiveForecast from "@/components/dashboard/PredictiveForecast";
 import ExecutiveActionCenter from "@/components/dashboard/ExecutiveActionCenter";
 import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import { Loader2, Brain, Sparkles } from "lucide-react";
+import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
+import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
+import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const DashboardContent = () => {
   const { session } = useSupabase();
@@ -31,7 +34,7 @@ const DashboardContent = () => {
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const queryClient = useQueryClient();
 
-  const { viewMode, dateRange } = useDashboard();
+  const { viewMode, dateRange, filters, setFilters } = useDashboard();
   const { data, tickets, uniqueCompanies, isLoading, isGeneratingAI, generateAI, hasAI } = useExecutiveDashboard();
   const [showInsight, setShowInsight] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -51,6 +54,12 @@ const DashboardContent = () => {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
   };
+
+  const selectedCustomer = filters.company || 'All';
+  const filteredTicketsForSummary = useMemo(() => {
+    if (selectedCustomer === 'All') return tickets;
+    return tickets.filter(t => t.cf_company === selectedCustomer);
+  }, [tickets, selectedCustomer]);
 
   if (isLoading) {
     return (
@@ -107,6 +116,40 @@ const DashboardContent = () => {
 
       <AnimatePresence mode="wait">
         <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
+          
+          {/* New Customer Intelligence Section */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                <Users2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h2 className="text-2xl font-black tracking-tight">Customer Intelligence</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
+                <CardHeader className="p-8 pb-0">
+                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-blue-500" />
+                    Ticket Type Distribution by Customer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8 h-[400px]">
+                  <TicketTypeByCustomerChart 
+                    tickets={tickets} 
+                    selectedCustomer={selectedCustomer}
+                    topNCustomers={10}
+                  />
+                </CardContent>
+              </Card>
+
+              <CustomerTypeSummary 
+                customerName={selectedCustomer} 
+                tickets={filteredTicketsForSummary} 
+              />
+            </div>
+          </section>
+
           {(viewMode === 'overview' || viewMode === 'performance') && (
             <>
               <OperationalIntelligence 
