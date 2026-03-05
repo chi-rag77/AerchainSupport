@@ -37,7 +37,7 @@ const GeographyInsights = ({ data }: GeographyInsightsProps) => {
           <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
             <Globe className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
           </div>
-          <h2 className="text-2xl font-black tracking-tight">Global Usage Visibility</h2>
+          <h2 className="text-2xl font-black tracking-tight text-foreground">Global Usage Visibility</h2>
         </div>
         
         <div className="flex items-center gap-6">
@@ -77,7 +77,13 @@ const GeographyInsights = ({ data }: GeographyInsightsProps) => {
               <Geographies geography={geoUrl}>
                 {({ geographies }) =>
                   geographies.map((geo) => {
-                    const countryData = data.distribution.find(d => d.countryCode === geo.id || d.countryCode === geo.properties.ISO_A3);
+                    // Match by Numeric ID, ISO Code, or Name for maximum compatibility
+                    const countryData = data.distribution.find(d => 
+                      d.countryCode === geo.id || 
+                      d.countryCode === geo.properties.ISO_A3 ||
+                      d.countryName.toLowerCase() === geo.properties.name.toLowerCase()
+                    );
+                    
                     return (
                       <Tooltip key={geo.rsmKey}>
                         <TooltipTrigger asChild>

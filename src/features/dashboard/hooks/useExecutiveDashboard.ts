@@ -7,22 +7,24 @@ import { Ticket } from '@/types';
 import { toast } from 'sonner';
 import { isWithinInterval, parseISO, isToday, isYesterday } from 'date-fns';
 
-// Helper to map country names to ISO codes (simplified for demo)
-const COUNTRY_TO_ISO: Record<string, string> = {
-  'United States': 'USA',
-  'USA': 'USA',
-  'India': 'IND',
-  'Germany': 'DEU',
-  'United Arab Emirates': 'ARE',
-  'UAE': 'ARE',
-  'Singapore': 'SGP',
-  'United Kingdom': 'GBR',
-  'UK': 'GBR',
-  'Canada': 'CAN',
-  'Australia': 'AUS',
-  'France': 'FRA',
-  'Japan': 'JPN',
-  'Brazil': 'BRA',
+// Mapping common names to ISO-A3 and Numeric IDs for world-atlas compatibility
+const COUNTRY_REGISTRY: Record<string, { iso: string; id: string }> = {
+  'United States': { iso: 'USA', id: '840' },
+  'USA': { iso: 'USA', id: '840' },
+  'India': { iso: 'IND', id: '356' },
+  'Germany': { iso: 'DEU', id: '276' },
+  'United Arab Emirates': { iso: 'ARE', id: '784' },
+  'UAE': { iso: 'ARE', id: '784' },
+  'Singapore': { iso: 'SGP', id: '702' },
+  'United Kingdom': { iso: 'GBR', id: '826' },
+  'UK': { iso: 'GBR', id: '826' },
+  'Canada': { iso: 'CAN', id: '124' },
+  'Australia': { iso: 'AUS', id: '036' },
+  'France': { iso: 'FRA', id: '250' },
+  'Japan': { iso: 'JPN', id: '392' },
+  'Brazil': { iso: 'BRA', id: '076' },
+  'Netherlands': { iso: 'NLD', id: '528' },
+  'Switzerland': { iso: 'CHE', id: '756' },
 };
 
 export function useExecutiveDashboard() {
@@ -143,11 +145,14 @@ export function useExecutiveDashboard() {
       }
     });
 
-    const distribution: GeographicData[] = Array.from(countryMap.entries()).map(([name, stats]) => ({
-      countryName: name,
-      countryCode: COUNTRY_TO_ISO[name] || 'UNKNOWN',
-      ...stats
-    })).sort((a, b) => b.total - a.total);
+    const distribution: GeographicData[] = Array.from(countryMap.entries()).map(([name, stats]) => {
+      const registryEntry = COUNTRY_REGISTRY[name];
+      return {
+        countryName: name,
+        countryCode: registryEntry ? registryEntry.id : 'UNKNOWN', // Use numeric ID for world-atlas
+        ...stats
+      };
+    }).sort((a, b) => b.total - a.total);
 
     return {
       activeCountries: countryMap.size,
