@@ -39,7 +39,7 @@ const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsig
     } else if (hour >= 12 && hour < 18) {
       return {
         greeting: "🌤️ Good Afternoon",
-        tagline: "Take a moment to review the latest ticket activity and team performance."
+        tagline: "Take a moment to review the latest ticket activity\nand team performance."
       };
     } else {
       return {
@@ -65,7 +65,7 @@ const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsig
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
               {timeContext.greeting}
             </h1>
-            <p className="text-base text-muted-foreground font-normal">
+            <p className="text-base text-muted-foreground font-normal whitespace-pre-line">
               {timeContext.tagline}
             </p>
           </motion.div>
