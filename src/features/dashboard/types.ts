@@ -1,5 +1,14 @@
 import { Ticket, Insight } from "@/types";
 
+export interface KPIMetric {
+  title: string;
+  value: number | string;
+  trend: number;
+  microInsight: string;
+  archetype: 'volume' | 'backlog' | 'resolved' | 'attention';
+  sparklineData: { value: number }[];
+}
+
 export interface Bottleneck {
   category: string;
   count: number;
@@ -49,9 +58,18 @@ export interface ExecutiveAction {
   priority: 'low' | 'medium' | 'high';
 }
 
+export interface ExecutiveSummary {
+  summary: string;
+  riskLevel: string;
+  confidenceScore: number;
+  keyDrivers: string[];
+  executiveAction: string;
+  updatedAt: string;
+}
+
 export interface DashboardData {
-  executiveSummary: any;
-  kpis: any[];
+  executiveSummary: ExecutiveSummary | null;
+  kpis: KPIMetric[];
   risks: any[];
   bottlenecks: Bottleneck[];
   forecast: ForecastData;
@@ -68,4 +86,8 @@ export interface DashboardData {
   lastSync: string;
   insights: any[];
   slaRiskScore: number;
+  tickerMetrics: {
+    created: { value: number; delta: number };
+    resolved: { value: number; delta: number };
+  };
 }

@@ -5,7 +5,7 @@ import { DashboardData, KPIMetric, ExecutiveSummary } from '../types';
 import { useDashboard } from '../DashboardContext';
 import { Ticket } from '@/types';
 import { toast } from 'sonner';
-import { isWithinInterval, parseISO, isToday, isYesterday, startOfDay } from 'date-fns';
+import { isWithinInterval, parseISO, isToday, isYesterday } from 'date-fns';
 
 export function useExecutiveDashboard() {
   const queryClient = useQueryClient();
@@ -108,11 +108,42 @@ export function useExecutiveDashboard() {
       updatedAt: aiRaw.updated_at,
     } : null;
 
+    // Mock sparkline data for visual effect
+    const generateSparkline = () => Array.from({ length: 10 }, () => ({ value: Math.floor(Math.random() * 50) + 10 }));
+
     const kpis: KPIMetric[] = [
-      { title: "Total Tickets", value: metrics?.totalTickets || 0, trend: 12, microInsight: "Volume trend", archetype: 'volume' },
-      { title: "Open Backlog", value: metrics?.openTickets || 0, trend: -5, microInsight: "Backlog status", archetype: 'health' },
-      { title: "Resolved", value: metrics?.resolvedTickets || 0, trend: 15, microInsight: "Efficiency", archetype: 'health' },
-      { title: "Bugs", value: metrics?.bugTickets || 0, trend: 8, microInsight: "Stability", archetype: 'attention' }
+      { 
+        title: "Total Tickets", 
+        value: metrics?.totalTickets || 0, 
+        trend: 12, 
+        microInsight: "vs last week", 
+        archetype: 'volume',
+        sparklineData: generateSparkline()
+      },
+      { 
+        title: "Open Backlog", 
+        value: metrics?.openTickets || 0, 
+        trend: -5, 
+        microInsight: "vs last week", 
+        archetype: 'backlog',
+        sparklineData: generateSparkline()
+      },
+      { 
+        title: "Resolved", 
+        value: metrics?.resolvedTickets || 0, 
+        trend: 15, 
+        microInsight: "vs last week", 
+        archetype: 'resolved',
+        sparklineData: generateSparkline()
+      },
+      { 
+        title: "Bugs", 
+        value: metrics?.bugTickets || 0, 
+        trend: 8, 
+        microInsight: "vs last week", 
+        archetype: 'attention',
+        sparklineData: generateSparkline()
+      }
     ];
 
     return {
