@@ -17,18 +17,21 @@ interface DeterministicSummaryProps {
 }
 
 const COLORS = [
-  '#6366f1', // Indigo
-  '#8b5cf6', // Violet
-  '#ec4899', // Pink
-  '#f43f5e', // Rose
-  '#f59e0b', // Amber
-  '#10b981', // Emerald
-  '#3b82f6', // Blue
-  '#06b6d4', // Cyan
+  '#4f46e5', // Indigo 600
+  '#7c3aed', // Violet 600
+  '#db2777', // Pink 600
+  '#e11d48', // Rose 600
+  '#d97706', // Amber 600
+  '#059669', // Emerald 600
+  '#2563eb', // Blue 600
+  '#0891b2', // Cyan 600
 ];
 
 const CustomTreemapContent = (props: any) => {
   const { x, y, width, height, index, name, percent } = props;
+
+  // Only show text if the box is large enough
+  const showText = width > 60 && height > 40;
 
   return (
     <g>
@@ -41,20 +44,24 @@ const CustomTreemapContent = (props: any) => {
           fill: COLORS[index % COLORS.length],
           stroke: '#fff',
           strokeWidth: 2,
-          strokeOpacity: 0.2,
+          strokeOpacity: 0.3,
         }}
-        className="hover:opacity-80 transition-opacity cursor-pointer"
+        className="hover:opacity-90 transition-opacity cursor-pointer"
       />
-      {width > 50 && height > 30 && (
+      {showText && (
         <text
           x={x + width / 2}
           y={y + height / 2}
           textAnchor="middle"
           dominantBaseline="middle"
           fill="#fff"
-          className="text-[10px] font-black uppercase tracking-tighter pointer-events-none"
+          className="text-xs font-black uppercase tracking-tight pointer-events-none"
+          style={{ 
+            textShadow: '0px 1px 2px rgba(0,0,0,0.5)',
+            filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.3))'
+          }}
         >
-          {name} {percent}%
+          {name} ({percent}%)
         </text>
       )}
     </g>
@@ -92,7 +99,7 @@ const DeterministicSummary = ({ tickets, dateRange, onTriggerAI, isGeneratingAI 
       .map(([name, count]) => ({
         name,
         count,
-        size: count, // Treemap uses 'size' or 'value'
+        size: count,
         percent: total > 0 ? Math.round((count / total) * 100) : 0
       }))
       .sort((a, b) => b.count - a.count);
