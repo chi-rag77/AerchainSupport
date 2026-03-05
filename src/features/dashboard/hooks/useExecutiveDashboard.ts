@@ -5,13 +5,13 @@ import { DashboardData, KPIMetric, ExecutiveSummary } from '../types';
 import { useDashboard } from '../DashboardContext';
 import { Ticket } from '@/types';
 import { toast } from 'sonner';
-import { isWithinInterval, parseISO } from 'date-fns';
+import { isWithinInterval, parseISO, isToday, isYesterday, startOfDay } from 'date-fns';
 
 export function useExecutiveDashboard() {
   const queryClient = useQueryClient();
   const { dateRange, filters } = useDashboard();
 
-  // 1. Fetch Aggregated Metrics (Deterministic - Always runs)
+  // 1. Fetch Aggregated Metrics
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
@@ -21,15 +21,15 @@ export function useExecutiveDashboard() {
     }
   });
 
-  // 2. Fetch AI Insights (Manual - enabled: false)
-  const { data: aiRaw, isLoading: isLoadingAI } = useQuery({
+  // 2. Fetch AI Insights
+  const { data: aiRaw } = useQuery({
     queryKey: ['dashboardInsights'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { method: 'POST' });
       if (error) throw error;
       return data;
     },
-    enabled: false, // DO NOT CALL AUTOMATICALLY
+    enabled: false,
   });
 
   const generateAIMutation = useMutation({
@@ -44,15 +44,15 @@ export function useExecutiveDashboard() {
     }
   });
 
-  // 3. Fetch recent tickets (Increased limit to ensure we have enough data for filtering)
-  const { data: recentTickets = [], isLoading: isLoadingTickets } = useQuery<Ticket[]>({
+  // 3. Fetch tickets for calculations
+  const { data: recentTickets = [], isLoading: isLoadingTickets, isFetching } = useQuery<Ticket[]>({
     queryKey: ['recentTicketsForDashboard'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('freshdesk_tickets')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(500); // Increased limit for better range filtering
+        .limit(1000); 
       if (error) throw error;
       return data.map(t => ({ ...t, id: t.freshdesk_id })) as Ticket[];
     }
@@ -67,20 +67,34 @@ export function useExecutiveDashboard() {
     }
   });
 
-  // Filter tickets by date range
+  // Calculate Live Ticker Metrics
+  const tickerMetrics = useMemo(() => {
+    const createdToday = recentTickets.filter(t => isToday(parseISO(t.created_at))).length;
+    const createdYesterday = recentTickets.filter(t => isYesterday(parseISO(t.created_at))).length;
+    
+    const resolvedToday = recentTickets.filter(t => {
+      const status = t.status.toLowerCase();
+      return (status === 'resolved' || status === 'closed') && isToday(parseISO(t.updated_at));
+    }).length;
+    
+    const resolvedYesterday = recentTickets.filter(t => {
+      const status = t.status.toLowerCase();
+      return (status === 'resolved' || status === 'closed') && isYesterday(parseISO(t.updated_at));
+    }).length;
+
+    return {
+      created: { value: createdToday, delta: createdToday - createdYesterday },
+      resolved: { value: resolvedToday, delta: resolvedToday - resolvedYesterday }
+    };
+  }, [recentTickets]);
+
   const filteredTickets = useMemo(() => {
     if (!dateRange.from || !dateRange.to) return recentTickets;
-    
     return recentTickets.filter(ticket => {
       try {
         const createdAt = parseISO(ticket.created_at);
-        return isWithinInterval(createdAt, { 
-          start: dateRange.from!, 
-          end: dateRange.to! 
-        });
-      } catch (e) {
-        return false;
-      }
+        return isWithinInterval(createdAt, { start: dateRange.from!, end: dateRange.to! });
+      } catch (e) { return false; }
     });
   }, [recentTickets, dateRange]);
 
@@ -112,22 +126,20 @@ export function useExecutiveDashboard() {
       clusters: [],
       slaTimeline: [],
       actions: aiRaw?.actions || [],
-      systemHealth: { 
-        aiConfidence: aiRaw?.confidence || 0, 
-        dataFreshness: "Live", 
-        syncIntegrity: "Healthy" 
-      },
+      systemHealth: { aiConfidence: aiRaw?.confidence || 0, dataFreshness: "Live", syncIntegrity: "Healthy" },
       lastSync: aiRaw?.updated_at || new Date().toISOString(),
       insights: aiRaw?.insights || [],
-      slaRiskScore: (metrics?.urgentTickets || 0) > 5 ? 85 : 20
+      slaRiskScore: (metrics?.urgentTickets || 0) > 5 ? 85 : 20,
+      tickerMetrics
     };
-  }, [metrics, aiRaw]);
+  }, [metrics, aiRaw, tickerMetrics]);
 
   return {
     data: dashboardData,
-    tickets: filteredTickets, // Return the filtered tickets
+    tickets: filteredTickets,
     uniqueCompanies,
     isLoading: isLoadingMetrics || isLoadingTickets,
+    isFetching,
     isGeneratingAI: generateAIMutation.isPending,
     generateAI: generateAIMutation.mutate,
     hasAI: !!aiRaw,

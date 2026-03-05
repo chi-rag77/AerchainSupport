@@ -34,7 +34,7 @@ const DashboardContent = () => {
   const { session } = useSupabase();
   const queryClient = useQueryClient();
   const { viewMode, dateRange, filters, setFilters } = useDashboard();
-  const { data, tickets, uniqueCompanies, isLoading, isGeneratingAI, generateAI, hasAI } = useExecutiveDashboard();
+  const { data, tickets, uniqueCompanies, isLoading, isFetching, isGeneratingAI, generateAI, hasAI } = useExecutiveDashboard();
   
   const [showInsight, setShowInsight] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -54,6 +54,7 @@ const DashboardContent = () => {
       if (error) throw error;
       toast.success("Data synchronized!", { id: "sync-dashboard" });
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
+      queryClient.invalidateQueries({ queryKey: ['recentTicketsForDashboard'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
@@ -93,21 +94,19 @@ const DashboardContent = () => {
     <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
       <ExecutiveHero 
         userName={fullName}
-        slaRiskScore={data.slaRiskScore}
+        tickerMetrics={data.tickerMetrics}
         lastSync={data.lastSync}
-        isSyncing={isLoading}
+        isSyncing={isFetching}
         onSync={handleSync}
         onViewInsights={generateAI} 
       />
 
-      {/* KPI Section at the top */}
       <KPISection metrics={data.kpis} isLoading={isLoading} />
 
       <div className="flex justify-center">
         <ViewModeSelector />
       </div>
 
-      {/* Deterministic Summary Section */}
       {!hasAI && (
         <DeterministicSummary 
           tickets={tickets}
@@ -126,7 +125,6 @@ const DashboardContent = () => {
 
       <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
 
-      {/* Customer Intelligence Section - Always Visible */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
