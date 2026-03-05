@@ -100,6 +100,9 @@ const DashboardContent = () => {
         onViewInsights={generateAI} 
       />
 
+      {/* KPI Section at the top */}
+      <KPISection metrics={data.kpis} isLoading={isLoading} />
+
       <div className="flex justify-center">
         <ViewModeSelector />
       </div>
@@ -120,8 +123,6 @@ const DashboardContent = () => {
           onDismiss={() => setShowInsight(false)}
         />
       )}
-
-      <KPISection metrics={data.kpis} isLoading={isLoading} />
 
       <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
 
