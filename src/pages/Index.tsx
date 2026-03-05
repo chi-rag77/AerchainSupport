@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DashboardProvider, useDashboard } from "@/features/dashboard/DashboardContext";
@@ -19,7 +19,7 @@ import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
-import { Loader2, Brain, Sparkles, Users2, BarChart3, Filter } from "lucide-react";
+import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,17 +31,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const DashboardContent = () => {
   const { session } = useSupabase();
-  const user = session?.user;
-  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const queryClient = useQueryClient();
-
   const { viewMode, dateRange, filters, setFilters } = useDashboard();
   const { data, tickets, uniqueCompanies, isLoading, isGeneratingAI, generateAI, hasAI } = useExecutiveDashboard();
+  
   const [showInsight, setShowInsight] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleSync = async () => {
+  const user = session?.user;
+  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const selectedCustomer = filters.company || 'All';
+
+  const handleSync = useCallback(async () => {
     toast.loading("Syncing Freshdesk data...", { id: "sync-dashboard" });
     try {
       const { error } = await supabase.functions.invoke('fetch-freshdesk-tickets', {
@@ -54,11 +56,9 @@ const DashboardContent = () => {
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
-  };
+  }, [user?.id, queryClient]);
 
-  const selectedCustomer = filters.company || 'All';
-  
-  const handleCustomerFilterChange = (value: string) => {
+  const handleCustomerFilterChange = useCallback((value: string) => {
     if (value === 'All') {
       const newFilters = { ...filters };
       delete newFilters.company;
@@ -66,12 +66,18 @@ const DashboardContent = () => {
     } else {
       setFilters({ ...filters, company: value });
     }
-  };
+  }, [filters, setFilters]);
 
   const filteredTicketsForSummary = useMemo(() => {
     if (selectedCustomer === 'All') return tickets;
     return tickets.filter(t => t.cf_company === selectedCustomer);
   }, [tickets, selectedCustomer]);
+
+  const activeInsight = useMemo(() => {
+    return (showInsight && data.insights && data.insights.length > 0) 
+      ? data.insights[0] 
+      : null;
+  }, [showInsight, data.insights]);
 
   if (isLoading) {
     return (
@@ -81,10 +87,6 @@ const DashboardContent = () => {
       </div>
     );
   }
-
-  const activeInsight = (showInsight && data.insights && data.insights.length > 0) 
-    ? data.insights[0] 
-    : null;
 
   return (
     <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
@@ -115,7 +117,7 @@ const DashboardContent = () => {
         </motion.div>
       )}
 
-      {hasAI && showInsight && (
+      {hasAI && activeInsight && (
         <AIInsightStrip 
           insight={activeInsight}
           onDismiss={() => setShowInsight(false)}
@@ -136,7 +138,6 @@ const DashboardContent = () => {
             <h2 className="text-2xl font-black tracking-tight">Customer Intelligence</h2>
           </div>
 
-          {/* Local Filter for this section */}
           <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-full border border-border shadow-sm">
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-3">Filter Account:</span>
             <Select value={selectedCustomer} onValueChange={handleCustomerFilterChange}>
