@@ -195,7 +195,7 @@ const DashboardAssistant = () => {
               isOpen ? "bg-gray-900 text-white rotate-90" : "bg-indigo-600 text-white"
             )}
           >
-            {isOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
+            {isOpen ? <X className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
             {!isOpen && (
               <span className="absolute -top-1 -right-1 flex h-4 w-4">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
