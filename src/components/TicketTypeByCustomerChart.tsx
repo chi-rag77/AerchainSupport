@@ -7,7 +7,7 @@ import { Ticket } from '@/types';
 interface TicketTypeByCustomerChartProps {
   tickets: Ticket[];
   selectedCustomer?: string;
-  topNCustomers?: number | 'all'; // New prop for Top N filter
+  topNCustomers?: number | 'all';
 }
 
 // Custom Tooltip component
@@ -47,7 +47,7 @@ const CustomBarChartLegend = ({ payload }: any) => {
   );
 };
 
-// Specific colors for each ticket type from the reference
+// Specific colors for each ticket type
 const TYPE_COLORS: { [key: string]: string } = {
   bug: "hsl(28 100% 70%)", // Orange
   csTask: "hsl(240 60% 70%)", // Purple
@@ -59,24 +59,14 @@ const TYPE_COLORS: { [key: string]: string } = {
 };
 
 const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 'all' }: TicketTypeByCustomerChartProps) => {
-  // Debugging logs
-  console.log("TicketTypeByCustomerChart: Received tickets prop:", tickets);
-  console.log("TicketTypeByCustomerChart: selectedCustomer:", selectedCustomer);
-  console.log("TicketTypeByCustomerChart: topNCustomers:", topNCustomers);
-
   const processedData = useMemo(() => {
-    if (!tickets || tickets.length === 0) {
-      console.log("TicketTypeByCustomerChart: No tickets received or tickets array is empty.");
-      return [];
-    }
+    if (!tickets || tickets.length === 0) return [];
 
     const customerTypeMap = new Map<string, { [key: string]: number | string }>();
 
     const relevantTickets = selectedCustomer && selectedCustomer !== "All"
       ? tickets.filter(ticket => (ticket.cf_company || 'Unknown Company') === selectedCustomer)
       : tickets;
-
-    console.log("TicketTypeByCustomerChart: Relevant tickets after customer filter:", relevantTickets);
 
     relevantTickets.forEach(ticket => {
       const customerName = ticket.cf_company || 'Unknown Customer';
@@ -87,7 +77,6 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
       }
       const customerData = customerTypeMap.get(customerName)!;
 
-      // Map Freshdesk types to the desired categories
       let mappedType: string;
       switch (type.toLowerCase()) {
         case 'bug': mappedType = 'bug'; break;
@@ -102,7 +91,6 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
       customerData[mappedType] = ((customerData[mappedType] as number) || 0) + 1;
     });
 
-    // Convert map to array and sort by total tickets (sum of all types)
     const dataArray = Array.from(customerTypeMap.values()).map(data => {
       let total = 0;
       for (const key in data) {
@@ -113,13 +101,11 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
       return { ...data, totalTickets: total };
     });
 
-    // Apply Top N filter
     let filteredAndSortedData = dataArray.sort((a, b) => (b.totalTickets as number) - (a.totalTickets as number));
     if (topNCustomers !== 'all' && typeof topNCustomers === 'number') {
       filteredAndSortedData = filteredAndSortedData.slice(0, topNCustomers);
     }
 
-    console.log("TicketTypeByCustomerChart: Processed data for chart:", filteredAndSortedData);
     return filteredAndSortedData;
   }, [tickets, selectedCustomer, topNCustomers]);
 
@@ -132,11 +118,8 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
         }
       }
     });
-    // Ensure a consistent order for stacking and legend, and include 'Unknown Type' if present
     const orderedTypes = ['bug', 'csTask', 'duplicate', 'notRelevant', 'query', 'techTask', 'Unknown Type'];
-    const result = orderedTypes.filter(type => typesSet.has(type));
-    console.log("TicketTypeByCustomerChart: Calculated uniqueTypes for legend/bars:", result);
-    return result;
+    return orderedPriorities.filter(type => typesSet.has(type));
   }, [processedData]);
 
   const legendPayload = uniqueTypes.map(type => ({
@@ -148,15 +131,15 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
         data={processedData}
-        layout="horizontal" // Horizontal layout
+        layout="vertical"
         margin={{
-          top: 20,
+          top: 5,
           right: 30,
           left: 20,
           bottom: 5,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" />
+        <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-gray-200 dark:stroke-gray-700" />
         <XAxis
           type="number"
           axisLine={false}
@@ -170,22 +153,21 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
           axisLine={false}
           tickLine={false}
           fontSize={11}
-          width={120} // Increased width for customer names
+          width={120}
           tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
-          interval={0} // Ensure all labels are shown
-          // Custom tick formatter for potentially long names
+          interval={0}
           tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 12)}...` : value}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend content={<CustomBarChartLegend payload={legendPayload} />} />
-        {uniqueTypes.map((type, index) => (
+        {uniqueTypes.map((type) => (
           <Bar
             key={type}
             dataKey={type}
             stackId="a"
             fill={TYPE_COLORS[type] || TYPE_COLORS['Unknown Type']}
             name={type}
-            radius={[0, 4, 4, 0]} // Rounded corners for horizontal bars
+            radius={[0, 4, 4, 0]}
           />
         ))}
       </BarChart>
