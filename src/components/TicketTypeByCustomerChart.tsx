@@ -119,7 +119,7 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
       }
     });
     const orderedTypes = ['bug', 'csTask', 'duplicate', 'notRelevant', 'query', 'techTask', 'Unknown Type'];
-    return orderedPriorities.filter(type => typesSet.has(type));
+    return orderedTypes.filter(type => typesSet.has(type));
   }, [processedData]);
 
   const legendPayload = uniqueTypes.map(type => ({
