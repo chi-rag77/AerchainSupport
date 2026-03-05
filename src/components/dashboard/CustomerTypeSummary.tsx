@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/features/tickets/types';
-import { Bug, ClipboardList, HelpCircle, AlertCircle, FileText, Zap } from 'lucide-react';
+import { Bug, ClipboardList, HelpCircle, FileText, Zap, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -30,7 +30,18 @@ const CustomerTypeSummary = ({ customerName, tickets }: CustomerTypeSummaryProps
       else counts.other++;
     });
 
-    return counts;
+    const getPercent = (count: number) => 
+      counts.total > 0 ? Math.round((count / counts.total) * 100) : 0;
+
+    return {
+      ...counts,
+      percents: {
+        bug: getPercent(counts.bug),
+        task: getPercent(counts.task),
+        query: getPercent(counts.query),
+        other: getPercent(counts.other),
+      }
+    };
   }, [tickets]);
 
   const items = [
@@ -41,7 +52,7 @@ const CustomerTypeSummary = ({ customerName, tickets }: CustomerTypeSummaryProps
   ];
 
   return (
-    <Card className="border-none shadow-glass rounded-[24px] bg-white dark:bg-gray-800 overflow-hidden h-full">
+    <Card className="border-none shadow-glass rounded-[24px] bg-white dark:bg-gray-800 overflow-hidden h-full flex flex-col">
       <CardHeader className="p-6 pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-black tracking-tight flex items-center gap-2">
@@ -51,7 +62,7 @@ const CustomerTypeSummary = ({ customerName, tickets }: CustomerTypeSummaryProps
           <Badge variant="secondary" className="font-bold">{stats.total} Total</Badge>
         </div>
       </CardHeader>
-      <CardContent className="p-6 pt-4">
+      <CardContent className="p-6 pt-4 space-y-6 flex-grow">
         <div className="grid grid-cols-2 gap-4">
           {items.map((item) => (
             <div key={item.label} className={cn("p-4 rounded-2xl border border-transparent transition-all hover:border-border", item.bg)}>
@@ -62,6 +73,19 @@ const CustomerTypeSummary = ({ customerName, tickets }: CustomerTypeSummaryProps
               <div className="text-2xl font-black tracking-tighter">{item.count}</div>
             </div>
           ))}
+        </div>
+
+        <div className="p-5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+            <p className="text-xs font-medium leading-relaxed text-indigo-900 dark:text-indigo-200">
+              For <span className="font-bold">{customerName === 'All' ? 'all accounts' : customerName}</span>, the ticket mix consists of 
+              <span className="font-bold"> {stats.percents.bug}% Bugs</span>, 
+              <span className="font-bold"> {stats.percents.task}% Tasks</span>, and 
+              <span className="font-bold"> {stats.percents.query}% Queries</span>. 
+              {stats.percents.bug > 30 ? " High bug ratio suggests potential stability issues." : " The distribution indicates a healthy operational balance."}
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -19,7 +19,7 @@ import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
-import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
+import { Loader2, Brain, Sparkles, Users2, BarChart3, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const DashboardContent = () => {
   const { session } = useSupabase();
@@ -56,6 +57,17 @@ const DashboardContent = () => {
   };
 
   const selectedCustomer = filters.company || 'All';
+  
+  const handleCustomerFilterChange = (value: string) => {
+    if (value === 'All') {
+      const newFilters = { ...filters };
+      delete newFilters.company;
+      setFilters(newFilters);
+    } else {
+      setFilters({ ...filters, company: value });
+    }
+  };
+
   const filteredTicketsForSummary = useMemo(() => {
     if (selectedCustomer === 'All') return tickets;
     return tickets.filter(t => t.cf_company === selectedCustomer);
@@ -116,11 +128,29 @@ const DashboardContent = () => {
 
       {/* Customer Intelligence Section - Always Visible */}
       <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-            <Users2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+              <Users2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h2 className="text-2xl font-black tracking-tight">Customer Intelligence</h2>
           </div>
-          <h2 className="text-2xl font-black tracking-tight">Customer Intelligence</h2>
+
+          {/* Local Filter for this section */}
+          <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-full border border-border shadow-sm">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-3">Filter Account:</span>
+            <Select value={selectedCustomer} onValueChange={handleCustomerFilterChange}>
+              <SelectTrigger className="w-[200px] border-none bg-transparent focus:ring-0 h-8 font-bold text-indigo-600">
+                <SelectValue placeholder="All Accounts" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-none shadow-2xl">
+                <SelectItem value="All">All Accounts</SelectItem>
+                {uniqueCompanies.map(c => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
