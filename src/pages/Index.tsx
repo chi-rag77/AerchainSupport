@@ -19,6 +19,7 @@ import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
+import DeterministicSummary from "@/components/dashboard/DeterministicSummary";
 import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -103,18 +104,14 @@ const DashboardContent = () => {
         <ViewModeSelector />
       </div>
 
+      {/* Deterministic Summary Section */}
       {!hasAI && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 rounded-[24px] border-2 border-dashed border-indigo-200 bg-indigo-50/30 flex flex-col items-center gap-4 text-center">
-          <Brain className="h-10 w-10 text-indigo-400" />
-          <div className="space-y-1">
-            <h3 className="font-bold text-indigo-900">AI Intelligence is Ready</h3>
-            <p className="text-sm text-indigo-700/70">Generate executive summaries and predictive insights on demand.</p>
-          </div>
-          <Button onClick={() => generateAI()} disabled={isGeneratingAI} className="bg-indigo-600 hover:bg-indigo-700 gap-2 rounded-full px-8">
-            {isGeneratingAI ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            Generate AI Insights
-          </Button>
-        </motion.div>
+        <DeterministicSummary 
+          tickets={tickets}
+          dateRange={dateRange}
+          onTriggerAI={generateAI}
+          isGeneratingAI={isGeneratingAI}
+        />
       )}
 
       {hasAI && activeInsight && (
