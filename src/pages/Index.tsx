@@ -20,6 +20,7 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
 import DeterministicSummary from "@/components/dashboard/DeterministicSummary";
+import DashboardAssistant from "@/components/assistant/DashboardAssistant";
 import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -209,6 +210,9 @@ const DashboardContent = () => {
       {selectedTicket && (
         <TicketDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ticket={selectedTicket} />
       )}
+
+      {/* AI Assistant */}
+      <DashboardAssistant />
     </div>
   );
 };
