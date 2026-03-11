@@ -56,10 +56,22 @@ const DashboardContent = () => {
       toast.success("Data synchronized!", { id: "sync-dashboard" });
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
       queryClient.invalidateQueries({ queryKey: ['recentTicketsForDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
   }, [user?.id, queryClient]);
+
+  const handleRefresh = useCallback(() => {
+    toast.loading("Refreshing dashboard data...", { id: "refresh-dashboard" });
+    queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
+    queryClient.invalidateQueries({ queryKey: ['recentTicketsForDashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+    queryClient.invalidateQueries({ queryKey: ['activeRisks'] });
+    setTimeout(() => {
+      toast.success("Dashboard refreshed!", { id: "refresh-dashboard" });
+    }, 800);
+  }, [queryClient]);
 
   const handleCustomerFilterChange = useCallback((value: string) => {
     if (value === 'All') {
@@ -99,6 +111,7 @@ const DashboardContent = () => {
         lastSync={data.lastSync}
         isSyncing={isFetching}
         onSync={handleSync}
+        onRefresh={handleRefresh}
         onViewInsights={generateAI} 
       />
 

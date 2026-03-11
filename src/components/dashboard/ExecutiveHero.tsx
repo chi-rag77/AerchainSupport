@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Brain, CalendarDays, Clock } from 'lucide-react';
+import { RefreshCw, Brain, CalendarDays, Clock, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useDashboard } from '@/features/dashboard/DashboardContext';
@@ -23,10 +23,11 @@ interface ExecutiveHeroProps {
   lastSync: string;
   isSyncing: boolean;
   onSync: () => void;
+  onRefresh: () => void; // New prop for data refresh
   onViewInsights: () => void;
 }
 
-const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsights }: ExecutiveHeroProps) => {
+const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onRefresh, onViewInsights }: ExecutiveHeroProps) => {
   const { dateRange, setDateRange, datePreset, setDatePreset } = useDashboard();
 
   const timeContext = useMemo(() => {
@@ -123,17 +124,28 @@ const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsig
             )}
           </div>
 
-          <Button 
-            onClick={onSync} 
-            disabled={isSyncing}
-            className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-11 px-6"
-          >
-            <RefreshCw className={cn("mr-2 h-4 w-4", isSyncing && "animate-spin")} />
-            Sync
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={onRefresh} 
+              variant="outline"
+              className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-11 px-6 font-bold gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Refresh
+            </Button>
+            <Button 
+              onClick={onSync} 
+              disabled={isSyncing}
+              className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-11 px-6 font-bold gap-2"
+            >
+              <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+              Sync
+            </Button>
+          </div>
+          
           <Button 
             onClick={onViewInsights}
-            className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 h-11 px-6"
+            className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 h-11 px-6 font-bold"
           >
             <Brain className="mr-2 h-4 w-4" />
             AI Insights
