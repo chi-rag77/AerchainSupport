@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Brain, CalendarDays, Clock, RotateCcw } from 'lucide-react';
+import { RefreshCw, Brain, CalendarDays, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useDashboard } from '@/features/dashboard/DashboardContext';
@@ -23,11 +23,10 @@ interface ExecutiveHeroProps {
   lastSync: string;
   isSyncing: boolean;
   onSync: () => void;
-  onRefresh: () => void; // New prop for data refresh
   onViewInsights: () => void;
 }
 
-const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onRefresh, onViewInsights }: ExecutiveHeroProps) => {
+const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsights }: ExecutiveHeroProps) => {
   const { dateRange, setDateRange, datePreset, setDatePreset } = useDashboard();
 
   const timeContext = useMemo(() => {
@@ -125,14 +124,6 @@ const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onRefresh, 
           </div>
 
           <div className="flex items-center gap-2">
-            <Button 
-              onClick={onRefresh} 
-              variant="outline"
-              className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-11 px-6 font-bold gap-2"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Refresh
-            </Button>
             <Button 
               onClick={onSync} 
               disabled={isSyncing}
