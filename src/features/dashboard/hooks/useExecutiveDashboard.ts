@@ -42,14 +42,13 @@ export function useExecutiveDashboard() {
   });
 
   // 2. Fetch AI Insights
-  const { data: aiRaw } = useQuery({
+  const { data: aiRaw, isLoading: isLoadingAI } = useQuery({
     queryKey: ['dashboardInsights'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { method: 'POST' });
       if (error) throw error;
       return data;
     },
-    enabled: false,
   });
 
   const generateAIMutation = useMutation({
@@ -234,7 +233,7 @@ export function useExecutiveDashboard() {
     data: dashboardData,
     tickets: filteredTickets,
     uniqueCompanies,
-    isLoading: isLoadingMetrics || isLoadingTickets,
+    isLoading: isLoadingMetrics || isLoadingTickets || isLoadingAI,
     isFetching,
     isGeneratingAI: generateAIMutation.isPending,
     generateAI: generateAIMutation.mutate,
