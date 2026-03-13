@@ -109,14 +109,13 @@ const DashboardContent = () => {
         <ViewModeSelector />
       </div>
 
-      {!hasAI && (
-        <DeterministicSummary 
-          tickets={tickets}
-          dateRange={dateRange}
-          onTriggerAI={generateAI}
-          isGeneratingAI={isGeneratingAI}
-        />
-      )}
+      <DeterministicSummary 
+        tickets={tickets}
+        dateRange={dateRange}
+        onTriggerAI={generateAI}
+        isGeneratingAI={isGeneratingAI}
+        showAIButton={!hasAI}
+      />
 
       {hasAI && activeInsight && (
         <AIInsightStrip 

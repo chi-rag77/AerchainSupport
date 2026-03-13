@@ -14,6 +14,7 @@ interface DeterministicSummaryProps {
   dateRange: { from?: Date; to?: Date };
   onTriggerAI: () => void;
   isGeneratingAI: boolean;
+  showAIButton?: boolean;
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -123,7 +124,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const DeterministicSummary = ({ tickets, dateRange, onTriggerAI, isGeneratingAI }: DeterministicSummaryProps) => {
+const DeterministicSummary = ({ tickets, dateRange, onTriggerAI, isGeneratingAI, showAIButton = true }: DeterministicSummaryProps) => {
   const stats = useMemo(() => {
     const total = tickets.length;
     const resolved = tickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length;
@@ -161,15 +162,17 @@ const DeterministicSummary = ({ tickets, dateRange, onTriggerAI, isGeneratingAI 
           <p className="text-sm font-medium text-muted-foreground">Deterministic summary for {dateLabel}</p>
         </div>
         
-        <Button 
-          onClick={onTriggerAI} 
-          disabled={isGeneratingAI}
-          variant="outline"
-          className="rounded-full border-indigo-100 bg-indigo-50/50 text-indigo-600 hover:bg-indigo-100 font-bold gap-2 h-10 px-5"
-        >
-          {isGeneratingAI ? <Sparkles className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-          Deep AI Analysis
-        </Button>
+        {showAIButton && (
+          <Button 
+            onClick={onTriggerAI} 
+            disabled={isGeneratingAI}
+            variant="outline"
+            className="rounded-full border-indigo-100 bg-indigo-50/50 text-indigo-600 hover:bg-indigo-100 font-bold gap-2 h-10 px-5"
+          >
+            {isGeneratingAI ? <Sparkles className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+            Deep AI Analysis
+          </Button>
+        )}
       </CardHeader>
 
       <CardContent className="p-8 pt-0 space-y-8">
