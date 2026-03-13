@@ -47,7 +47,7 @@ const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeader
     return (
       <div className="p-8 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-dashed">
         <h2 className="text-xl font-bold mb-2">{customerName}</h2>
-        <p className="text-muted-foreground">{data?.ai_summary || "Not enough data to generate insights for this customer."}</p>
+        <p className="text-muted-foreground">{data?.ai_summary.status || "Not enough data to generate insights for this customer."}</p>
       </div>
     );
   }
@@ -61,15 +61,13 @@ const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeader
       
       <Separator />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <MetricWidget label="Health Score" value={data.health_score} subValue="/ 100" status={data.status} />
-        <MetricWidget label="Open Tickets" value={data.open_tickets} subValue={data.ticket_growth} />
-        <MetricWidget label="SLA Risk" value={data.sla_risk} status={data.sla_risk} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <MetricWidget type="health" data={data} />
+        <MetricWidget type="activity" data={data} />
+        <MetricWidget type="sla" data={data} />
       </div>
 
-      <Separator />
-
-      <AISummary summary={data.ai_summary} confidence={data.confidence} />
+      <AISummary summary={data.ai_summary} confidence={data.confidence} explainability={data.explainability} />
     </div>
   );
 };

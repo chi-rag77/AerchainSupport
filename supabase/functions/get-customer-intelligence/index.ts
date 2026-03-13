@@ -38,7 +38,7 @@ serve(async (req) => {
 
     if (!tickets || tickets.length < 5) {
       return new Response(JSON.stringify({
-        ai_summary: "Insufficient interaction history to generate customer intelligence insights.",
+        ai_summary: { status: "Insufficient interaction history to generate customer intelligence insights." },
         health_score: 0,
         status: "No Data",
       }), { status: 200, headers: corsHeaders });
@@ -61,7 +61,7 @@ serve(async (req) => {
     if (openHighPriority > 5) slaRisk = "High";
     else if (openMediumPriority > 10) slaRisk = "Medium";
 
-    // --- HEALTH SCORE CALCULATION ---
+    // --- HEALTH SCORE COMPONENTS ---
     const resolvedTickets = tickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase()));
     const slaTotal = resolvedTickets.filter(t => t.due_by).length;
     const slaMet = resolvedTickets.filter(t => t.due_by && new Date(t.updated_at) <= new Date(t.due_by)).length;
@@ -101,15 +101,22 @@ serve(async (req) => {
     const topTicketTopics = Object.entries(topIssues).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]).join(', ');
 
     const prompt = `
-      You are a customer success intelligence assistant. Your job is to summarize the health of a customer account using support metrics and ticket context. Focus on: 1. current health, 2. major issues, 3. trend changes, 4. recommended actions. Keep response concise (3-4 sentences).
-      Analyze the following customer data and generate a concise health summary.
+      You are an enterprise customer success intelligence analyst. Your task is to analyze support metrics and produce a concise customer account intelligence summary.
+      Focus on: 1. overall account health, 2. key drivers affecting the health score, 3. major recurring issues, 4. actionable recommendations for support managers.
+      Output must be structured JSON with keys: "status", "key_drivers", "top_issues", "recommended_actions".
+      Keep explanations concise and data-driven.
+
+      Analyze the following customer data and generate a structured health summary.
       Customer: ${customerName}
+      Health score: ${healthScore}
+      Health status: ${healthStatus}
+      Ticket metrics:
       Open tickets: ${openTickets.length}
-      Ticket growth: ${ticketGrowth}% increase
-      Sentiment score: ${Math.round(sentimentScore)}
+      Ticket growth: ${ticketGrowth}%
       SLA adherence: ${Math.round(slaAdherence)}%
-      Top ticket topics: ${topTicketTopics}
-      Recent complaints: ${openTickets.slice(0, 3).map(t => t.subject).join(', ')}
+      Sentiment score: ${Math.round(sentimentScore)}
+      Top ticket categories: ${topTicketTopics}
+      Escalation risk: ${slaRisk}
     `;
 
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`, {
@@ -117,7 +124,7 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "text/plain" }
+        generationConfig: { response_mime_type: "application/json" }
       }),
     });
 
@@ -127,18 +134,27 @@ serve(async (req) => {
       throw new Error(`AI Service Error (${geminiResponse.status}): ${errorBody}`);
     }
     const geminiData = await geminiResponse.json();
-    const aiSummary = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate AI summary.";
+    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    const aiSummary = JSON.parse(rawText);
 
     const responsePayload = {
       customer: customerName,
       health_score: healthScore,
       status: healthStatus,
       open_tickets: openTickets.length,
-      ticket_growth: `${ticketGrowth}%`,
+      ticket_growth: `${ticketGrowth > 0 ? '+' : ''}${ticketGrowth}%`,
       sla_risk: slaRisk,
       ai_summary: aiSummary,
-      confidence: 84, // Placeholder
-      metadata: { // Placeholder CRM data
+      confidence: 84,
+      explainability: `Generated from ${tickets.length} tickets, ${escalationRate} escalations and SLA data.`,
+      health_score_components: {
+        sla_adherence: { score: Math.round(slaAdherence), weight: 30 },
+        sentiment: { score: Math.round(sentimentScore), weight: 25 },
+        ticket_volume: { score: Math.round(ticketFrequencyScore), weight: 20 },
+        escalation: { score: Math.round(escalationScore), weight: 15 },
+        unresolved: { score: Math.round(unresolvedScore), weight: 10 }
+      },
+      metadata: {
         tier: "Enterprise",
         arr: "$180K",
         industry: "FMCG",
