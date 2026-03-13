@@ -118,7 +118,7 @@ serve(async (req) => {
         }
         Tickets: ${JSON.stringify(currentWeekTickets.slice(0, 15).map(t => ({ s: t.subject, p: t.priority, st: t.status })))}`;
 
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
