@@ -15,9 +15,10 @@ interface OperationalIntelligenceProps {
   tickets: Ticket[];
   startDate: Date;
   endDate: Date;
+  onViewDetails: () => void;
 }
 
-const OperationalIntelligence = ({ summary, tickets, startDate, endDate }: OperationalIntelligenceProps) => {
+const OperationalIntelligence = ({ summary, tickets, startDate, endDate, onViewDetails }: OperationalIntelligenceProps) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left: Chart Section */}
@@ -98,7 +99,7 @@ const OperationalIntelligence = ({ summary, tickets, startDate, endDate }: Opera
         </CardContent>
 
         <div className="p-6 bg-indigo-700/50 border-t border-white/10">
-          <Button variant="ghost" className="w-full text-white hover:bg-white/10 font-bold gap-2">
+          <Button variant="ghost" className="w-full text-white hover:bg-white/10 font-bold gap-2" onClick={onViewDetails}>
             View Detailed Reasoning <ArrowRight className="h-4 w-4" />
           </Button>
         </div>

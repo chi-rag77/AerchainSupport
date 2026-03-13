@@ -21,6 +21,7 @@ import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
 import DeterministicSummary from "@/components/dashboard/DeterministicSummary";
 import DashboardAssistant from "@/components/assistant/DashboardAssistant";
+import DetailedReasoningModal from "@/components/dashboard/DetailedReasoningModal";
 import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -40,6 +41,7 @@ const DashboardContent = () => {
   const [showInsight, setShowInsight] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isReasoningModalOpen, setIsReasoningModalOpen] = useState(false);
 
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -186,6 +188,7 @@ const DashboardContent = () => {
                 tickets={tickets}
                 startDate={dateRange.from!}
                 endDate={dateRange.to!}
+                onViewDetails={() => setIsReasoningModalOpen(true)}
               />
               {hasAI && <OperationalBottlenecks data={data.bottlenecks} />}
               {hasAI && <PredictiveForecast data={data.forecast} />}
@@ -210,6 +213,12 @@ const DashboardContent = () => {
       {selectedTicket && (
         <TicketDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ticket={selectedTicket} />
       )}
+
+      <DetailedReasoningModal 
+        isOpen={isReasoningModalOpen}
+        onClose={() => setIsReasoningModalOpen(false)}
+        summary={data.executiveSummary}
+      />
 
       {/* AI Assistant */}
       <DashboardAssistant />
