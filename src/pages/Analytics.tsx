@@ -10,8 +10,6 @@ import PredictiveForecasting from "@/components/insights/PredictiveForecasting";
 import AutomationOpportunity from "@/components/insights/AutomationOpportunity";
 import CustomerHealthMonitor from "@/components/insights/CustomerHealthMonitor";
 import AgentIntelligence from "@/components/insights/AgentIntelligence";
-import IncidentAlerts from "@/components/insights/IncidentAlerts";
-import RevenueImpact from "@/components/insights/RevenueImpact";
 import ProductIntelligence from "@/components/insights/ProductIntelligence";
 import { Loader2, RefreshCw, BarChart3, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,14 +78,11 @@ const Analytics = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
             <ExecutiveAISummary data={data.summary} />
             
-            <IncidentAlerts />
-
             <Separator className="bg-gray-200 dark:bg-gray-800" />
 
             <div className="space-y-12">
-              <ProductIntelligence />
+              <ProductIntelligence clusters={data.clusters} />
               <CustomerHealthMonitor risks={data.accountRisks} />
-              <RevenueImpact />
               <AIRootCauseDiscovery clusters={data.clusters} />
             </div>
 
