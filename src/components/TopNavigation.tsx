@@ -57,7 +57,6 @@ const TopNavigation = () => {
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: Layers, label: "Queue", path: "/tickets" },
-    { icon: BarChart2, label: "Insights", path: "/analytics" },
     { icon: Users, label: "Customer 360", path: "/customer360" },
     { icon: CalendarDays, label: "Weekly Summary", path: "/weekly-summary" },
   ];

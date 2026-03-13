@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import TicketsPage from "./pages/TicketsPage";
 import DashboardV2 from "./pages/DashboardV2";
-import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -37,7 +36,6 @@ const App = () => (
                   <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
                   <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2 /></ProtectedRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                   <Route path="/customer360" element={<ProtectedRoute><Customer360 /></ProtectedRoute>} />
                   <Route path="/weekly-summary" element={<ProtectedRoute><WeeklySummaryPage /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} /> {/* New route */}
