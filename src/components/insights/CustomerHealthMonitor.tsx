@@ -8,14 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-const SentimentRiskMonitor = ({ risks }: { risks: AccountHealth[] }) => {
+const CustomerHealthMonitor = ({ risks }: { risks: AccountHealth[] }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
           <Heart className="h-5 w-5 text-purple-600 dark:text-purple-400" />
         </div>
-        <h3 className="text-xl font-black tracking-tight">Risk & Sentiment Monitor</h3>
+        <h3 className="text-xl font-black tracking-tight">Customer Health Intelligence</h3>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -76,4 +76,4 @@ const SentimentRiskMonitor = ({ risks }: { risks: AccountHealth[] }) => {
   );
 };
 
-export default SentimentRiskMonitor;
+export default CustomerHealthMonitor;

@@ -5,12 +5,15 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useInsightsV2 } from "@/features/insights/hooks/useInsightsV2";
 import ExecutiveAISummary from "@/components/insights/ExecutiveAISummary";
-import RootCauseClustering from "@/components/insights/RootCauseClustering";
+import AIRootCauseDiscovery from "@/components/insights/AIRootCauseDiscovery";
 import PredictiveForecasting from "@/components/insights/PredictiveForecasting";
 import AutomationOpportunity from "@/components/insights/AutomationOpportunity";
-import SentimentRiskMonitor from "@/components/insights/SentimentRiskMonitor";
+import CustomerHealthMonitor from "@/components/insights/CustomerHealthMonitor";
 import AgentIntelligence from "@/components/insights/AgentIntelligence";
-import { Loader2, RefreshCw, BarChart3, ShieldCheck, Brain, Sparkles } from "lucide-react";
+import IncidentAlerts from "@/components/insights/IncidentAlerts";
+import RevenueImpact from "@/components/insights/RevenueImpact";
+import ProductIntelligence from "@/components/insights/ProductIntelligence";
+import { Loader2, RefreshCw, BarChart3, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,7 +26,6 @@ const Analytics = () => {
   const user = session?.user;
   const queryClient = useQueryClient();
 
-  // Use refetch instead of automatic query
   const { data, isLoading, isFetching, error, refetch } = useInsightsV2();
 
   const handleRefresh = () => {
@@ -78,16 +80,27 @@ const Analytics = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
             <ExecutiveAISummary data={data.summary} />
             
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              <RootCauseClustering clusters={data.clusters} />
-              <PredictiveForecasting points={data.forecast.points} recommendation={data.forecast.recommendation} />
-            </section>
+            <IncidentAlerts />
 
             <Separator className="bg-gray-200 dark:bg-gray-800" />
+
+            <div className="space-y-12">
+              <ProductIntelligence />
+              <CustomerHealthMonitor risks={data.accountRisks} />
+              <RevenueImpact />
+              <AIRootCauseDiscovery clusters={data.clusters} />
+            </div>
+
+            <Separator className="bg-gray-200 dark:bg-gray-800" />
+            
+            <PredictiveForecasting points={data.forecast.points} recommendation={data.forecast.recommendation} />
+            
+            <Separator className="bg-gray-200 dark:bg-gray-800" />
+            
             <AutomationOpportunity data={data.automation} />
+            
             <Separator className="bg-gray-200 dark:bg-gray-800" />
-            <SentimentRiskMonitor risks={data.accountRisks} />
-            <Separator className="bg-gray-200 dark:bg-gray-800" />
+            
             <AgentIntelligence insights={data.agentIntelligence} />
           </motion.div>
         ) : null}

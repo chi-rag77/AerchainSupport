@@ -3,20 +3,20 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { IssueCluster } from '@/features/insights/types';
-import { AlertCircle, ArrowRight, Target } from 'lucide-react';
+import { AlertCircle, ArrowRight, Target, Code } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
-const RootCauseClustering = ({ clusters }: { clusters: IssueCluster[] }) => {
+const AIRootCauseDiscovery = ({ clusters }: { clusters: IssueCluster[] }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
-          <Target className="h-5 w-5 text-red-600 dark:text-red-400" />
+          <Code className="h-5 w-5 text-red-600 dark:text-red-400" />
         </div>
-        <h3 className="text-xl font-black tracking-tight">AI Root Cause Engine</h3>
+        <h3 className="text-xl font-black tracking-tight">AI Root Cause Discovery</h3>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
@@ -67,4 +67,4 @@ const RootCauseClustering = ({ clusters }: { clusters: IssueCluster[] }) => {
   );
 };
 
-export default RootCauseClustering;
+export default AIRootCauseDiscovery;
