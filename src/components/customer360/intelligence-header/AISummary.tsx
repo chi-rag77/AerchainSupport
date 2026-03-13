@@ -44,10 +44,14 @@ const AISummary = ({ summary, confidence, explainability }: AISummaryProps) => {
             <h5 className="font-bold text-sm mb-2 flex items-center gap-2"><section.icon className="h-4 w-4 text-muted-foreground" /> {section.title}</h5>
             {Array.isArray(section.content) ? (
               <ul className="list-disc list-inside space-y-1">
-                {section.content.map((item, i) => <li key={i} className="text-sm text-foreground/90">{item}</li>)}
+                {section.content && section.content.length > 0 ? (
+                  section.content.map((item, i) => <li key={i} className="text-sm text-foreground/90">{item}</li>)
+                ) : (
+                  <li className="text-sm text-muted-foreground italic">No data available.</li>
+                )}
               </ul>
             ) : (
-              <p className="text-sm text-foreground/90">{section.content}</p>
+              <p className="text-sm text-foreground/90">{section.content || <span className="text-muted-foreground italic">No data available.</span>}</p>
             )}
           </div>
         ))}

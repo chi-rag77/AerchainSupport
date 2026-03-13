@@ -103,10 +103,30 @@ serve(async (req) => {
     const prompt = `
       You are an enterprise customer success intelligence analyst. Your task is to analyze support metrics and produce a concise customer account intelligence summary.
       Focus on: 1. overall account health, 2. key drivers affecting the health score, 3. major recurring issues, 4. actionable recommendations for support managers.
-      Output must be structured JSON with keys: "status", "key_drivers", "top_issues", "recommended_actions".
-      Keep explanations concise and data-driven.
+      
+      Output must be a single, valid JSON object with the following keys: "status" (string), "key_drivers" (array of strings), "top_issues" (array of strings), "recommended_actions" (array of strings).
+      
+      Example output format:
+      {
+        "status": "Customer health is critical due to poor SLA performance and rapidly increasing ticket activity.",
+        "key_drivers": [
+          "SLA adherence only 20%",
+          "200% increase in ticket volume",
+          "Moderate negative sentiment"
+        ],
+        "top_issues": [
+          "Duplicate PO creation bug",
+          "High Memo transaction errors",
+          "Invoice attachment problems"
+        ],
+        "recommended_actions": [
+          "Escalate duplicate PO bug to engineering",
+          "Improve response times for finance-related tickets",
+          "Proactively communicate fixes to the customer."
+        ]
+      }
 
-      Analyze the following customer data and generate a structured health summary.
+      Analyze the following customer data and generate the JSON output.
       Customer: ${customerName}
       Health score: ${healthScore}
       Health status: ${healthStatus}
