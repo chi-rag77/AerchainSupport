@@ -64,26 +64,17 @@ const Analytics = () => {
           </div>
         </div>
 
-        {!data && !isLoading ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-32 text-center space-y-6">
-            <div className="p-6 rounded-full bg-indigo-50 dark:bg-indigo-900/20">
-              <Brain className="h-16 w-16 text-indigo-600" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black text-foreground">AI Intelligence Engine is Offline</h2>
-              <p className="text-muted-foreground max-w-md mx-auto">Insights 2.0 requires a manual trigger to synthesize cross-account patterns, root causes, and predictive forecasts.</p>
-            </div>
-            <Button onClick={() => handleRefresh()} className="bg-indigo-600 hover:bg-indigo-700 h-14 px-10 rounded-full font-black text-lg gap-3 shadow-xl shadow-indigo-500/20">
-              <Sparkles className="h-6 w-6" />
-              Start Intelligence Engine
-            </Button>
-          </motion.div>
-        ) : isLoading ? (
+        {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32">
             <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
             <p className="text-lg font-bold text-muted-foreground animate-pulse">Synthesizing Insights 2.0...</p>
           </div>
-        ) : (
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-32 text-center text-red-500">
+            <p className="font-bold">Failed to load insights.</p>
+            <p className="text-sm">{error.message}</p>
+          </div>
+        ) : data ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
             <ExecutiveAISummary data={data.summary} />
             
@@ -99,7 +90,7 @@ const Analytics = () => {
             <Separator className="bg-gray-200 dark:bg-gray-800" />
             <AgentIntelligence insights={data.agentIntelligence} />
           </motion.div>
-        )}
+        ) : null}
       </div>
     </TooltipProvider>
   );
