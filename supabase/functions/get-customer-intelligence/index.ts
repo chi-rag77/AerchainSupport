@@ -121,7 +121,11 @@ serve(async (req) => {
       }),
     });
 
-    if (!geminiResponse.ok) throw new Error("AI Service Unavailable");
+    if (!geminiResponse.ok) {
+      const errorBody = await geminiResponse.text();
+      console.error(`[get-customer-intelligence] Gemini API Error (${geminiResponse.status}):`, errorBody);
+      throw new Error(`AI Service Error (${geminiResponse.status}): ${errorBody}`);
+    }
     const geminiData = await geminiResponse.json();
     const aiSummary = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate AI summary.";
 

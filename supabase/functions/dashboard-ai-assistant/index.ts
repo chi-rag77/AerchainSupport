@@ -87,7 +87,11 @@ serve(async (req) => {
       }),
     });
 
-    if (!geminiResponse.ok) throw new Error("AI Service Unavailable");
+    if (!geminiResponse.ok) {
+      const errorBody = await geminiResponse.text();
+      console.error(`[dashboard-ai-assistant] Gemini API Error (${geminiResponse.status}):`, errorBody);
+      throw new Error(`AI Service Error (${geminiResponse.status}): ${errorBody}`);
+    }
 
     const geminiData = await geminiResponse.json();
     const answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that request.";

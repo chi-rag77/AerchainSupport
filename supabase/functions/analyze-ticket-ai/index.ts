@@ -88,7 +88,7 @@ serve(async (req) => {
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
       console.error(`[analyze-ticket-ai] Gemini API Error (${geminiResponse.status}):`, errorBody);
-      return new Response(JSON.stringify({ error: `Gemini API failed with status ${geminiResponse.status}. Check Supabase logs for details.` }), {
+      return new Response(JSON.stringify({ error: `AI Service Error (${geminiResponse.status}): ${errorBody}` }), {
         status: geminiResponse.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
