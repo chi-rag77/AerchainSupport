@@ -98,40 +98,7 @@ serve(async (req) => {
     const topTicketTopics = Object.entries(topIssues).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]).join(', ');
 
     const prompt = `
-      You are an enterprise customer success intelligence analyst.
-      Your task is to analyze support metrics and produce a concise customer account intelligence summary.
-      
-      **CRITICAL: You MUST respond with a single, valid JSON object and nothing else. Do not add any text before or after the JSON.**
-      
-      The JSON object must have the following structure:
-      {
-        "status": "string",
-        "key_drivers": ["string"],
-        "top_issues": ["string"],
-        "recommended_actions": ["string"]
-      }
-
-      Here is an example of a perfect response:
-      {
-        "status": "Customer health is critical due to poor SLA performance and rapidly increasing ticket activity.",
-        "key_drivers": [
-          "SLA adherence only 20%",
-          "200% increase in ticket volume",
-          "Moderate negative sentiment"
-        ],
-        "top_issues": [
-          "Duplicate PO creation bug",
-          "High Memo transaction errors",
-          "Invoice attachment problems"
-        ],
-        "recommended_actions": [
-          "Escalate duplicate PO bug to engineering",
-          "Improve response times for finance-related tickets",
-          "Proactively communicate fixes to the customer."
-        ]
-      }
-
-      Now, analyze the following customer data and generate the JSON output.
+      Analyze the following customer support data.
 
       DATA:
       - Customer: ${customerName}
@@ -143,6 +110,18 @@ serve(async (req) => {
       - Sentiment score: ${Math.round(sentimentScore)}
       - Top ticket categories: ${topTicketTopics}
       - Escalation risk: ${slaRisk}
+
+      TASK:
+      Generate a customer intelligence summary.
+
+      OUTPUT FORMAT:
+      Respond with ONLY a single, valid JSON object. Do not include any other text, explanations, or markdown formatting. The JSON object must conform to this exact structure:
+      {
+        "status": "A 1-2 sentence summary of the customer's current health status.",
+        "key_drivers": ["A short phrase for the first key driver", "A short phrase for the second key driver"],
+        "top_issues": ["A short phrase for the most common issue", "A short phrase for another common issue"],
+        "recommended_actions": ["A concise, actionable recommendation", "Another concise recommendation"]
+      }
     `;
 
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`, {
@@ -166,9 +145,9 @@ serve(async (req) => {
     try {
       aiSummary = JSON.parse(rawText);
     } catch (e) {
-      console.error("Failed to parse AI JSON response, using fallback. Raw text:", rawText);
+      console.error("Failed to parse AI JSON response. Raw text received:", rawText);
       aiSummary = {
-        status: "AI analysis could not be parsed. The raw response was: " + rawText,
+        status: "AI analysis could not be parsed. Please check the function logs for the raw AI response.",
         key_drivers: [],
         top_issues: [],
         recommended_actions: []
