@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import CustomerIntelligenceHeader from "@/components/customer360/intelligence-header/CustomerIntelligenceHeader";
 
 const Customer360 = () => {
   const { session } = useSupabase();
@@ -77,7 +78,7 @@ const Customer360 = () => {
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
                   Customer 360 <Target className="h-8 w-8 text-indigo-600" />
                 </h1>
-                <p className="text-lg text-muted-foreground font-medium">Select a customer to begin.</p>
+                <p className="text-lg text-muted-foreground font-medium">A unified view of customer health and support activity.</p>
               </div>
               
               <div className="flex flex-wrap gap-3">
@@ -123,8 +124,9 @@ const Customer360 = () => {
             </motion.div>
           ) : (
             <motion.div key={selectedCustomer} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-              <div className="flex flex-col items-center justify-center py-32 text-muted-foreground border-2 border-dashed rounded-2xl">
-                <p className="text-xl font-bold">Ready to build the new Customer 360 view for {selectedCustomer}.</p>
+              <CustomerIntelligenceHeader customerName={selectedCustomer} />
+              <div className="flex flex-col items-center justify-center py-24 text-muted-foreground border-2 border-dashed rounded-2xl">
+                <p className="text-lg font-bold">More modules coming soon...</p>
               </div>
             </motion.div>
           )}
