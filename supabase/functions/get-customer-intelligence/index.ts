@@ -47,7 +47,6 @@ serve(async (req) => {
     const now = new Date();
     const openTickets = tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()));
     
-    // --- METRICS CALCULATION ---
     const ticketsLast7 = tickets.filter(t => dateFns.differenceInDays(now, new Date(t.created_at)) <= 7).length;
     const ticketsPrev7 = tickets.filter(t => {
       const diff = dateFns.differenceInDays(now, new Date(t.created_at));
@@ -61,7 +60,6 @@ serve(async (req) => {
     if (openHighPriority > 5) slaRisk = "High";
     else if (openMediumPriority > 10) slaRisk = "Medium";
 
-    // --- HEALTH SCORE COMPONENTS ---
     const resolvedTickets = tickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase()));
     const slaTotal = resolvedTickets.filter(t => t.due_by).length;
     const slaMet = resolvedTickets.filter(t => t.due_by && new Date(t.updated_at) <= new Date(t.due_by)).length;
@@ -87,7 +85,6 @@ serve(async (req) => {
     else if (healthScore >= 60) healthStatus = "Watchlist";
     else if (healthScore >= 40) healthStatus = "At Risk";
 
-    // --- AI SUMMARY GENERATION ---
     const topIssues = openTickets
       .map(t => t.subject)
       .reduce((acc, subject) => {
@@ -101,12 +98,20 @@ serve(async (req) => {
     const topTicketTopics = Object.entries(topIssues).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]).join(', ');
 
     const prompt = `
-      You are an enterprise customer success intelligence analyst. Your task is to analyze support metrics and produce a concise customer account intelligence summary.
-      Focus on: 1. overall account health, 2. key drivers affecting the health score, 3. major recurring issues, 4. actionable recommendations for support managers.
+      You are an enterprise customer success intelligence analyst.
+      Your task is to analyze support metrics and produce a concise customer account intelligence summary.
       
-      Output must be a single, valid JSON object with the following keys: "status" (string), "key_drivers" (array of strings), "top_issues" (array of strings), "recommended_actions" (array of strings).
+      **CRITICAL: You MUST respond with a single, valid JSON object and nothing else. Do not add any text before or after the JSON.**
       
-      Example output format:
+      The JSON object must have the following structure:
+      {
+        "status": "string",
+        "key_drivers": ["string"],
+        "top_issues": ["string"],
+        "recommended_actions": ["string"]
+      }
+
+      Here is an example of a perfect response:
       {
         "status": "Customer health is critical due to poor SLA performance and rapidly increasing ticket activity.",
         "key_drivers": [
@@ -126,17 +131,18 @@ serve(async (req) => {
         ]
       }
 
-      Analyze the following customer data and generate the JSON output.
-      Customer: ${customerName}
-      Health score: ${healthScore}
-      Health status: ${healthStatus}
-      Ticket metrics:
-      Open tickets: ${openTickets.length}
-      Ticket growth: ${ticketGrowth}%
-      SLA adherence: ${Math.round(slaAdherence)}%
-      Sentiment score: ${Math.round(sentimentScore)}
-      Top ticket categories: ${topTicketTopics}
-      Escalation risk: ${slaRisk}
+      Now, analyze the following customer data and generate the JSON output.
+
+      DATA:
+      - Customer: ${customerName}
+      - Health score: ${healthScore}
+      - Health status: ${healthStatus}
+      - Open tickets: ${openTickets.length}
+      - Ticket growth: ${ticketGrowth}%
+      - SLA adherence: ${Math.round(slaAdherence)}%
+      - Sentiment score: ${Math.round(sentimentScore)}
+      - Top ticket categories: ${topTicketTopics}
+      - Escalation risk: ${slaRisk}
     `;
 
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`, {
@@ -155,7 +161,19 @@ serve(async (req) => {
     }
     const geminiData = await geminiResponse.json();
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    const aiSummary = JSON.parse(rawText);
+    
+    let aiSummary;
+    try {
+      aiSummary = JSON.parse(rawText);
+    } catch (e) {
+      console.error("Failed to parse AI JSON response, using fallback. Raw text:", rawText);
+      aiSummary = {
+        status: "AI analysis could not be parsed. The raw response was: " + rawText,
+        key_drivers: [],
+        top_issues: [],
+        recommended_actions: []
+      };
+    }
 
     const responsePayload = {
       customer: customerName,
