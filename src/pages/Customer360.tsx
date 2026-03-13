@@ -4,45 +4,25 @@ import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Users, Loader2, LayoutDashboard, Handshake, 
-  AlertTriangle, TrendingUp, BarChart2, Gauge, Brain,
-  RefreshCw, Sparkles, Target
+  Users, Loader2, Handshake, RefreshCw, Target
 } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from 'sonner';
-import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-
-// Components
-import CustomerOverviewCard from "@/components/customer360/CustomerOverviewCard";
-import CustomerHealthScore from "@/components/customer360/CustomerHealthScore";
-import CustomerPerformanceMetricsCard from "@/components/customer360/CustomerPerformanceMetricsCard";
-import CustomerIssueInsightsCard from "@/components/customer360/CustomerIssueInsightsCard";
-import CustomerRiskIndicatorsCard from "@/components/customer360/CustomerRiskIndicatorsCard";
-import CustomerOperationalLoadCard from "@/components/customer360/CustomerOperationalLoadCard";
-import CustomerConversationActivityCard from "@/components/customer360/CustomerConversationActivityCard";
-import CustomerHistoricalBehaviourCard from "@/components/customer360/CustomerHistoricalBehaviourCard";
-import TicketDetailModal from "@/components/TicketDetailModal";
-import CustomerAISummaryCard from "@/components/customer360/CustomerAISummaryCard";
-import CustomerActionCenter from "@/components/customer360/CustomerActionCenter";
 import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 
 const Customer360 = () => {
   const { session } = useSupabase();
   const user = session?.user;
-  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const queryClient = useQueryClient();
 
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
-  const [isTicketDetailModalOpen, setIsTicketDetailModalOpen] = useState(false);
-  const [selectedTicketForModal, setSelectedTicketForModal] = useState<Ticket | null>(null);
 
   const { data: allTickets, isLoading, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["allFreshdeskTicketsFor360"],
@@ -60,37 +40,6 @@ const Customer360 = () => {
     });
     return Array.from(customers).sort();
   }, [allTickets]);
-
-  const customerTickets = useMemo(() => {
-    if (!allTickets || !selectedCustomer) return [];
-    return allTickets.filter(ticket => ticket.cf_company === selectedCustomer);
-  }, [allTickets, selectedCustomer]);
-
-  // AI Intelligence (Manual Trigger)
-  const { data: intelligence, isLoading: isIntelLoading, error: intelError } = useQuery({
-    queryKey: ["customerIntelligence", selectedCustomer],
-    queryFn: async () => {
-      return await invokeEdgeFunction<any>('summarize-customer-tickets', {
-        method: 'POST',
-        body: { customerName: selectedCustomer, ticketsData: customerTickets },
-      });
-    },
-    enabled: false, // DO NOT CALL AUTOMATICALLY
-  });
-
-  const generateAIMutation = useMutation({
-    mutationFn: async () => {
-      return await invokeEdgeFunction<any>('summarize-customer-tickets', {
-        method: 'POST',
-        body: { customerName: selectedCustomer, ticketsData: customerTickets },
-      });
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["customerIntelligence", selectedCustomer], data);
-      toast.success("Customer Intelligence synthesized!");
-    },
-    onError: (err: any) => toast.error(`AI failed: ${err.message}`)
-  });
 
   const handleSync = async () => {
     toast.loading("Syncing Freshdesk data...", { id: "sync-360" });
@@ -126,9 +75,9 @@ const Customer360 = () => {
             <div className="space-y-4">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
-                  Customer 360 Intelligence <Target className="h-8 w-8 text-indigo-600" />
+                  Customer 360 <Target className="h-8 w-8 text-indigo-600" />
                 </h1>
-                <p className="text-lg text-muted-foreground font-medium">Holistic behavioral and operational analysis</p>
+                <p className="text-lg text-muted-foreground font-medium">Select a customer to begin.</p>
               </div>
               
               <div className="flex flex-wrap gap-3">
@@ -174,99 +123,13 @@ const Customer360 = () => {
             </motion.div>
           ) : (
             <motion.div key={selectedCustomer} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-              
-              <section className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                    <LayoutDashboard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h2 className="text-2xl font-black tracking-tight">Account Snapshot</h2>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <CustomerOverviewCard customerName={selectedCustomer} tickets={customerTickets} />
-                  <CustomerHealthScore customerName={selectedCustomer} tickets={customerTickets} />
-                  
-                  {!intelligence ? (
-                    <Card className="relative overflow-hidden rounded-[24px] border-2 border-dashed border-indigo-200 bg-indigo-50/30 lg:col-span-2 p-12 flex flex-col items-center gap-4 text-center">
-                      <Brain className="h-12 w-12 text-indigo-400" />
-                      <div className="space-y-1">
-                        <h3 className="text-xl font-bold text-indigo-900">Synthesize Behavioral Intelligence</h3>
-                        <p className="text-sm text-indigo-700/70 max-w-md">Analyze interaction history to identify personas, churn risk, and prescriptive actions.</p>
-                      </div>
-                      <Button 
-                        onClick={() => generateAIMutation.mutate()} 
-                        disabled={generateAIMutation.isPending}
-                        className="bg-indigo-600 hover:bg-indigo-700 gap-2 rounded-full px-10 h-12 font-bold shadow-lg shadow-indigo-500/20"
-                      >
-                        {generateAIMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-                        Generate AI Intelligence
-                      </Button>
-                    </Card>
-                  ) : (
-                    <CustomerAISummaryCard
-                      customerName={selectedCustomer}
-                      analysis={intelligence}
-                      isLoading={isIntelLoading}
-                      error={intelError}
-                    />
-                  )}
-                </div>
-              </section>
-
-              {intelligence && <CustomerActionCenter actions={intelligence?.nextBestActions} isLoading={isIntelLoading} />}
-
-              <Separator className="bg-gray-200 dark:bg-gray-800" />
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <section className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-                      <Gauge className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <h2 className="text-xl font-black tracking-tight">Performance Intelligence</h2>
-                  </div>
-                  <CustomerPerformanceMetricsCard customerName={selectedCustomer} tickets={customerTickets} />
-                </section>
-
-                <section className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                      <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                    </div>
-                    <h2 className="text-xl font-black tracking-tight">Risk Indicators</h2>
-                  </div>
-                  <CustomerRiskIndicatorsCard 
-                    customerName={selectedCustomer} 
-                    tickets={customerTickets} 
-                    onViewTicketDetails={(t) => { setSelectedTicketForModal(t); setIsTicketDetailModalOpen(true); }} 
-                  />
-                </section>
-              </div>
-
-              <section className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
-                    <BarChart2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <h2 className="text-xl font-black tracking-tight">Issue & Category Insights</h2>
-                </div>
-                <CustomerIssueInsightsCard customerName={selectedCustomer} tickets={customerTickets} />
-              </section>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <CustomerOperationalLoadCard customerName={selectedCustomer} tickets={customerTickets} />
-                <CustomerConversationActivityCard customerName={selectedCustomer} tickets={customerTickets} />
-                <CustomerHistoricalBehaviourCard customerName={selectedCustomer} tickets={customerTickets} />
+              <div className="flex flex-col items-center justify-center py-32 text-muted-foreground border-2 border-dashed rounded-2xl">
+                <p className="text-xl font-bold">Ready to build the new Customer 360 view for {selectedCustomer}.</p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <TicketDetailModal
-          isOpen={isTicketDetailModalOpen}
-          onClose={() => { setIsTicketDetailModalOpen(false); setSelectedTicketForModal(null); }}
-          ticket={selectedTicketForModal}
-        />
       </div>
     </TooltipProvider>
   );
