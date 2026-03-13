@@ -11,10 +11,8 @@ import {
   Minimize2,
   Trash2,
   Loader2,
-  Zap,
   Mic,
   MicOff,
-  AlertTriangle
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,15 +21,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 import { getAssistantResponse } from "@/features/assistant/services/assistant.service";
+import { ChatMessage as Message, SMART_SUGGESTIONS } from "@/features/assistant/types";
+import ChatMessage from "./ChatMessage";
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: string;
-}
-
-const DashboardAssistant = ({ dashboardData }: any) => {
+const DashboardAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -42,8 +35,6 @@ const DashboardAssistant = ({ dashboardData }: any) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  /* ---------------- SCROLL ---------------- */
-
   useEffect(() => {
     requestAnimationFrame(() => {
       if (scrollRef.current) {
@@ -52,11 +43,8 @@ const DashboardAssistant = ({ dashboardData }: any) => {
     });
   }, [messages, isLoading]);
 
-  /* ---------------- LOAD CHAT HISTORY ---------------- */
-
   useEffect(() => {
     const saved = localStorage.getItem("assistant_chat");
-
     if (saved) {
       setMessages(JSON.parse(saved));
     }
@@ -66,29 +54,22 @@ const DashboardAssistant = ({ dashboardData }: any) => {
     localStorage.setItem("assistant_chat", JSON.stringify(messages));
   }, [messages]);
 
-  /* ---------------- VOICE INPUT ---------------- */
-
   useEffect(() => {
     if (!("webkitSpeechRecognition" in window)) return;
-
     const SpeechRecognition = (window as any).webkitSpeechRecognition;
     recognitionRef.current = new SpeechRecognition();
-
     recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = false;
-
     recognitionRef.current.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       setInput(transcript);
       setListening(false);
     };
-
     recognitionRef.current.onend = () => setListening(false);
   }, []);
 
   const toggleVoice = () => {
     if (!recognitionRef.current) return;
-
     if (listening) {
       recognitionRef.current.stop();
       setListening(false);
@@ -98,8 +79,6 @@ const DashboardAssistant = ({ dashboardData }: any) => {
     }
   };
 
-  /* ---------------- SEND MESSAGE ---------------- */
-
   const handleSend = async (content: string) => {
     if (!content.trim() || isLoading) return;
 
@@ -107,7 +86,7 @@ const DashboardAssistant = ({ dashboardData }: any) => {
       id: Date.now().toString(),
       role: "user",
       content,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -115,49 +94,30 @@ const DashboardAssistant = ({ dashboardData }: any) => {
     setIsLoading(true);
 
     try {
-      const response = await getAssistantResponse(content, dashboardData);
-
+      const response = await getAssistantResponse(content);
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: response.answer,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        mode: response.mode,
       };
-
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch {
+    } catch (err: any) {
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: "assistant",
-          content: "Something went wrong. Please try again.",
-          timestamp: new Date().toISOString()
-        }
+          content: `An error occurred: ${err.message || 'Please try again.'}`,
+          timestamp: new Date().toISOString(),
+          mode: 'rule',
+        },
       ]);
     }
 
     setIsLoading(false);
   };
-
-  /* ---------------- PROACTIVE INSIGHTS ---------------- */
-
-  useEffect(() => {
-    if (!dashboardData) return;
-
-    if (dashboardData.failedIntegrations > 10) {
-      const alertMsg: Message = {
-        id: "alert_" + Date.now(),
-        role: "assistant",
-        content: `⚠️ Alert: ${dashboardData.failedIntegrations} integrations failed in the last hour.`,
-        timestamp: new Date().toISOString()
-      };
-
-      setMessages((prev) => [...prev, alertMsg]);
-    }
-  }, [dashboardData]);
-
-  /* ---------------- CLEAR CHAT ---------------- */
 
   const clearChat = () => {
     setMessages([]);
@@ -169,81 +129,62 @@ const DashboardAssistant = ({ dashboardData }: any) => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
             className={cn(
               "mb-4 overflow-hidden shadow-2xl rounded-2xl border bg-background flex flex-col",
               isExpanded ? "w-[600px] h-[700px]" : "w-[380px] h-[500px]"
             )}
           >
-            {/* HEADER */}
-
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex gap-2 items-center">
                 <Brain className="h-5 w-5 text-indigo-600" />
-                <span className="font-bold text-sm">
-                  AI Operations Assistant
-                </span>
+                <span className="font-bold text-sm">AI Operations Assistant</span>
               </div>
-
               <div className="flex gap-1">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={clearChat}
-                >
+                <Button size="icon" variant="ghost" onClick={clearChat}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
-
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                >
-                  {isExpanded ? (
-                    <Minimize2 className="h-4 w-4" />
-                  ) : (
-                    <Maximize2 className="h-4 w-4" />
-                  )}
+                <Button size="icon" variant="ghost" onClick={() => setIsExpanded(!isExpanded)}>
+                  {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </Button>
-
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setIsOpen(false)}
-                >
+                <Button size="icon" variant="ghost" onClick={() => setIsOpen(false)}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* CHAT */}
-
             <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={cn(
-                    "mb-3 text-sm p-3 rounded-xl max-w-[80%]",
-                    m.role === "assistant"
-                      ? "bg-muted"
-                      : "bg-indigo-600 text-white ml-auto"
-                  )}
-                >
-                  {m.content}
+              {messages.length === 0 && !isLoading ? (
+                <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                  <Brain className="h-12 w-12 text-indigo-200 dark:text-indigo-800 mb-4" />
+                  <h3 className="font-bold text-lg">AI Operations Assistant</h3>
+                  <p className="text-sm text-muted-foreground mb-6">Ask me anything about your dashboard data.</p>
+                  <div className="w-full space-y-2">
+                    <p className="text-xs font-bold uppercase text-muted-foreground">Try these:</p>
+                    {SMART_SUGGESTIONS.slice(0, 3).map(s => (
+                      <button 
+                        key={s} 
+                        onClick={() => handleSend(s)}
+                        className="w-full text-left p-3 bg-white dark:bg-gray-800 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ))}
-
+              ) : (
+                messages.map((m) => <ChatMessage key={m.id} message={m} />)
+              )}
               {isLoading && (
-                <div className="flex gap-2 text-sm text-muted-foreground">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-sm text-muted-foreground p-3">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  AI thinking...
-                </div>
+                  AI is thinking...
+                </motion.div>
               )}
             </ScrollArea>
-
-            {/* INPUT */}
 
             <div className="p-4 border-t flex gap-2">
               <Input
@@ -257,23 +198,10 @@ const DashboardAssistant = ({ dashboardData }: any) => {
                   }
                 }}
               />
-
-              <Button
-                size="icon"
-                variant={listening ? "destructive" : "secondary"}
-                onClick={toggleVoice}
-              >
-                {listening ? (
-                  <MicOff className="h-4 w-4" />
-                ) : (
-                  <Mic className="h-4 w-4" />
-                )}
+              <Button size="icon" variant={listening ? "destructive" : "secondary"} onClick={toggleVoice}>
+                {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </Button>
-
-              <Button
-                size="icon"
-                onClick={() => handleSend(input)}
-              >
+              <Button size="icon" onClick={() => handleSend(input)}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
@@ -281,18 +209,12 @@ const DashboardAssistant = ({ dashboardData }: any) => {
         )}
       </AnimatePresence>
 
-      {/* FLOAT BUTTON */}
-
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
         className="h-14 w-14 bg-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center"
       >
-        {isOpen ? (
-          <X className="h-6 w-6" />
-        ) : (
-          <Sparkles className="h-6 w-6" />
-        )}
+        {isOpen ? <X className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
       </motion.button>
     </div>
   );

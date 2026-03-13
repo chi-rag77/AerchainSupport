@@ -4,7 +4,7 @@ import React from 'react';
 import { ChatMessage as ChatMessageType } from '@/features/assistant/types';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Brain, User, Copy, Check } from 'lucide-react';
+import { Brain, User, Copy, Check, Zap, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -39,13 +39,28 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
       )}
 
       <div className={cn(
-        "relative group max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm",
+        "relative group max-w-[85%] rounded-2xl text-sm shadow-sm",
         isAssistant 
           ? "bg-white dark:bg-gray-800 text-foreground border border-border rounded-tl-none" 
           : "bg-indigo-600 text-white rounded-tr-none"
       )}>
-        {message.content}
+        <div className="p-3 leading-relaxed">
+          {message.content}
+        </div>
         
+        {isAssistant && message.mode && (
+          <div className="px-3 pb-2 flex items-center gap-2 text-muted-foreground border-t border-border/50 mt-2 pt-2">
+            {message.mode === 'ai' ? (
+              <Zap className="h-3 w-3 text-purple-500" />
+            ) : (
+              <AlertTriangle className="h-3 w-3 text-amber-500" />
+            )}
+            <span className="text-[10px] font-bold uppercase tracking-wider">
+              {message.mode === 'ai' ? 'AI Generated' : 'Rule-Based Fallback'}
+            </span>
+          </div>
+        )}
+
         {isAssistant && (
           <Button
             variant="ghost"

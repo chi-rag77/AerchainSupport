@@ -5,15 +5,7 @@ export interface ChatMessage {
   role: MessageRole;
   content: string;
   timestamp: string;
-  mode: 'ai' | 'rule';
-}
-
-export interface AssistantState {
-  isOpen: boolean;
-  isExpanded: boolean;
-  messages: ChatMessage[];
-  isLoading: boolean;
-  mode: 'ai' | 'rule';
+  mode?: 'ai' | 'rule';
 }
 
 export const SMART_SUGGESTIONS = [
