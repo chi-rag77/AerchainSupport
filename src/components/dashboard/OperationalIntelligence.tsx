@@ -55,31 +55,32 @@ const OperationalIntelligence = ({ summary, tickets, startDate, endDate }: Opera
         
         <CardContent className="p-8 pt-0 flex-grow space-y-6">
           {summary ? (
-            <>
-              <p className="text-indigo-50 leading-relaxed font-medium">
-                {summary.summary}
-              </p>
-
+            <div className="space-y-6">
+              {/* Key Risk Drivers */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-200">Key Risk Drivers</h4>
                 <div className="space-y-2">
                   {summary.keyDrivers && summary.keyDrivers.length > 0 ? (
                     summary.keyDrivers.map((driver, i) => (
                       <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-300" />
+                        <AlertTriangle className="h-4 w-4 text-amber-300 shrink-0" />
                         <span className="text-sm font-semibold">{driver}</span>
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-indigo-200 italic">No specific risk drivers identified.</p>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                      <CheckCircle2 className="h-4 w-4 text-green-300 shrink-0" />
+                      <span className="text-sm font-semibold">No significant risks identified.</span>
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/10">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-3">Suggested Action</h4>
-                <div className="flex items-start gap-3">
-                  <div className="p-1.5 rounded-lg bg-amber-400 text-indigo-900">
+              {/* Suggested Action */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-200">Suggested Action</h4>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                  <div className="p-1.5 rounded-lg bg-amber-400 text-indigo-900 shrink-0">
                     <Sparkles className="h-4 w-4" />
                   </div>
                   <p className="text-sm font-bold leading-snug">
@@ -87,7 +88,7 @@ const OperationalIntelligence = ({ summary, tickets, startDate, endDate }: Opera
                   </p>
                 </div>
               </div>
-            </>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-indigo-200">
               <Loader2 className="h-8 w-8 animate-spin mb-2" />
