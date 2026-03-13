@@ -13,13 +13,15 @@ interface MetricWidgetProps {
 }
 
 const MetricWidget = ({ type, data }: MetricWidgetProps) => {
+  if (!data) return null;
+
   const config = {
     health: {
       icon: Heart,
       title: "Customer Health",
-      value: `${data.health_score} / 100`,
+      value: data.health_score ? `${data.health_score} / 100` : 'N/A',
       subValue: data.status,
-      info: <HealthScorePopover data={data} />,
+      info: data.health_score_components ? <HealthScorePopover data={data} /> : null,
       status: data.status,
     },
     activity: {
@@ -34,7 +36,7 @@ const MetricWidget = ({ type, data }: MetricWidgetProps) => {
       icon: Timer,
       title: "SLA Risk",
       value: data.sla_risk,
-      subValue: `${data.health_score_components.sla_adherence.score}% Adherence`,
+      subValue: data.health_score_components ? `${data.health_score_components.sla_adherence.score}% Adherence` : 'N/A',
       info: <span className="text-xs text-muted-foreground">View SLA analysis</span>,
       status: data.sla_risk,
     }

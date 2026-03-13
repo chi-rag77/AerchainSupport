@@ -38,7 +38,10 @@ const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeader
     return (
       <div className="flex items-center justify-center h-64 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-dashed border-red-200 text-red-600">
         <AlertTriangle className="h-8 w-8 mr-3" />
-        <span className="font-bold">Error: {error.message}</span>
+        <div className="text-left">
+          <p className="font-bold">Error Fetching Intelligence</p>
+          <p className="text-xs max-w-md">{error.message}</p>
+        </div>
       </div>
     );
   }
