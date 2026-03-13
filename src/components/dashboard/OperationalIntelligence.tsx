@@ -57,6 +57,10 @@ const OperationalIntelligence = ({ summary, tickets, startDate, endDate, onViewD
         <CardContent className="p-8 pt-0 flex-grow space-y-6">
           {summary ? (
             <div className="space-y-6">
+              <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                <p className="text-sm font-medium leading-relaxed">{summary.summary}</p>
+              </div>
+
               {/* Key Risk Drivers */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-200">Key Risk Drivers</h4>
