@@ -89,18 +89,25 @@ const Customer360 = () => {
   const handleExportExcel = async () => {
     if (!selectedCustomer) return;
     setIsExporting(true);
-    const toastId = toast.loading("Preparing multi-sheet Excel report...");
+    const toastId = toast.loading("Preparing Excel report...");
+    
     try {
+      // OPTIMIZATION: Try to get data from cache first to avoid network calls
+      const cachedIntel = queryClient.getQueryData(['customerIntelligence', selectedCustomer]);
+      const cachedJourney = queryClient.getQueryData(['customerJourneyImpact', selectedCustomer]);
+      const cachedRadar = queryClient.getQueryData(['recurringIssueRadar', selectedCustomer]);
+
+      // Only fetch what's missing
       const [intel, journey, radar] = await Promise.all([
-        selectedCustomer !== 'All' ? queryClient.fetchQuery({
+        cachedIntel || (selectedCustomer !== 'All' ? queryClient.fetchQuery({
           queryKey: ['customerIntelligence', selectedCustomer],
           queryFn: () => invokeEdgeFunction('get-customer-intelligence', { method: 'POST', body: { customerName: selectedCustomer } })
-        }) : Promise.resolve(null),
-        selectedCustomer !== 'All' ? queryClient.fetchQuery({
+        }) : Promise.resolve(null)),
+        cachedJourney || (selectedCustomer !== 'All' ? queryClient.fetchQuery({
           queryKey: ['customerJourneyImpact', selectedCustomer],
           queryFn: () => invokeEdgeFunction('get-customer-journey-impact', { method: 'POST', body: { customerName: selectedCustomer } })
-        }) : Promise.resolve(null),
-        queryClient.fetchQuery({
+        }) : Promise.resolve(null)),
+        cachedRadar || queryClient.fetchQuery({
           queryKey: ['recurringIssueRadar', selectedCustomer],
           queryFn: () => invokeEdgeFunction('get-recurring-issue-radar', { method: 'POST', body: { customerName: selectedCustomer } })
         })

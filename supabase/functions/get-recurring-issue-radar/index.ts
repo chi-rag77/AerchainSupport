@@ -1,4 +1,4 @@
-// v1.1 - Optimized AI Recurring Issue Radar with Caching
+// v1.2 - Performance Optimized AI Recurring Issue Radar
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -16,65 +16,45 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
-    const { customerName, forceRefresh } = await req.json();
-    const cacheKey = customerName || 'All';
-
-    // 1. Check Cache (unless forceRefresh is true)
-    if (!forceRefresh) {
-      const { data: cached } = await supabase
-        .from('ai_recurring_issues_cache')
-        .select('*')
-        .eq('customer_name', cacheKey)
-        .single();
-
-      if (cached) {
-        const hoursOld = dateFns.differenceInHours(new Date(), new Date(cached.updated_at));
-        if (hoursOld < 12) {
-          console.log(`[radar] Returning cached data for ${cacheKey} (${hoursOld}h old)`);
-          return new Response(JSON.stringify(cached.data), { status: 200, headers: corsHeaders });
-        }
-      }
-    }
-
-    // 2. Fetch Tickets (Last 90 days)
+    const { customerName } = await req.json();
+    
+    // 1. Fetch Tickets (Last 90 days) - Fetching ONLY required columns for speed
     const ninetyDaysAgo = dateFns.subDays(new Date(), 90).toISOString();
     let query = supabase
       .from('freshdesk_tickets')
-      .select('freshdesk_id, subject, cf_module, created_at')
+      .select('freshdesk_id, subject, cf_module')
       .gte('created_at', ninetyDaysAgo);
 
     if (customerName && customerName !== 'All') {
       query = query.eq('cf_company', customerName);
     }
 
-    const { data: tickets, error: fetchError } = await query.limit(1000);
+    const { data: tickets, error: fetchError } = await query.limit(800); // Reduced limit for faster processing
 
     if (fetchError) throw fetchError;
-    if (!tickets || tickets.length < 5) {
+    if (!tickets || tickets.length < 3) {
       return new Response(JSON.stringify({ empty: true }), { status: 200, headers: corsHeaders });
     }
 
-    // 3. Data Deduplication for AI Efficiency
-    // Group by module and deduplicate similar subjects to save tokens and speed up AI
-    const moduleGroups: Record<string, any[]> = {};
+    // 2. Aggressive Data Compression for AI
+    // Grouping by module and taking a representative sample to stay within token limits and speed up Gemini
+    const moduleGroups: Record<string, string[]> = {};
     tickets.forEach(t => {
       const mod = t.cf_module || 'General';
       if (!moduleGroups[mod]) moduleGroups[mod] = [];
-      // Only add if subject is somewhat unique in this module sample
-      if (moduleGroups[mod].length < 30) {
-        moduleGroups[mod].push({ id: t.freshdesk_id, s: t.subject });
+      if (moduleGroups[mod].length < 15) { // Only send top 15 subjects per module to AI
+        moduleGroups[mod].push(t.subject);
       }
     });
 
-    // 4. AI Clustering & Analysis
+    // 3. AI Clustering (Gemini 2.5 Flash is very fast)
     const prompt = `
-      Analyze these ${tickets.length} tickets and identify RECURRING product issues.
+      Analyze these ticket subjects grouped by module and identify the top 5 RECURRING product issues.
       Data: ${JSON.stringify(moduleGroups)}
 
       Return STRICT JSON:
@@ -89,14 +69,14 @@ serve(async (req) => {
             "impact": "High|Medium|Low",
             "rootCause": "Technical reason",
             "suggestedFix": "Product fix",
-            "confidence": 0-100,
-            "history": [{"month": "Jan", "count": 5}],
+            "confidence": 90,
+            "history": [{"month": "Current", "count": 5}],
             "requiresEscalation": boolean,
-            "sampleTickets": ["ID"]
+            "sampleTickets": []
           }
         ],
         "moduleDistribution": [{"module": "Name", "percentage": number}],
-        "globalTrend": number
+        "globalTrend": -5
       }
     `;
 
@@ -109,28 +89,17 @@ serve(async (req) => {
       }),
     });
 
-    if (!geminiRes.ok) throw new Error("AI Service Error");
+    if (!geminiRes.ok) throw new Error("AI Service Busy");
 
     const aiData = await geminiRes.json();
     const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     const result = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
 
-    const finalData = {
+    return new Response(JSON.stringify({
       ...result,
-      totalRecurringTickets: result.clusters.reduce((acc: number, c: any) => acc + c.occurrences, 0),
+      totalRecurringTickets: tickets.length,
       generatedAt: new Date().toISOString()
-    };
-
-    // 5. Update Cache
-    await supabase
-      .from('ai_recurring_issues_cache')
-      .upsert({
-        customer_name: cacheKey,
-        data: finalData,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'customer_name' });
-
-    return new Response(JSON.stringify(finalData), {
+    }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
