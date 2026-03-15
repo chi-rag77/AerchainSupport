@@ -25,7 +25,6 @@ serve(async (req) => {
     const { customerName } = await req.json();
     if (!customerName) throw new Error("customerName is required.");
 
-    // 1. Fetch all historical tickets for this customer
     const { data: tickets, error: fetchError } = await supabase
       .from('freshdesk_tickets')
       .select('*')
@@ -37,16 +36,23 @@ serve(async (req) => {
       return new Response(JSON.stringify({ empty: true }), { status: 200, headers: corsHeaders });
     }
 
-    // 2. Aggregate by Month
     const monthlyData: Record<string, any> = {};
-    const allModules = new Set<string>();
+    const moduleStats: Record<string, any> = {};
+    const severityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
 
     tickets.forEach(t => {
       const date = new Date(t.created_at);
       const monthKey = dateFns.format(date, 'yyyy-MM');
-      const module = t.cf_module || 'Uncategorized';
-      allModules.add(module);
+      const module = t.cf_module || 'General';
+      const priority = t.priority || 'Medium';
+      
+      // Global Severity
+      if (priority === 'Urgent') severityCounts.Critical++;
+      else if (priority === 'High') severityCounts.High++;
+      else if (priority === 'Medium') severityCounts.Medium++;
+      else severityCounts.Low++;
 
+      // Monthly Aggregation
       if (!monthlyData[monthKey]) {
         monthlyData[monthKey] = {
           month: monthKey,
@@ -56,10 +62,8 @@ serve(async (req) => {
           fastResolved: 0,
           escalated: 0,
           unresolved: 0,
-          reopened: 0, // Inferred if updated_at >> created_at and status is open
-          modules: {},
-          avgResolutionHours: 0,
           totalResHours: 0,
+          modules: {},
         };
       }
 
@@ -82,44 +86,60 @@ serve(async (req) => {
         m.escalated++;
       }
 
+      // Module specific monthly count
       m.modules[module] = (m.modules[module] || 0) + 1;
+
+      // Global Module Stats
+      if (!moduleStats[module]) {
+        moduleStats[module] = { name: module, total: 0, resolved: 0, totalResHours: 0, escalated: 0, history: [] };
+      }
+      const ms = moduleStats[module];
+      ms.total++;
+      if (isResolved) {
+        ms.resolved++;
+        ms.totalResHours += dateFns.differenceInHours(new Date(t.updated_at), new Date(t.created_at));
+      }
+      if (t.priority.toLowerCase() === 'urgent' || statusLower === 'escalated') ms.escalated++;
     });
 
-    // 3. Calculate Impact Scores
-    const timeline = Object.values(monthlyData).map((m: any) => {
-      // Formula: (+2 × fast) - (2 × escalated) - (1 × unresolved)
-      const score = (m.fastResolved * 2) - (m.escalated * 2) - (m.unresolved * 1);
-      m.impactScore = score;
-      m.avgResolutionHours = m.resolved > 0 ? Math.round(m.totalResHours / m.resolved) : 0;
-      return m;
-    }).sort((a, b) => a.month.localeCompare(b.month));
+    // Calculate Trends and Averages
+    const timeline = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+    const modules = Object.keys(moduleStats);
 
-    // 4. AI Synthesis
+    const processedModuleStats = modules.map(name => {
+      const stats = moduleStats[name];
+      const history = timeline.map(m => m.modules[name] || 0);
+      const lastMonth = history[history.length - 1] || 0;
+      const prevMonth = history[history.length - 2] || 0;
+      const trend = prevMonth === 0 ? (lastMonth > 0 ? 100 : 0) : Math.round(((lastMonth - prevMonth) / prevMonth) * 100);
+
+      return {
+        ...stats,
+        avgResolution: stats.resolved > 0 ? Math.round(stats.totalResHours / stats.resolved) : 0,
+        trend,
+        history
+      };
+    }).sort((a, b) => b.total - a.total);
+
+    // AI Synthesis
     let aiAnalysis = null;
     if (geminiApiKey) {
-      const context = JSON.stringify(timeline.map(t => ({
-        month: t.label,
-        score: t.impactScore,
-        tickets: t.tickets,
-        topModules: Object.entries(t.modules).sort((a: any, b: any) => b[1] - a[1]).slice(0, 2)
-      })));
+      const context = {
+        topModules: processedModuleStats.slice(0, 3),
+        severity: severityCounts,
+        recentTimeline: timeline.slice(-3)
+      };
 
       const prompt = `
-        Analyze this customer support journey for "${customerName}".
-        Timeline Data: ${context}
+        Analyze this customer support intelligence for "${customerName}".
+        Data: ${JSON.stringify(context)}
 
         Return STRICT JSON:
         {
-          "journeyInsight": "2-sentence summary of the experience trend.",
-          "patterns": ["List of detected patterns like spikes after releases"],
-          "riskTrend": {
-            "trajectory": "Improving | Stable | Declining",
-            "reason": "Brief explanation"
-          },
-          "forecast": {
-            "nextMonthScore": number,
-            "drivers": ["List of risk/benefit drivers"]
-          }
+          "executiveInsight": "1-2 sentence summary of the most critical issue.",
+          "majorCause": "Identify the likely root cause for the top problematic module.",
+          "patterns": ["List of detected patterns"],
+          "recommendation": "One specific executive action."
         }
       `;
 
@@ -140,8 +160,9 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       timeline,
+      moduleStats: processedModuleStats,
+      severityCounts,
       aiAnalysis,
-      modules: Array.from(allModules),
       generatedAt: new Date().toISOString()
     }), {
       status: 200,

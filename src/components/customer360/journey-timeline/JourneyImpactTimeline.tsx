@@ -8,11 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Activity, Brain, Sparkles, TrendingUp, ShieldAlert, 
-  Clock, Zap, Target, Loader2, AlertTriangle, ArrowRight
+  Clock, Zap, Target, Loader2, AlertTriangle, ArrowRight, MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ImpactTimelineChart from './ImpactTimelineChart';
-import IssueHeatmap from './IssueHeatmap';
+import SmartIssueHeatmap from './SmartIssueHeatmap';
+import IssueIntelligenceSummary from '../issue-intelligence/IssueIntelligenceSummary';
+import IssueContributionCharts from '../issue-intelligence/IssueContributionCharts';
+import InvestigationModal from '../issue-intelligence/InvestigationModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface JourneyImpactTimelineProps {
@@ -21,6 +24,7 @@ interface JourneyImpactTimelineProps {
 
 const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => {
   const [selectedMonth, setSelectedMonth] = useState<any>(null);
+  const [investigationData, setInvestigationData] = useState<any>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['customerJourneyImpact', customerName],
@@ -52,9 +56,10 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
   }
 
   const currentMonth = selectedMonth || data.timeline[data.timeline.length - 1];
+  const topModule = data.moduleStats[0];
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Section 1: Impact Timeline Graph */}
       <Card className="rounded-[32px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
         <CardHeader className="p-8 pb-0 flex flex-row items-center justify-between">
@@ -80,142 +85,108 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Section 2: Monthly Breakdown */}
-        <Card className="rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass p-8 space-y-6">
-          <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <h3 className="text-xl font-black">{currentMonth.label}</h3>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Monthly Performance</p>
-            </div>
-            <div className={cn(
-              "h-12 w-12 rounded-2xl flex items-center justify-center text-xl font-black shadow-sm",
-              currentMonth.impactScore > 0 ? "bg-green-100 text-green-700" : currentMonth.impactScore < 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
-            )}>
-              {currentMonth.impactScore > 0 ? '+' : ''}{currentMonth.impactScore}
-            </div>
+      {/* Section 2: Issue Intelligence Summary */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 px-2">
+          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+            <Brain className="h-5 w-5 text-indigo-600" />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-border">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Tickets</span>
-              <span className="text-2xl font-black">{currentMonth.tickets}</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-border">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Escalations</span>
-              <span className="text-2xl font-black text-red-600">{currentMonth.escalated}</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-border">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Fast Res.</span>
-              <span className="text-2xl font-black text-green-600">{currentMonth.fastResolved}</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-border">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Avg Res.</span>
-              <span className="text-2xl font-black">{currentMonth.avgResolutionHours}h</span>
-            </div>
-          </div>
-        </Card>
-
-        {/* Section 3 & 4: AI Journey Insight & Pattern Detection */}
-        <Card className="lg:col-span-2 rounded-[28px] border-none bg-indigo-600 text-white shadow-glass-glow p-8 flex flex-col justify-between">
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-white/20 backdrop-blur-md">
-                  <Brain className="h-6 w-6 text-white" />
-                </div>
-                <h3 className="text-xl font-black tracking-tight">AI Journey Intelligence</h3>
-              </div>
-              <Badge className="bg-white/20 text-white border-none font-bold">
-                <Sparkles className="h-3 w-3 mr-1.5" />
-                Pattern Detection Active
-              </Badge>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-2">Executive Insight</h4>
-                <p className="text-lg font-bold leading-tight">
-                  {data.aiAnalysis?.journeyInsight || "Analyzing journey patterns..."}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Detected Patterns</h4>
-                  <div className="space-y-2">
-                    {data.aiAnalysis?.patterns?.map((p: string, i: number) => (
-                      <div key={i} className="flex items-center gap-2 text-sm font-semibold">
-                        <Target className="h-4 w-4 text-indigo-300 shrink-0" />
-                        {p}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Risk Trajectory</h4>
-                  <div className="p-4 rounded-xl bg-white/10 border border-white/10">
-                    <div className="flex items-center gap-2 mb-1">
-                      <TrendingUp className={cn(
-                        "h-4 w-4",
-                        data.aiAnalysis?.riskTrend?.trajectory === 'Improving' ? "text-green-400" : "text-red-400"
-                      )} />
-                      <span className="font-black uppercase text-xs">{data.aiAnalysis?.riskTrend?.trajectory}</span>
-                    </div>
-                    <p className="text-xs font-medium text-indigo-100">{data.aiAnalysis?.riskTrend?.reason}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
+          <h3 className="text-xl font-black tracking-tight">Customer Issue Intelligence</h3>
+        </div>
+        
+        <IssueIntelligenceSummary 
+          totalTickets={data.timeline.reduce((acc: number, m: any) => acc + m.tickets, 0)}
+          topModule={topModule?.name || 'N/A'}
+          globalTrend={topModule?.trend || 0}
+          escalations={data.moduleStats.reduce((acc: number, m: any) => acc + m.escalated, 0)}
+        />
       </div>
 
-      {/* Section 5: Issue Category Heatmap */}
-      <IssueHeatmap timeline={data.timeline} modules={data.modules} />
-
-      {/* Section 8: Impact Forecast */}
-      <Card className="rounded-[32px] border-none bg-gray-900 text-white shadow-2xl p-8 overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-12 opacity-5">
-          <Zap className="h-48 w-48" />
-        </div>
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="space-y-4 flex-1">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-indigo-500">
-                <Zap className="h-5 w-5 text-white" />
-              </div>
-              <h3 className="text-xl font-black tracking-tight">Predictive Impact Forecast</h3>
-            </div>
-            <p className="text-sm text-gray-400 font-medium max-w-xl">
-              Based on current unresolved backlog and sentiment velocity, we predict the next month's impact score.
-            </p>
+      {/* Section 3: AI Support Insight Panel */}
+      <Card className="rounded-[32px] border-none bg-indigo-600 text-white shadow-glass-glow p-8">
+        <div className="flex flex-col md:flex-row gap-8 items-start">
+          <div className="p-4 rounded-[24px] bg-white/10 backdrop-blur-md shrink-0">
+            <Brain className="h-8 w-8 text-white" />
           </div>
-
-          <div className="flex items-center gap-12">
-            <div className="text-center">
-              <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-2">Next Month Score</span>
-              <div className={cn(
-                "text-5xl font-black tracking-tighter",
-                (data.aiAnalysis?.forecast?.nextMonthScore || 0) > 0 ? "text-green-500" : "text-red-500"
-              )}>
-                {data.aiAnalysis?.forecast?.nextMonthScore > 0 ? '+' : ''}{data.aiAnalysis?.forecast?.nextMonthScore || 0}
-              </div>
-            </div>
-            <div className="h-16 w-px bg-gray-800" />
+          <div className="space-y-6 flex-1">
             <div className="space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Primary Drivers</span>
-              <div className="flex flex-wrap gap-2">
-                {data.aiAnalysis?.forecast?.drivers?.map((d: string, i: number) => (
-                  <Badge key={i} variant="outline" className="border-gray-700 text-gray-300 font-bold">
-                    {d}
-                  </Badge>
-                ))}
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200">AI Support Insight</h4>
+              <p className="text-2xl font-bold leading-tight">
+                {data.aiAnalysis?.executiveInsight || "Analyzing support patterns..."}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-200 flex items-center gap-2">
+                  <Target className="h-3 w-3" /> Major Cause
+                </h5>
+                <p className="text-sm font-medium text-indigo-50 leading-relaxed">
+                  {data.aiAnalysis?.majorCause || "Identifying root causes..."}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-200 flex items-center gap-2">
+                  <Zap className="h-3 w-3" /> Recommendation
+                </h5>
+                <p className="text-sm font-medium text-indigo-50 leading-relaxed">
+                  {data.aiAnalysis?.recommendation || "Synthesizing actions..."}
+                </p>
               </div>
             </div>
           </div>
         </div>
       </Card>
+
+      {/* Section 4: Contribution & Severity Charts */}
+      <IssueContributionCharts 
+        moduleStats={data.moduleStats}
+        severityCounts={data.severityCounts}
+      />
+
+      {/* Section 5: Smart Heatmap */}
+      <SmartIssueHeatmap 
+        timeline={data.timeline} 
+        moduleStats={data.moduleStats}
+        onInvestigate={(module, month, count) => setInvestigationData({ module, month, count })}
+      />
+
+      {/* Section 6: Resolution Performance */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 px-2">
+          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
+            <Clock className="h-5 w-5 text-green-600" />
+          </div>
+          <h3 className="text-xl font-black tracking-tight">Resolution Performance</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {data.moduleStats.slice(0, 3).map((ms: any) => (
+            <Card key={ms.name} className="border-none shadow-sm bg-white dark:bg-gray-800 rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">{ms.name}</span>
+                <Badge variant="outline" className="font-bold">{ms.avgResolution} hrs</Badge>
+              </div>
+              <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className={cn(
+                    "h-full rounded-full",
+                    ms.avgResolution > 24 ? "bg-red-500" : ms.avgResolution > 12 ? "bg-amber-500" : "bg-green-500"
+                  )} 
+                  style={{ width: `${Math.min(100, (ms.avgResolution / 48) * 100)}%` }} 
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2 font-medium">Avg. Resolution Time</p>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <InvestigationModal 
+        isOpen={!!investigationData}
+        onClose={() => setInvestigationData(null)}
+        data={investigationData}
+      />
     </div>
   );
 };
