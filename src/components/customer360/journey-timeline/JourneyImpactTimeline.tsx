@@ -15,7 +15,6 @@ import ImpactTimelineChart from './ImpactTimelineChart';
 import SmartIssueHeatmap from '../issue-intelligence/SmartIssueHeatmap';
 import IssueIntelligenceSummary from '../issue-intelligence/IssueIntelligenceSummary';
 import IssueContributionCharts from '../issue-intelligence/IssueContributionCharts';
-import ModuleTrendAnalysis from '../issue-intelligence/ModuleTrendAnalysis';
 import InvestigationModal from '../issue-intelligence/InvestigationModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -96,12 +95,7 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
         />
       )}
 
-      {/* 4. Module Trend Analysis */}
-      {data.moduleStats && (
-        <ModuleTrendAnalysis moduleStats={data.moduleStats} />
-      )}
-
-      {/* 5. AI Insights Panel */}
+      {/* 4. AI Insights Panel */}
       <Card className="rounded-[32px] border-none bg-indigo-600 text-white shadow-glass-glow p-8">
         <div className="flex flex-col md:flex-row gap-8 items-start">
           <div className="p-4 rounded-[24px] bg-white/10 backdrop-blur-md shrink-0">
@@ -137,7 +131,7 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
         </div>
       </Card>
 
-      {/* 6. Resolution Performance */}
+      {/* 5. Resolution Performance */}
       {data.moduleStats && data.moduleStats.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center gap-3 px-2">
