@@ -95,42 +95,6 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
         />
       )}
 
-      {/* 4. AI Insights Panel */}
-      <Card className="rounded-[32px] border-none bg-indigo-600 text-white shadow-glass-glow p-8">
-        <div className="flex flex-col md:flex-row gap-8 items-start">
-          <div className="p-4 rounded-[24px] bg-white/10 backdrop-blur-md shrink-0">
-            <Brain className="h-8 w-8 text-white" />
-          </div>
-          <div className="space-y-6 flex-1">
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200">AI Support Insight</h4>
-              <p className="text-2xl font-bold leading-tight">
-                {data.aiAnalysis?.executiveInsight || "Analyzing support patterns..."}
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-200 flex items-center gap-2">
-                  <Target className="h-3 w-3" /> Major Cause
-                </h5>
-                <p className="text-sm font-medium text-indigo-50 leading-relaxed">
-                  {data.aiAnalysis?.majorCause || "Identifying root causes..."}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-200 flex items-center gap-2">
-                  <Zap className="h-3 w-3" /> Recommendation
-                </h5>
-                <p className="text-sm font-medium text-indigo-50 leading-relaxed">
-                  {data.aiAnalysis?.recommendation || "Synthesizing actions..."}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
       <InvestigationModal 
         isOpen={!!investigationData}
         onClose={() => setInvestigationData(null)}
