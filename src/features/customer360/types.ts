@@ -4,10 +4,31 @@ export interface HealthScoreComponent {
 }
 
 export interface AISummary {
-  status: string;
-  key_drivers: string[];
-  top_issues: string[];
-  recommended_actions: string[];
+  root_issue: {
+    module: string;
+    percentage: number;
+    description: string;
+    insight: string;
+  };
+  composition: {
+    bugs: number;
+    queries: number;
+    config: number;
+    insight: string;
+  };
+  suggested_actions: {
+    type: 'engineering' | 'education' | 'risk';
+    title: string;
+    description: string;
+    items: string[];
+  }[];
+  operational_risk: {
+    level: 'Low' | 'Medium' | 'High';
+    metric: string;
+    target: string;
+    description: string;
+  };
+  reasoning: string[];
 }
 
 export interface CustomerIntelligenceData {
@@ -34,45 +55,4 @@ export interface CustomerIntelligenceData {
     since: string;
     renewal: string;
   };
-}
-
-// --- Incident Explorer Types ---
-
-export interface IssueCluster {
-  id: string;
-  name: string;
-  ticketCount: number;
-  lastSeen: string;
-  trend: 'improving' | 'worsening' | 'stable';
-  topErrors: string[];
-  relatedTicketIds: string[];
-}
-
-export interface RecurringIssue {
-  id: string;
-  title: string;
-  occurrenceCount: number;
-  ticketCount: number;
-  timeframe: string;
-}
-
-export interface IncidentEvent {
-  id: string;
-  date: string;
-  type: 'critical' | 'high' | 'medium' | 'info';
-  title: string;
-  description: string;
-}
-
-export interface RootCauseMetric {
-  module: string;
-  percentage: number;
-  context: string;
-}
-
-export interface IncidentExplorerData {
-  clusters: IssueCluster[];
-  recurringIssues: RecurringIssue[];
-  timeline: IncidentEvent[];
-  rootCauses: RootCauseMetric[];
 }
