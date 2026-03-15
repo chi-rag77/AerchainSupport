@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CustomerIntelligenceHeader from "@/components/customer360/intelligence-header/CustomerIntelligenceHeader";
 import JourneyImpactTimeline from "@/components/customer360/journey-timeline/JourneyImpactTimeline";
-import RiskOpportunityRadar from "@/components/customer360/risk-radar/RiskOpportunityRadar";
 
 const Customer360 = () => {
   const { session } = useSupabase();
@@ -187,8 +186,6 @@ const Customer360 = () => {
               <CustomerIntelligenceHeader customerName={selectedCustomer} />
               
               <JourneyImpactTimeline customerName={selectedCustomer} />
-
-              <RiskOpportunityRadar customerName={selectedCustomer} />
               
               <div className="flex flex-col items-center justify-center py-24 text-muted-foreground border-2 border-dashed rounded-2xl">
                 <p className="text-lg font-bold">More modules coming soon...</p>
