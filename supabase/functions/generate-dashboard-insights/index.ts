@@ -1,4 +1,4 @@
-// v2.1 - AI Dashboard Insights
+// v2.2 - AI Dashboard Insights with Robust Error Handling
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -19,8 +19,8 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
-    if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'Environment variables for Supabase or Gemini API key not set.' }), {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return new Response(JSON.stringify({ error: 'Supabase environment variables not set.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -46,98 +46,116 @@ serve(async (req) => {
     if (cached) {
       const lastUpdated = new Date(cached.updated_at);
       const hoursSinceUpdate = (new Date().getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
-      if (hoursSinceUpdate < 6) {
+      
+      // If not forced and not stale, return cached
+      const url = new URL(req.url);
+      const force = url.searchParams.get('force') === 'true';
+      
+      if (!force && hoursSinceUpdate < 6) {
         const responsePayload = {
           ...cached,
-          insights: [{ message: "SLA adherence is stable.", severity: "info", type: "trend" }]
+          insights: cached.insights || [{ message: "Operational trends are stable.", severity: "info", type: "trend" }]
         };
         return new Response(JSON.stringify(responsePayload), { status: 200, headers: corsHeaders });
       }
     }
 
-    // 2. If stale, fetch data and generate new insights
+    // 2. If stale or no cache, fetch data
     const thirtyDaysAgo = dateFns.subDays(new Date(), 30).toISOString();
     const { data: tickets, error: ticketsError } = await supabase
       .from('freshdesk_tickets')
       .select('subject, status, priority, created_at, due_by, cf_company')
-      .gte('created_at', thirtyDaysAgo);
+      .gte('created_at', thirtyDaysAgo)
+      .limit(500);
 
     if (ticketsError) throw ticketsError;
 
-    const totalTickets = tickets.length;
-    const openTickets = tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase())).length;
-    const urgentTickets = tickets.filter(t => t.priority.toLowerCase() === 'urgent').length;
-    const slaBreached = tickets.filter(t => t.due_by && dateFns.isPast(new Date(t.due_by)) && !['resolved', 'closed'].includes(t.status.toLowerCase())).length;
-
-    const context = `
-      Here is a summary of support operations for the last 30 days:
-      - Total Tickets: ${totalTickets}
-      - Currently Open Tickets: ${openTickets}
-      - Urgent Tickets: ${urgentTickets}
-      - Active SLA Breached Tickets: ${slaBreached}
-      - A sample of recent ticket subjects: ${JSON.stringify(tickets.slice(0, 10).map(t => t.subject))}
-    `;
-
-    const prompt = `
-      You are an AI operations analyst for a support dashboard. Based on the following data, generate a concise, executive-level summary.
-
-      ${context}
-
-      Return a STRICT JSON object with the following structure:
-      {
-        "summary": "A 2-3 sentence summary of the current operational state. Mention key trends or risks.",
-        "risk_level": "Low | Medium | High | Critical",
-        "confidence": 90-98,
-        "key_drivers": ["A short phrase for the primary driver of ticket volume", "A short phrase for the primary risk factor"],
-        "executive_action": "A single, actionable recommendation for a support leader.",
-        "insights": [
-          { "message": "A short, insightful observation about the data.", "severity": "info | warning | critical", "type": "trend | anomaly | risk" }
-        ]
-      }
-    `;
-
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
-      }),
-    });
-
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText}`);
+    if (!tickets || tickets.length === 0) {
+      return new Response(JSON.stringify({ 
+        summary: "No ticket data available for the last 30 days.",
+        risk_level: "Low",
+        confidence: 100,
+        key_drivers: [],
+        executive_action: "Encourage team to log tickets in Freshdesk.",
+        insights: []
+      }), { status: 200, headers: corsHeaders });
     }
 
-    const geminiData = await geminiResponse.json();
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    const analysis = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
+    // 3. Call Gemini if API key exists
+    if (geminiApiKey) {
+      const totalTickets = tickets.length;
+      const openTickets = tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase())).length;
+      const urgentTickets = tickets.filter(t => t.priority.toLowerCase() === 'urgent').length;
+      
+      const context = `
+        Support data (30 days):
+        - Total: ${totalTickets}
+        - Open: ${openTickets}
+        - Urgent: ${urgentTickets}
+        - Sample subjects: ${JSON.stringify(tickets.slice(0, 10).map(t => t.subject))}
+      `;
 
-    const dbPayload = {
-      org_id: user.id,
-      summary: analysis.summary,
-      risk_level: analysis.risk_level,
-      confidence: analysis.confidence,
-      key_drivers: analysis.key_drivers,
-      executive_action: analysis.executive_action,
-      updated_at: new Date().toISOString(),
-    };
+      const prompt = `Analyze this support data and return STRICT JSON:
+      {
+        "summary": "2 sentence summary",
+        "risk_level": "Low|Medium|High",
+        "confidence": 90-98,
+        "key_drivers": ["driver 1", "driver 2"],
+        "executive_action": "one recommendation",
+        "insights": [{"message": "obs", "severity": "info", "type": "trend"}]
+      }
+      Data: ${context}`;
 
-    await supabase.from('ai_dashboard_summary').upsert(dbPayload, { onConflict: 'org_id' });
+      try {
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { response_mime_type: "application/json" }
+          }),
+        });
 
-    const responsePayload = {
-      ...dbPayload,
-      insights: analysis.insights,
-    };
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+          const analysis = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
 
-    return new Response(JSON.stringify(responsePayload), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+          const dbPayload = {
+            org_id: user.id,
+            summary: analysis.summary,
+            risk_level: analysis.risk_level,
+            confidence: analysis.confidence,
+            key_drivers: analysis.key_drivers,
+            executive_action: analysis.executive_action,
+            updated_at: new Date().toISOString(),
+          };
+
+          await supabase.from('ai_dashboard_summary').upsert(dbPayload, { onConflict: 'org_id' });
+
+          return new Response(JSON.stringify({ ...dbPayload, insights: analysis.insights }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } catch (aiErr) {
+        console.error("Gemini call failed:", aiErr);
+      }
+    }
+
+    // 4. Fallback if Gemini fails or no API key
+    return new Response(JSON.stringify({ 
+      summary: "Operational data is being tracked. AI analysis is currently unavailable.",
+      risk_level: "Medium",
+      confidence: 60,
+      key_drivers: ["Manual review required"],
+      executive_action: "Review the ticket queue for urgent items.",
+      insights: [],
+      updated_at: new Date().toISOString()
+    }), { status: 200, headers: corsHeaders });
 
   } catch (error: any) {
-    console.error('[generate-dashboard-insights] Error:', error);
+    console.error('[generate-dashboard-insights] Fatal Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

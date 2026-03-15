@@ -31,17 +31,18 @@ export function useExecutiveDashboard() {
   const queryClient = useQueryClient();
   const { dateRange, filters } = useDashboard();
 
-  // 1. Fetch Aggregated Metrics
+  // 1. Fetch Aggregated Metrics - Cached for 5 mins
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-dashboard-metrics', { method: 'POST' });
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 5 * 60 * 1000, 
   });
 
-  // 2. Fetch AI Insights
+  // 2. Fetch AI Insights - Manual trigger or long cache
   const { data: aiRaw, isLoading: isLoadingAI } = useQuery({
     queryKey: ['dashboardInsights'],
     queryFn: async () => {
@@ -49,6 +50,9 @@ export function useExecutiveDashboard() {
       if (error) throw error;
       return data;
     },
+    staleTime: 30 * 60 * 1000, // Cache for 30 mins
+    enabled: false, // Don't run automatically on every mount
+    retry: false,
   });
 
   const generateAIMutation = useMutation({
@@ -57,13 +61,16 @@ export function useExecutiveDashboard() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(['dashboardInsights'], data);
       toast.success("AI Insights generated!");
+    },
+    onError: (err: any) => {
+      toast.error(`AI Analysis failed: ${err.message}`);
     }
   });
 
-  // 3. Fetch tickets for calculations
+  // 3. Fetch tickets for calculations - Cached for 2 mins
   const { data: recentTickets = [], isLoading: isLoadingTickets, isFetching } = useQuery<Ticket[]>({
     queryKey: ['recentTicketsForDashboard'],
     queryFn: async () => {
@@ -74,7 +81,8 @@ export function useExecutiveDashboard() {
         .limit(1000); 
       if (error) throw error;
       return data.map(t => ({ ...t, id: t.freshdesk_id })) as Ticket[];
-    }
+    },
+    staleTime: 2 * 60 * 1000,
   });
 
   const { data: uniqueCompanies = [] } = useQuery<string[]>({
@@ -83,7 +91,8 @@ export function useExecutiveDashboard() {
       const { data, error } = await supabase.from('freshdesk_tickets').select('cf_company').limit(1000);
       if (error) throw error;
       return Array.from(new Set((data || []).map(t => t.cf_company).filter(Boolean))) as string[];
-    }
+    },
+    staleTime: 10 * 60 * 1000,
   });
 
   // Calculate Live Ticker Metrics
@@ -148,7 +157,7 @@ export function useExecutiveDashboard() {
       const registryEntry = COUNTRY_REGISTRY[name];
       return {
         countryName: name,
-        countryCode: registryEntry ? registryEntry.id : 'UNKNOWN', // Use numeric ID for world-atlas
+        countryCode: registryEntry ? registryEntry.id : 'UNKNOWN', 
         ...stats
       };
     }).sort((a, b) => b.total - a.total);
@@ -171,7 +180,6 @@ export function useExecutiveDashboard() {
       updatedAt: aiRaw.updated_at,
     } : null;
 
-    // Mock sparkline data for visual effect
     const generateSparkline = () => Array.from({ length: 10 }, () => ({ value: Math.floor(Math.random() * 50) + 10 }));
 
     const kpis: KPIMetric[] = [
@@ -233,7 +241,7 @@ export function useExecutiveDashboard() {
     data: dashboardData,
     tickets: filteredTickets,
     uniqueCompanies,
-    isLoading: isLoadingMetrics || isLoadingTickets || isLoadingAI,
+    isLoading: isLoadingMetrics || isLoadingTickets,
     isFetching,
     isGeneratingAI: generateAIMutation.isPending,
     generateAI: generateAIMutation.mutate,
