@@ -72,7 +72,13 @@ const KnowledgeLibrary = () => {
 
   return (
     <div className="space-y-6 h-full flex flex-col">
-      <input type="file" className="hidden" ref={fileInputRef} onChange={handleUpload} accept=".txt,.md,.pdf" />
+      <input 
+        type="file" 
+        className="hidden" 
+        ref={fileInputRef} 
+        onChange={handleUpload} 
+        accept=".txt,.md,.pdf,.xlsx,.xls" 
+      />
       
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 group">

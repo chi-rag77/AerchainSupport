@@ -2,6 +2,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+// @ts-ignore
+import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,7 +37,28 @@ serve(async (req) => {
 
     if (downloadError) throw downloadError;
 
-    const text = await fileData.text(); // Simplified: assumes text/md for now
+    let text = "";
+    const isExcel = doc.name.endsWith('.xlsx') || doc.name.endsWith('.xls') || doc.file_type.includes('spreadsheet');
+
+    if (isExcel) {
+      // Parse Excel
+      const arrayBuffer = await fileData.arrayBuffer();
+      const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+      
+      // Convert each sheet to a text representation
+      workbook.SheetNames.forEach((sheetName: string) => {
+        const worksheet = workbook.Sheets[sheetName];
+        const sheetText = XLSX.utils.sheet_to_txt(worksheet);
+        text += `Sheet: ${sheetName}\n${sheetText}\n\n`;
+      });
+    } else {
+      // Assume text/markdown for other types
+      text = await fileData.text();
+    }
+
+    if (!text || text.trim().length === 0) {
+      throw new Error("No text content extracted from document.");
+    }
 
     // 3. Chunking (Simple 1000 char chunks with overlap)
     const chunks = [];
@@ -54,6 +77,11 @@ serve(async (req) => {
         })
       });
 
+      if (!res.ok) {
+        console.error(`Embedding failed for chunk: ${await res.text()}`);
+        continue;
+      }
+
       const { embedding } = await res.json();
 
       await supabase.from('knowledge_chunks').insert({
@@ -70,6 +98,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
+    console.error("[process-knowledge-document] Error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
