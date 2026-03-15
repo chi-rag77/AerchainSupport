@@ -36,33 +36,43 @@ export interface CustomerIntelligenceData {
   };
 }
 
-// --- Risk & Opportunity Radar Types ---
+// --- Incident Explorer Types ---
 
-export interface RiskSignal {
+export interface IssueCluster {
   id: string;
-  title: string;
-  severity: 'Low' | 'Medium' | 'High';
-  type: 'risk' | 'opportunity';
+  name: string;
+  ticketCount: number;
+  lastSeen: string;
+  trend: 'improving' | 'worsening' | 'stable';
+  topErrors: string[];
+  relatedTicketIds: string[];
 }
 
-export interface RecommendedAction {
+export interface RecurringIssue {
   id: string;
+  title: string;
+  occurrenceCount: number;
+  ticketCount: number;
+  timeframe: string;
+}
+
+export interface IncidentEvent {
+  id: string;
+  date: string;
+  type: 'critical' | 'high' | 'medium' | 'info';
   title: string;
   description: string;
 }
 
-export interface MonthlyRiskTrend {
-  month: string;
-  label: string;
-  score: number;
-  status: string;
+export interface RootCauseMetric {
+  module: string;
+  percentage: number;
+  context: string;
 }
 
-export interface CustomerRiskRadarData {
-  healthScore: number;
-  status: 'Healthy' | 'Stable' | 'At Risk' | 'Critical';
-  riskSignals: RiskSignal[];
-  opportunitySignals: RiskSignal[];
-  recommendedActions: RecommendedAction[];
-  trendTimeline: MonthlyRiskTrend[];
+export interface IncidentExplorerData {
+  clusters: IssueCluster[];
+  recurringIssues: RecurringIssue[];
+  timeline: IncidentEvent[];
+  rootCauses: RootCauseMetric[];
 }
