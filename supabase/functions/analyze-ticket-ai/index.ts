@@ -1,4 +1,4 @@
-// v2.3 - Ticket AI Analyzer with Robust Parsing and Table Check
+// v2.4 - Ticket AI Analyzer with Stable Model
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -21,7 +21,6 @@ serve(async (req) => {
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
-      console.error("[analyze-ticket-ai] Missing environment variables");
       return new Response(JSON.stringify({ error: 'AI Configuration missing (API Key or Supabase URL).' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -58,7 +57,7 @@ serve(async (req) => {
           }
         }
       } catch (e) {
-        console.warn("[analyze-ticket-ai] Cache check failed (table might not exist):", e.message);
+        console.warn("[analyze-ticket-ai] Cache check failed:", e.message);
       }
     }
 
@@ -76,10 +75,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No conversation found to analyze. Please sync messages first.' }), { status: 404, headers: corsHeaders });
     }
 
-    // 3. Call Gemini
+    // 3. Call Gemini (Using stable 1.5-flash)
     const prompt = getAnalysisPrompt(customerName || 'Unknown', messages.reverse());
     
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -93,13 +92,11 @@ serve(async (req) => {
 
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
-      throw new Error(`AI Service Error: ${geminiResponse.status}`);
+      throw new Error(`AI Service Error: ${geminiResponse.status} - ${errorBody}`);
     }
 
     const geminiData = await geminiResponse.json();
     let rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    
-    // Clean up potential markdown formatting
     rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
     
     const analysis = JSON.parse(rawText);
@@ -120,11 +117,10 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
 
-    // 4. Try to save to DB (optional, don't fail if table missing)
     try {
       await supabase.from('ai_ticket_analysis').upsert(dbPayload, { onConflict: 'ticket_id' });
     } catch (dbErr) {
-      console.error("[analyze-ticket-ai] Failed to save analysis to DB:", dbErr.message);
+      console.error("[analyze-ticket-ai] DB save failed:", dbErr.message);
     }
 
     return new Response(JSON.stringify(dbPayload), {
