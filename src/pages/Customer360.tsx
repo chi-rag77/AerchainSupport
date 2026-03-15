@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CustomerIntelligenceHeader from "@/components/customer360/intelligence-header/CustomerIntelligenceHeader";
 import JourneyImpactTimeline from "@/components/customer360/journey-timeline/JourneyImpactTimeline";
-import CustomerIncidentExplorer from "@/components/customer360/incident-explorer/CustomerIncidentExplorer";
 
 const Customer360 = () => {
   const { session } = useSupabase();
@@ -91,7 +90,7 @@ const Customer360 = () => {
             "bg-gradient-to-br from-[#F8FAFF] to-[#F1F5FF] dark:from-gray-800/40 dark:to-gray-900/40"
           )}
         >
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl" />
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-50/10 rounded-full blur-3xl" />
           
           <div className="relative z-10 flex items-center justify-between gap-8 h-full">
             <AnimatePresence mode="wait">
@@ -161,7 +160,7 @@ const Customer360 = () => {
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
+            </AnPresence>
 
             {selectedCustomer && (
               <Button
@@ -187,8 +186,6 @@ const Customer360 = () => {
               <CustomerIntelligenceHeader customerName={selectedCustomer} />
               
               <JourneyImpactTimeline customerName={selectedCustomer} />
-
-              <CustomerIncidentExplorer customerName={selectedCustomer} />
               
               <div className="flex flex-col items-center justify-center py-24 text-muted-foreground border-2 border-dashed rounded-2xl">
                 <p className="text-lg font-bold">More modules coming soon...</p>
