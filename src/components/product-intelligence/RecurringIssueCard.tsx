@@ -9,125 +9,106 @@ import { motion } from 'framer-motion';
 import { 
   Repeat, TrendingUp, TrendingDown, Minus, 
   ShieldAlert, Sparkles, ArrowRight, Zap, 
-  MessageSquare, AlertTriangle, ExternalLink
+  AlertTriangle, ExternalLink, BarChart3
 } from 'lucide-react';
 import { RecurringIssueCluster } from '@/features/product-intelligence/types';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RecurringIssueCardProps {
   cluster: RecurringIssueCluster;
   onViewTickets: (ids: string[]) => void;
+  isSelected?: boolean;
 }
 
-const RecurringIssueCard = ({ cluster, onViewTickets }: RecurringIssueCardProps) => {
+const RecurringIssueCard = ({ cluster, onViewTickets, isSelected }: RecurringIssueCardProps) => {
   const isIncreasing = cluster.trend === 'increasing';
   const isDecreasing = cluster.trend === 'decreasing';
 
+  const impactColors = {
+    High: "from-rose-500/20 to-rose-600/5 border-rose-200/50 text-rose-700 dark:text-rose-400",
+    Medium: "from-amber-500/20 to-amber-600/5 border-amber-200/50 text-amber-700 dark:text-amber-400",
+    Low: "from-emerald-500/20 to-emerald-600/5 border-emerald-200/50 text-emerald-700 dark:text-emerald-400",
+  };
+
   return (
     <motion.div
-      whileHover={{ y: -5, scale: 1.01 }}
-      className="relative group"
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="relative"
     >
       <Card className={cn(
-        "border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-800 overflow-hidden transition-all duration-500",
-        cluster.requiresEscalation ? "ring-2 ring-red-500/20" : "hover:shadow-glass-glow"
+        "relative overflow-hidden border-none transition-all duration-500 rounded-[24px] shadow-glass group cursor-pointer",
+        isSelected ? "ring-2 ring-indigo-500 ring-offset-4 dark:ring-offset-gray-950 bg-white dark:bg-gray-800" : "bg-white/60 dark:bg-gray-800/60 backdrop-blur-md hover:bg-white dark:hover:bg-gray-800"
       )}>
-        {/* Top Status Bar */}
+        {/* Impact Indicator Glow */}
         <div className={cn(
-          "h-1.5 w-full",
-          cluster.impact === 'High' ? "bg-red-500" : cluster.impact === 'Medium' ? "bg-amber-500" : "bg-blue-500"
+          "absolute -right-12 -top-12 w-24 h-24 rounded-full blur-3xl opacity-20 transition-opacity group-hover:opacity-40",
+          cluster.impact === 'High' ? "bg-rose-500" : cluster.impact === 'Medium' ? "bg-amber-500" : "bg-emerald-500"
         )} />
 
-        <CardContent className="p-8 space-y-6">
-          <div className="flex justify-between items-start">
+        <CardContent className="p-6 space-y-5">
+          <div className="flex justify-between items-start gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600">
-                <Repeat className="h-6 w-6" />
+              <div className={cn(
+                "p-2.5 rounded-xl shadow-sm transition-colors",
+                isSelected ? "bg-indigo-600 text-white" : "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600"
+              )}>
+                <Repeat className="h-5 w-5" />
               </div>
               <div className="space-y-0.5">
-                <h4 className="text-xl font-black tracking-tight group-hover:text-indigo-600 transition-colors">
+                <h4 className="text-base font-black tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">
                   {cluster.title}
                 </h4>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {cluster.modules.map(m => (
-                    <Badge key={m} variant="outline" className="text-[9px] font-black uppercase tracking-widest border-none bg-gray-100 dark:bg-gray-900">
+                    <span key={m} className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">
                       {m}
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="text-right">
-              <div className="flex items-center justify-end gap-1.5 font-black text-[10px] uppercase tracking-widest mb-1">
-                {isIncreasing ? <TrendingUp className="h-3 w-3 text-red-500" /> : isDecreasing ? <TrendingDown className="h-3 w-3 text-green-500" /> : <Minus className="h-3 w-3 text-blue-500" />}
-                <span className={cn(isIncreasing ? "text-red-500" : isDecreasing ? "text-green-500" : "text-blue-500")}>
-                  {cluster.trend}
-                </span>
+            <div className="text-right shrink-0">
+              <div className={cn(
+                "flex items-center justify-end gap-1 font-black text-[10px] uppercase tracking-tighter mb-1",
+                isIncreasing ? "text-rose-500" : isDecreasing ? "text-emerald-500" : "text-indigo-500"
+              )}>
+                {isIncreasing ? <TrendingUp className="h-3 w-3" /> : isDecreasing ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+                {cluster.trend}
               </div>
-              <div className="text-3xl font-black tracking-tighter">{cluster.occurrences}</div>
-              <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Occurrences</div>
+              <div className="text-2xl font-black tracking-tighter">{cluster.occurrences}</div>
             </div>
           </div>
 
-          {/* AI Insight Hover Area */}
-          <div className="relative p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-border group-hover:border-indigo-200 transition-all">
-            <div className="flex items-start gap-3">
-              <Sparkles className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
-              <div className="space-y-2">
-                <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600">AI Root Cause Insight</h5>
-                <p className="text-sm font-medium leading-relaxed text-foreground/80">
-                  {cluster.rootCause}
-                </p>
-              </div>
-            </div>
-            
-            {/* Hidden Detail on Hover */}
-            <div className="mt-4 pt-4 border-t border-border/50 space-y-3">
-              <div className="flex items-start gap-3">
-                <Zap className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <h5 className="text-[10px] font-black uppercase tracking-widest text-amber-600">Suggested Permanent Fix</h5>
-                  <p className="text-xs font-bold text-foreground/90">{cluster.suggestedFix}</p>
-                </div>
-              </div>
+          {/* AI Micro-Insight */}
+          <div className="p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-900/50 border border-border/50 group-hover:border-indigo-200/50 transition-all">
+            <div className="flex items-start gap-2.5">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+              <p className="text-xs font-medium leading-relaxed text-muted-foreground line-clamp-2">
+                {cluster.rootCause}
+              </p>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[9px] font-bold border-none bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600">
-                AI Confidence: {cluster.confidence}%
+          {/* Footer Stats */}
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className={cn(
+                "text-[9px] font-black uppercase tracking-widest border-none px-2 py-0.5 rounded-full",
+                impactColors[cluster.impact]
+              )}>
+                {cluster.impact} Impact
               </Badge>
               {cluster.requiresEscalation && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 text-red-600 animate-pulse">
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      <span className="text-[9px] font-black uppercase tracking-widest">Escalation Recommended</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>This issue has crossed the critical threshold of 50 occurrences.</TooltipContent>
-                </Tooltip>
+                <div className="flex items-center gap-1 text-rose-600 animate-pulse">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">Escalate</span>
+                </div>
               )}
             </div>
-
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => onViewTickets(cluster.sampleTickets)}
-                className="text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 gap-1.5"
-              >
-                View Tickets <ExternalLink className="h-3 w-3" />
-              </Button>
-              {cluster.requiresEscalation && (
-                <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white rounded-full h-8 px-4 text-[10px] font-black uppercase tracking-widest gap-1.5 shadow-lg shadow-red-500/20">
-                  <ShieldAlert className="h-3 w-3" />
-                  Escalate to Product
-                </Button>
-              )}
+            
+            <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+              Details <ArrowRight className="h-3 w-3" />
             </div>
           </div>
         </CardContent>
