@@ -160,7 +160,7 @@ const Customer360 = () => {
                   </div>
                 </motion.div>
               )}
-            </AnPresence>
+            </AnimatePresence>
 
             {selectedCustomer && (
               <Button
