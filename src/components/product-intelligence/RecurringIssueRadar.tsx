@@ -7,7 +7,8 @@ import { RecurringIssueRadarData, RecurringIssueCluster } from '@/features/produ
 import { 
   Loader2, Repeat, Target, Sparkles, AlertTriangle, 
   RefreshCw, Inbox, LayoutGrid, BarChart3, ShieldAlert,
-  Zap, Brain, ArrowRight, ExternalLink, Activity
+  Zap, Brain, ArrowRight, ExternalLink, Activity,
+  TrendingUp, TrendingDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
