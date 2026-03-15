@@ -1,83 +1,48 @@
+"use client";
+
 import { supabase } from '@/integrations/supabase/client';
 import { ApiError } from './errorHandler';
 
-// Base URL for Edge Functions (hardcoded project ID is required for client invocation)
-const EDGE_FUNCTION_BASE_URL = `https://qwvdfewgilkbxtrdenhs.supabase.co/functions/v1`;
-
-interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  body?: any;
-  headers?: Record<string, string>;
-  params?: Record<string, string | number | boolean>;
-}
-
 /**
  * Generic client for invoking Supabase Edge Functions.
- * Handles authentication, JSON serialization, and error parsing.
- * 
- * @param functionName The name of the Edge Function (e.g., 'summarize-customer-tickets')
- * @param options Request options (method, body, headers, params)
- * @returns The parsed JSON response data
+ * Uses the official Supabase SDK for better reliability and auth handling.
  */
 export async function invokeEdgeFunction<T>(
   functionName: string,
-  options: RequestOptions = {}
+  options: {
+    method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+    body?: any;
+    headers?: Record<string, string>;
+    params?: Record<string, string | number | boolean>;
+  } = {}
 ): Promise<T> {
-  const session = await supabase.auth.getSession();
-  const token = session.data.session?.access_token;
-
-  if (!token) {
-    throw new ApiError("Authentication required to access this resource.", 401);
-  }
-
-  const url = `${EDGE_FUNCTION_BASE_URL}/${functionName}`;
-  const method = options.method || 'POST';
-  
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-    ...options.headers,
-  };
-
-  let fullUrl = url;
-  if (options.params) {
-    const query = new URLSearchParams(options.params as Record<string, string>).toString();
-    fullUrl = `${url}?${query}`;
-  }
-
-  const fetchOptions: RequestInit = {
-    method,
-    headers: defaultHeaders,
-  };
-
-  if (options.body && method !== 'GET') {
-    fetchOptions.body = JSON.stringify(options.body);
-  }
-
   try {
-    const response = await fetch(fullUrl, fetchOptions);
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      method: options.method || 'POST',
+      body: options.body,
+      headers: options.headers,
+      queryParams: options.params as Record<string, string>,
+    });
 
-    if (!response.ok) {
-      let errorData: any = { error: 'Unknown error' };
-      try {
-        errorData = await response.json();
-      } catch {
-        // If response is not JSON, use status text
-        errorData.error = response.statusText;
-      }
-      
-      const errorMessage = errorData.error || `Edge Function failed with status ${response.status}`;
-      throw new ApiError(errorMessage, response.status, errorData);
+    if (error) {
+      // Handle Supabase-specific function errors
+      console.error(`Edge Function [${functionName}] Error:`, error);
+      throw new ApiError(
+        error.message || `Function ${functionName} failed`,
+        error.status || 500,
+        error
+      );
     }
 
-    // Edge functions often return JSON data directly
-    return await response.json() as T;
-
-  } catch (error: any) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    // Handle network or parsing errors
-    throw new ApiError(error.message || 'Network error during Edge Function invocation.', 500, error);
+    return data as T;
+  } catch (err: any) {
+    if (err instanceof ApiError) throw err;
+    
+    console.error(`Unexpected error invoking [${functionName}]:`, err);
+    throw new ApiError(
+      err.message || 'Network error during Edge Function invocation.',
+      500,
+      err
+    );
   }
 }

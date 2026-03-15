@@ -4,43 +4,56 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { invokeEdgeFunction } from '@/lib/apiClient';
 import { CustomerIntelligenceData } from '@/features/customer360/types';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Info } from 'lucide-react';
 import CustomerMetadata from './CustomerMetadata';
 import MetricWidget from './MetricWidget';
 import AISummary from './AISummary';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 
 interface CustomerIntelligenceHeaderProps {
   customerName: string;
 }
 
 const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeaderProps) => {
-  const { data, isLoading, error } = useQuery<CustomerIntelligenceData, Error>({
+  const { data, isLoading, error, refetch } = useQuery<CustomerIntelligenceData, Error>({
     queryKey: ['customerIntelligence', customerName],
     queryFn: () => invokeEdgeFunction('get-customer-intelligence', {
       method: 'POST',
       body: { customerName },
     }),
     enabled: !!customerName,
-    staleTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: 15 * 60 * 1000,
+    retry: 1,
   });
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-dashed">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mr-3" />
-        <span className="font-bold text-muted-foreground">Synthesizing Customer Intelligence...</span>
+      <div className="flex flex-col items-center justify-center h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-dashed border-indigo-200">
+        <Loader2 className="h-10 w-10 animate-spin text-indigo-600 mb-4" />
+        <span className="font-bold text-muted-foreground animate-pulse">Synthesizing Customer Intelligence...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-dashed border-red-200 text-red-600">
-        <AlertTriangle className="h-8 w-8 mr-3" />
-        <div className="text-left">
-          <p className="font-bold">Error Fetching Intelligence</p>
-          <p className="text-xs max-w-md">{error.message}</p>
+      <div className="p-8 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-dashed border-red-200 text-red-600">
+        <div className="flex items-start gap-4">
+          <AlertTriangle className="h-8 w-8 shrink-0" />
+          <div className="space-y-3">
+            <div>
+              <p className="font-bold text-lg">Intelligence Engine Offline</p>
+              <p className="text-sm opacity-80 max-w-2xl">
+                {error.message.includes("GEMINI_API_KEY") 
+                  ? "The AI analysis engine is missing its API key. Please contact your administrator to set the GEMINI_API_KEY secret."
+                  : `We encountered an error while processing data for ${customerName}: ${error.message}`}
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-white hover:bg-red-50 border-red-200 text-red-600">
+              Try Again
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -48,15 +61,20 @@ const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeader
 
   if (!data || data.status === 'No Data') {
     return (
-      <div className="p-8 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-dashed">
-        <h2 className="text-xl font-bold mb-2">{customerName}</h2>
-        <p className="text-muted-foreground">{data?.ai_summary.status || "Not enough data to generate insights for this customer."}</p>
+      <div className="p-8 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-dashed flex items-center gap-4">
+        <Info className="h-8 w-8 text-muted-foreground opacity-50" />
+        <div>
+          <h2 className="text-xl font-bold">{customerName}</h2>
+          <p className="text-sm text-muted-foreground">
+            {data?.ai_summary?.status || "Insufficient ticket history to generate a comprehensive intelligence profile."}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="space-y-2">
         <h2 className="text-2xl font-bold">{data.customer}</h2>
         <CustomerMetadata metadata={data.metadata} />
