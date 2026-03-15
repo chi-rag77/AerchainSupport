@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArrowUpRight, ArrowDownRight, Minus, Info, TrendingUp, TrendingDown } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SmartIssueHeatmapProps {
   timeline: any[];
@@ -56,112 +57,114 @@ const SmartIssueHeatmap = ({ timeline, moduleStats, onInvestigate }: SmartIssueH
         </div>
       </div>
       
-      {/* Compact Grid Table */}
-      <div className="overflow-x-auto rounded-[20px] border border-border bg-white dark:bg-gray-800 shadow-glass">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-50/50 dark:bg-gray-900/50">
-              <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-r w-48">Module</th>
-              <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-r w-32">Trend</th>
-              {timeline.map(m => (
-                <th key={m.month} className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
-                  {m.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/50">
-            {moduleStats.map(ms => {
-              const maxInModule = Math.max(...ms.history, 1);
-              const isImproving = ms.trend <= 0;
-              const sparklineData = ms.history.map((val: number, i: number) => ({ value: val }));
+      {/* Compact Grid Table with Scroll Area */}
+      <div className="rounded-[20px] border border-border bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
+        <ScrollArea className="h-[320px] w-full">
+          <table className="w-full border-collapse">
+            <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-sm">
+              <tr>
+                <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-r w-48">Module</th>
+                <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-r w-32">Trend</th>
+                {timeline.map(m => (
+                  <th key={m.month} className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
+                    {m.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {moduleStats.map(ms => {
+                const maxInModule = Math.max(...ms.history, 1);
+                const isImproving = ms.trend <= 0;
+                const sparklineData = ms.history.map((val: number, i: number) => ({ value: val }));
 
-              return (
-                <tr key={ms.name} className="group hover:bg-gray-50/30 dark:hover:bg-gray-900/30 transition-colors">
-                  {/* Module Name */}
-                  <td className="p-4 border-r bg-gray-50/20 dark:bg-gray-900/20">
-                    <span className="text-sm font-bold text-foreground">{ms.name}</span>
-                  </td>
+                return (
+                  <tr key={ms.name} className="group hover:bg-gray-50/30 dark:hover:bg-gray-900/30 transition-colors">
+                    {/* Module Name */}
+                    <td className="p-4 border-r bg-gray-50/20 dark:bg-gray-900/20">
+                      <span className="text-sm font-bold text-foreground">{ms.name}</span>
+                    </td>
 
-                  {/* Trend & Sparkline */}
-                  <td className="p-4 border-r">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "flex items-center font-black text-[10px] uppercase tracking-tighter shrink-0",
-                        isImproving ? "text-green-600" : "text-red-600"
-                      )}>
-                        {isImproving ? <TrendingDown className="h-3 w-3 mr-0.5" /> : <TrendingUp className="h-3 w-3 mr-0.5" />}
-                        {Math.abs(ms.trend)}%
+                    {/* Trend & Sparkline */}
+                    <td className="p-4 border-r">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "flex items-center font-black text-[10px] uppercase tracking-tighter shrink-0",
+                          isImproving ? "text-green-600" : "text-red-600"
+                        )}>
+                          {isImproving ? <TrendingDown className="h-3 w-3 mr-0.5" /> : <TrendingUp className="h-3 w-3 mr-0.5" />}
+                          {Math.abs(ms.trend)}%
+                        </div>
+                        <div className="h-6 w-16 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={sparklineData}>
+                              <Area 
+                                type="monotone" 
+                                dataKey="value" 
+                                stroke={isImproving ? "#16A34A" : "#DC2626"} 
+                                fill={isImproving ? "#DCFCE7" : "#FEE2E2"} 
+                                strokeWidth={1.5}
+                                isAnimationActive={false}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
-                      <div className="h-6 w-16 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={sparklineData}>
-                            <Area 
-                              type="monotone" 
-                              dataKey="value" 
-                              stroke={isImproving ? "#16A34A" : "#DC2626"} 
-                              fill={isImproving ? "#DCFCE7" : "#FEE2E2"} 
-                              strokeWidth={1.5}
-                              isAnimationActive={false}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* Heatmap Cells */}
-                  {timeline.map((m, idx) => {
-                    const count = m.modules[ms.name] || 0;
-                    const prevCount = timeline[idx - 1]?.modules[ms.name] || 0;
-                    const diff = count - prevCount;
-                    const percentChange = prevCount > 0 ? Math.round((diff / prevCount) * 100) : 0;
-                    
-                    return (
-                      <td key={`${ms.name}-${m.month}`} className="p-1.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div 
-                              onClick={() => count > 0 && onInvestigate(ms.name, m.label, count)}
-                              className={cn(
-                                "h-10 w-full rounded-lg flex items-center justify-center text-xs font-black transition-all hover:scale-[1.05] cursor-pointer",
-                                getIntensityStyle(count, maxInModule)
-                              )}
-                            >
-                              {count > 0 ? count : ''}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent className="p-4 rounded-2xl shadow-2xl border-none bg-white dark:bg-gray-900">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between gap-8">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{ms.name}</span>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{m.label}</span>
+                    {/* Heatmap Cells */}
+                    {timeline.map((m, idx) => {
+                      const count = m.modules[ms.name] || 0;
+                      const prevCount = timeline[idx - 1]?.modules[ms.name] || 0;
+                      const diff = count - prevCount;
+                      const percentChange = prevCount > 0 ? Math.round((diff / prevCount) * 100) : 0;
+                      
+                      return (
+                        <td key={`${ms.name}-${m.month}`} className="p-1.5">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div 
+                                onClick={() => count > 0 && onInvestigate(ms.name, m.label, count)}
+                                className={cn(
+                                  "h-10 w-full rounded-lg flex items-center justify-center text-xs font-black transition-all hover:scale-[1.05] cursor-pointer",
+                                  getIntensityStyle(count, maxInModule)
+                                )}
+                              >
+                                {count > 0 ? count : ''}
                               </div>
-                              <div className="space-y-1">
-                                <div className="flex items-baseline justify-between">
-                                  <span className="text-lg font-black">{count} tickets</span>
-                                  {idx > 0 && (
-                                    <span className={cn("text-[10px] font-bold", diff > 0 ? "text-red-500" : "text-green-500")}>
-                                      {diff > 0 ? '+' : ''}{percentChange}% vs prev
-                                    </span>
-                                  )}
+                            </TooltipTrigger>
+                            <TooltipContent className="p-4 rounded-2xl shadow-2xl border-none bg-white dark:bg-gray-900">
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-8">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{ms.name}</span>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{m.label}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-                                  <Info className="h-3 w-3" />
-                                  Avg Resolution: {ms.avgResolution}h
+                                <div className="space-y-1">
+                                  <div className="flex items-baseline justify-between">
+                                    <span className="text-lg font-black">{count} tickets</span>
+                                    {idx > 0 && (
+                                      <span className={cn("text-[10px] font-bold", diff > 0 ? "text-red-500" : "text-green-500")}>
+                                        {diff > 0 ? '+' : ''}{percentChange}% vs prev
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+                                    <Info className="h-3 w-3" />
+                                    Avg Resolution: {ms.avgResolution}h
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                            </TooltipContent>
+                          </Tooltip>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </ScrollArea>
       </div>
     </div>
   );
