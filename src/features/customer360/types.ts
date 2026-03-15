@@ -35,3 +35,34 @@ export interface CustomerIntelligenceData {
     renewal: string;
   };
 }
+
+// --- Risk & Opportunity Radar Types ---
+
+export interface RiskSignal {
+  id: string;
+  title: string;
+  severity: 'Low' | 'Medium' | 'High';
+  type: 'risk' | 'opportunity';
+}
+
+export interface RecommendedAction {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface MonthlyRiskTrend {
+  month: string;
+  label: string;
+  score: number;
+  status: string;
+}
+
+export interface CustomerRiskRadarData {
+  healthScore: number;
+  status: 'Healthy' | 'Stable' | 'At Risk' | 'Critical';
+  riskSignals: RiskSignal[];
+  opportunitySignals: RiskSignal[];
+  recommendedActions: RecommendedAction[];
+  trendTimeline: MonthlyRiskTrend[];
+}
