@@ -1,4 +1,4 @@
-// v2.1 - Ticket AI Analyzer
+// v2.3 - Ticket AI Analyzer with Robust Parsing and Table Check
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -21,7 +21,8 @@ serve(async (req) => {
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'Environment variables not set.' }), {
+      console.error("[analyze-ticket-ai] Missing environment variables");
+      return new Response(JSON.stringify({ error: 'AI Configuration missing (API Key or Supabase URL).' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -40,22 +41,28 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'ticketId is required' }), { status: 400, headers: corsHeaders });
     }
 
+    // 1. Check Cache
     if (!forceRefresh) {
-      const { data: cached } = await supabase
-        .from('ai_ticket_analysis')
-        .select('*')
-        .eq('ticket_id', ticketId)
-        .single();
+      try {
+        const { data: cached } = await supabase
+          .from('ai_ticket_analysis')
+          .select('*')
+          .eq('ticket_id', ticketId)
+          .single();
 
-      if (cached) {
-        const lastUpdated = new Date(cached.updated_at);
-        const hoursSinceUpdate = (new Date().getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
-        if (hoursSinceUpdate < 24) {
-          return new Response(JSON.stringify(cached), { status: 200, headers: corsHeaders });
+        if (cached) {
+          const lastUpdated = new Date(cached.updated_at);
+          const hoursSinceUpdate = (new Date().getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
+          if (hoursSinceUpdate < 24) {
+            return new Response(JSON.stringify(cached), { status: 200, headers: corsHeaders });
+          }
         }
+      } catch (e) {
+        console.warn("[analyze-ticket-ai] Cache check failed (table might not exist):", e.message);
       }
     }
 
+    // 2. Fetch Messages
     const { data: messages, error: msgError } = await supabase
       .from('ticket_messages')
       .select('*')
@@ -66,9 +73,10 @@ serve(async (req) => {
     if (msgError) throw msgError;
 
     if (!messages || messages.length === 0) {
-      return new Response(JSON.stringify({ error: 'No conversation found to analyze.' }), { status: 404, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'No conversation found to analyze. Please sync messages first.' }), { status: 404, headers: corsHeaders });
     }
 
+    // 3. Call Gemini
     const prompt = getAnalysisPrompt(customerName || 'Unknown', messages.reverse());
     
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
@@ -76,18 +84,25 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
+        generationConfig: { 
+          response_mime_type: "application/json",
+          temperature: 0.1
+        }
       }),
     });
 
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
-      throw new Error(`AI Service Error (${geminiResponse.status}): ${errorBody}`);
+      throw new Error(`AI Service Error: ${geminiResponse.status}`);
     }
 
     const geminiData = await geminiResponse.json();
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    const analysis = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
+    let rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    
+    // Clean up potential markdown formatting
+    rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    const analysis = JSON.parse(rawText);
 
     const dbPayload = {
       ticket_id: ticketId,
@@ -95,15 +110,22 @@ serve(async (req) => {
       customer_tone: analysis.customer_tone,
       agent_tone: analysis.agent_tone,
       escalation_risk: analysis.escalation_risk,
-      is_escalating: analysis.is_escalating,
-      sentiment_score: analysis.sentiment_score,
-      sentiment_trend: analysis.sentiment_trend,
-      suggested_action: analysis.suggested_action,
-      confidence_score: analysis.confidence_score,
+      is_escalating: !!analysis.is_escalating,
+      sentiment_score: analysis.sentiment_score || 0,
+      sentiment_trend: analysis.sentiment_trend || 'stable',
+      suggested_action: Array.isArray(analysis.suggested_action) 
+        ? analysis.suggested_action.join('\n') 
+        : analysis.suggested_action,
+      confidence_score: analysis.confidence_score || 80,
       updated_at: new Date().toISOString(),
     };
 
-    await supabase.from('ai_ticket_analysis').upsert(dbPayload, { onConflict: 'ticket_id' });
+    // 4. Try to save to DB (optional, don't fail if table missing)
+    try {
+      await supabase.from('ai_ticket_analysis').upsert(dbPayload, { onConflict: 'ticket_id' });
+    } catch (dbErr) {
+      console.error("[analyze-ticket-ai] Failed to save analysis to DB:", dbErr.message);
+    }
 
     return new Response(JSON.stringify(dbPayload), {
       status: 200,
@@ -111,6 +133,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
+    console.error('[analyze-ticket-ai] Fatal Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
