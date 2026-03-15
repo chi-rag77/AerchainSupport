@@ -59,7 +59,7 @@ const SmartIssueHeatmap = ({ timeline, moduleStats, onInvestigate }: SmartIssueH
       
       {/* Compact Grid Table with Scroll Area */}
       <div className="rounded-[20px] border border-border bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
-        <ScrollArea className="h-[320px] w-full">
+        <ScrollArea className="h-[520px] w-full">
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-sm">
               <tr>
