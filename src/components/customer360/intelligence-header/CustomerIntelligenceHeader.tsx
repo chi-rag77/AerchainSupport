@@ -10,6 +10,7 @@ import MetricWidget from './MetricWidget';
 import AISummary from './AISummary';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface CustomerIntelligenceHeaderProps {
   customerName: string;
