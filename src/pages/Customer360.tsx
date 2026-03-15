@@ -4,7 +4,8 @@ import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Users, Loader2, Handshake, RefreshCw, Target, ChevronUp, ChevronDown
+  Users, Loader2, Handshake, RefreshCw, Target, ChevronUp, ChevronDown,
+  LayoutDashboard, BarChart3, Repeat
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,8 +17,10 @@ import { cn } from "@/lib/utils";
 import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import CustomerIntelligenceHeader from "@/components/customer360/intelligence-header/CustomerIntelligenceHeader";
 import JourneyImpactTimeline from "@/components/customer360/journey-timeline/JourneyImpactTimeline";
+import RecurringIssueRadar from "@/components/product-intelligence/RecurringIssueRadar";
 
 const Customer360 = () => {
   const { session } = useSupabase();
@@ -26,6 +29,7 @@ const Customer360 = () => {
 
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState<'intelligence' | 'radar'>('intelligence');
 
   const { data: allTickets, isLoading, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["allFreshdeskTicketsFor360"],
@@ -67,7 +71,7 @@ const Customer360 = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
         <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
-        <p className="text-lg font-medium text-muted-foreground">Loading Customer Intelligence...</p>
+        <p className="text-lg font-medium text-muted-foreground">Initializing Customer Intelligence...</p>
       </div>
     );
   }
@@ -142,6 +146,7 @@ const Customer360 = () => {
                           <SelectValue placeholder="Choose a customer..." />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-none shadow-2xl">
+                          <SelectItem value="All" className="font-bold text-indigo-600">Global View (All Accounts)</SelectItem>
                           {uniqueCustomers.map(customer => (
                             <SelectItem key={customer} value={customer} className="font-medium">{customer}</SelectItem>
                           ))}
@@ -183,12 +188,69 @@ const Customer360 = () => {
             </motion.div>
           ) : (
             <motion.div key={selectedCustomer} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-20">
-              <CustomerIntelligenceHeader customerName={selectedCustomer} />
               
-              <JourneyImpactTimeline customerName={selectedCustomer} />
+              {/* Tab Switcher */}
+              <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-full w-fit border border-white/20">
+                <button
+                  onClick={() => setActiveTab('intelligence')}
+                  className={cn(
+                    "relative flex items-center gap-2 px-8 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all duration-300",
+                    activeTab === 'intelligence' ? "text-white" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {activeTab === 'intelligence' && (
+                    <motion.div layoutId="active-360-tab" className="absolute inset-0 bg-indigo-600 rounded-full shadow-lg" />
+                  )}
+                  <span className="relative z-10 flex items-center gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Intelligence
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('radar')}
+                  className={cn(
+                    "relative flex items-center gap-2 px-8 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all duration-300",
+                    activeTab === 'radar' ? "text-white" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {activeTab === 'radar' && (
+                    <motion.div layoutId="active-360-tab" className="absolute inset-0 bg-indigo-600 rounded-full shadow-lg" />
+                  )}
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Repeat className="h-4 w-4" />
+                    Issue Radar
+                  </span>
+                </button>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {activeTab === 'intelligence' ? (
+                  <motion.div 
+                    key="intelligence"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="space-y-20"
+                  >
+                    <CustomerIntelligenceHeader customerName={selectedCustomer} />
+                    <JourneyImpactTimeline customerName={selectedCustomer} />
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    key="radar"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                  >
+                    <RecurringIssueRadar customerName={selectedCustomer} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
               
-              <div className="flex flex-col items-center justify-center py-24 text-muted-foreground border-2 border-dashed rounded-2xl">
-                <p className="text-lg font-bold">More modules coming soon...</p>
+              <Separator className="opacity-50" />
+              
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <p className="text-xs font-black uppercase tracking-[0.3em] opacity-30">End of Intelligence Brief</p>
               </div>
             </motion.div>
           )}
