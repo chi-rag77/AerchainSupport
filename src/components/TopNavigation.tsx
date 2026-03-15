@@ -2,7 +2,10 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Bell, LogOut, Home, Layers, BarChart2, Settings, MessageSquare, TrendingUp, BarChart3, Users, CalendarDays, KeyRound } from 'lucide-react';
+import { 
+  LayoutDashboard, Bell, LogOut, Home, Layers, 
+  Settings, Users, CalendarDays, KeyRound, Brain 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -15,11 +18,9 @@ import { Badge } from './ui/badge';
 import NavPill from './NavPill';
 import NotificationsSheet from './NotificationsSheet';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { Notification } from '@/types';
-import { useOrgData } from '@/hooks/use-org-user'; // Import useOrgData
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'; // <-- ADDED IMPORTS
+import { useOrgData } from '@/hooks/use-org-user';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-// Function to fetch only the unread count
 const fetchUnreadNotificationsCount = async (userId: string | undefined): Promise<number> => {
   if (!userId) return 0;
   const { count, error } = await supabase
@@ -28,16 +29,13 @@ const fetchUnreadNotificationsCount = async (userId: string | undefined): Promis
     .eq('user_id', userId)
     .eq('read', false);
 
-  if (error) {
-    console.error("Error fetching unread notifications count:", error);
-    throw error;
-  }
+  if (error) throw error;
   return count || 0;
 };
 
 const TopNavigation = () => {
   const { session } = useSupabase();
-  const { orgUser, isOrgLoading } = useOrgData(); // Use org data
+  const { orgUser } = useOrgData();
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const location = useLocation();
@@ -47,7 +45,7 @@ const TopNavigation = () => {
     queryKey: ["unreadNotificationsCount", user?.id],
     queryFn: () => fetchUnreadNotificationsCount(user?.id),
     enabled: !!user?.id,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   } as UseQueryOptions<number, Error>);
 
   const handleLogout = async () => {
@@ -58,6 +56,7 @@ const TopNavigation = () => {
     { icon: Home, label: "Home", path: "/" },
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: Users, label: "Customer 360", path: "/customer360" },
+    { icon: Brain, label: "Knowledge Hub", path: "/knowledge" }, // Added Knowledge Hub
     { icon: CalendarDays, label: "Weekly Summary", path: "/weekly-summary" },
   ];
 
@@ -66,7 +65,6 @@ const TopNavigation = () => {
   return (
     <nav className="sticky top-0 z-40 w-full bg-background border-b border-border shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        {/* Left Section: Logo and Version */}
         <div className="flex items-center space-x-2">
           <Link to="/" className="flex items-center space-x-2">
             <Logo className="h-6 w-auto text-primary fill-current" />
@@ -76,10 +74,8 @@ const TopNavigation = () => {
           </Link>
         </div>
 
-        {/* Middle Section: Navigation Links (using NavPill) */}
         <NavPill items={navItems} activePath={location.pathname} />
 
-        {/* Right Section: Notifications and User Profile */}
         <div className="flex items-center space-x-4">
           {canViewSettings && (
             <Tooltip>
@@ -153,8 +149,6 @@ const TopNavigation = () => {
       <NotificationsSheet
         isOpen={isNotificationsSheetOpen}
         onClose={() => setIsNotificationsSheetOpen(false)}
-        // notifications and unreadCount props are no longer passed directly
-        // The sheet will fetch its own data
       />
     </nav>
   );
