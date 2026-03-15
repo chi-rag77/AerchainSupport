@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invokeEdgeFunction } from '@/lib/apiClient';
 import { RecurringIssueRadarData, RecurringIssueCluster } from '@/features/product-intelligence/types';
 import { 
@@ -15,6 +15,7 @@ import RecurringIssueCard from './RecurringIssueCard';
 import RecurrenceTrendChart from './RecurrenceTrendChart';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 interface RecurringIssueRadarProps {
   customerName?: string;
@@ -22,15 +23,29 @@ interface RecurringIssueRadarProps {
 
 const RecurringIssueRadar = ({ customerName = 'All' }: RecurringIssueRadarProps) => {
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const queryKey = ['recurringIssueRadar', customerName];
 
-  const { data, isLoading, error, refetch, isFetching } = useQuery<RecurringIssueRadarData, Error>({
-    queryKey: ['recurringIssueRadar', customerName],
+  const { data, isLoading, error, isFetching } = useQuery<RecurringIssueRadarData, Error>({
+    queryKey,
     queryFn: () => invokeEdgeFunction('get-recurring-issue-radar', {
       method: 'POST',
       body: { customerName },
     }),
     enabled: !!customerName,
-    staleTime: 15 * 60 * 1000,
+    staleTime: 12 * 60 * 60 * 1000, // 12 hours
+  });
+
+  const refreshMutation = useMutation({
+    mutationFn: () => invokeEdgeFunction<RecurringIssueRadarData>('get-recurring-issue-radar', {
+      method: 'POST',
+      body: { customerName, forceRefresh: true },
+    }),
+    onSuccess: (newData) => {
+      queryClient.setQueryData(queryKey, newData);
+      toast.success("Radar scan complete!");
+    },
+    onError: (err: any) => toast.error(`Scan failed: ${err.message}`)
   });
 
   if (isLoading) {
@@ -52,8 +67,9 @@ const RecurringIssueRadar = ({ customerName = 'All' }: RecurringIssueRadarProps)
             Operational health is high. No significant repeating patterns found in the recent ticket history.
           </p>
         </div>
-        <Button variant="link" onClick={() => refetch()} className="text-indigo-600 font-bold">
-          Refresh Scan
+        <Button onClick={() => refreshMutation.mutate()} disabled={refreshMutation.isPending} className="bg-indigo-600 text-white font-bold rounded-full">
+          {refreshMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+          Force New Scan
         </Button>
       </div>
     );
@@ -79,8 +95,14 @@ const RecurringIssueRadar = ({ customerName = 'All' }: RecurringIssueRadarProps)
             <Sparkles className="h-4 w-4 text-indigo-600" />
             <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300">AI Pattern Recognition Active</span>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-full">
-            <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => refreshMutation.mutate()} 
+            disabled={refreshMutation.isPending || isFetching} 
+            className="rounded-full"
+          >
+            <RefreshCw className={cn("h-4 w-4", (refreshMutation.isPending || isFetching) && "animate-spin")} />
           </Button>
         </div>
       </div>

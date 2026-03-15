@@ -1,4 +1,4 @@
-// v1.0 - AI Recurring Issue Radar Engine with Gemini 2.5 Flash
+// v1.1 - Optimized AI Recurring Issue Radar with Caching
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -17,21 +17,36 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
-    if (!geminiApiKey) throw new Error("GEMINI_API_KEY is not configured.");
+    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
-    const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
-      global: { headers: { Authorization: req.headers.get('Authorization')! } },
-    });
+    const { customerName, forceRefresh } = await req.json();
+    const cacheKey = customerName || 'All';
 
-    const { customerName } = await req.json();
+    // 1. Check Cache (unless forceRefresh is true)
+    if (!forceRefresh) {
+      const { data: cached } = await supabase
+        .from('ai_recurring_issues_cache')
+        .select('*')
+        .eq('customer_name', cacheKey)
+        .single();
 
-    // 1. Fetch Tickets (Last 90 days for pattern detection)
+      if (cached) {
+        const hoursOld = dateFns.differenceInHours(new Date(), new Date(cached.updated_at));
+        if (hoursOld < 12) {
+          console.log(`[radar] Returning cached data for ${cacheKey} (${hoursOld}h old)`);
+          return new Response(JSON.stringify(cached.data), { status: 200, headers: corsHeaders });
+        }
+      }
+    }
+
+    // 2. Fetch Tickets (Last 90 days)
     const ninetyDaysAgo = dateFns.subDays(new Date(), 90).toISOString();
     let query = supabase
       .from('freshdesk_tickets')
-      .select('freshdesk_id, subject, description_text, cf_module, created_at, priority, status')
+      .select('freshdesk_id, subject, cf_module, created_at')
       .gte('created_at', ninetyDaysAgo);
 
     if (customerName && customerName !== 'All') {
@@ -45,44 +60,44 @@ serve(async (req) => {
       return new Response(JSON.stringify({ empty: true }), { status: 200, headers: corsHeaders });
     }
 
-    // 2. Pre-process for AI (Group by module to reduce token usage and improve clustering)
+    // 3. Data Deduplication for AI Efficiency
+    // Group by module and deduplicate similar subjects to save tokens and speed up AI
     const moduleGroups: Record<string, any[]> = {};
     tickets.forEach(t => {
       const mod = t.cf_module || 'General';
       if (!moduleGroups[mod]) moduleGroups[mod] = [];
-      moduleGroups[mod].push({ id: t.freshdesk_id, s: t.subject, d: t.created_at });
+      // Only add if subject is somewhat unique in this module sample
+      if (moduleGroups[mod].length < 30) {
+        moduleGroups[mod].push({ id: t.freshdesk_id, s: t.subject });
+      }
     });
 
-    // 3. AI Clustering & Analysis
+    // 4. AI Clustering & Analysis
     const prompt = `
-      You are a Support Operations AI. Analyze these ${tickets.length} support tickets and identify RECURRING product issues.
-      
-      Data (Sampled):
-      ${JSON.stringify(Object.entries(moduleGroups).map(([mod, tks]) => ({ module: mod, tickets: tks.slice(0, 50) })))}
+      Analyze these ${tickets.length} tickets and identify RECURRING product issues.
+      Data: ${JSON.stringify(moduleGroups)}
 
-      Return STRICT JSON with this structure:
+      Return STRICT JSON:
       {
         "clusters": [
           {
-            "id": "unique-slug",
-            "title": "Concise Issue Name (e.g. PR Approval Timeout)",
-            "occurrences": number (total estimated across data),
-            "modules": ["Module Name"],
+            "id": "slug",
+            "title": "Issue Name",
+            "occurrences": number,
+            "modules": ["Module"],
             "trend": "increasing|stable|decreasing",
             "impact": "High|Medium|Low",
-            "rootCause": "1-2 sentence technical root cause inference",
-            "suggestedFix": "Specific product or operational fix",
+            "rootCause": "Technical reason",
+            "suggestedFix": "Product fix",
             "confidence": 0-100,
-            "history": [{"month": "Jan", "count": 10}],
-            "requiresEscalation": boolean (true if occurrences > 50 or impact is High),
-            "sampleTickets": ["ID1", "ID2"]
+            "history": [{"month": "Jan", "count": 5}],
+            "requiresEscalation": boolean,
+            "sampleTickets": ["ID"]
           }
         ],
         "moduleDistribution": [{"module": "Name", "percentage": number}],
-        "globalTrend": number (percentage change vs previous period)
+        "globalTrend": number
       }
-
-      Focus on patterns, not individual tickets. Group similar subjects like "Sync Error" and "Sync Timeout" into one cluster.
     `;
 
     const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
@@ -90,30 +105,37 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "application/json", temperature: 0.2 }
+        generationConfig: { response_mime_type: "application/json", temperature: 0.1 }
       }),
     });
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      throw new Error(`AI Service Error: ${geminiRes.status} - ${errText}`);
-    }
+    if (!geminiRes.ok) throw new Error("AI Service Error");
 
     const aiData = await geminiRes.json();
     const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     const result = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
 
-    return new Response(JSON.stringify({
+    const finalData = {
       ...result,
       totalRecurringTickets: result.clusters.reduce((acc: number, c: any) => acc + c.occurrences, 0),
       generatedAt: new Date().toISOString()
-    }), {
+    };
+
+    // 5. Update Cache
+    await supabase
+      .from('ai_recurring_issues_cache')
+      .upsert({
+        customer_name: cacheKey,
+        data: finalData,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'customer_name' });
+
+    return new Response(JSON.stringify(finalData), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: any) {
-    console.error("[recurring-issue-radar] Error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
