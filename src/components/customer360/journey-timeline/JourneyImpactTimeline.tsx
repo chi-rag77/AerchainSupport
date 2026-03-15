@@ -15,6 +15,7 @@ import ImpactTimelineChart from './ImpactTimelineChart';
 import SmartIssueHeatmap from '../issue-intelligence/SmartIssueHeatmap';
 import IssueIntelligenceSummary from '../issue-intelligence/IssueIntelligenceSummary';
 import IssueContributionCharts from '../issue-intelligence/IssueContributionCharts';
+import ModuleTrendAnalysis from '../issue-intelligence/ModuleTrendAnalysis';
 import InvestigationModal from '../issue-intelligence/InvestigationModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -59,39 +60,15 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
   const topModule = data.moduleStats && data.moduleStats.length > 0 ? data.moduleStats[0] : null;
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Section 1: Impact Timeline Graph */}
-      <Card className="rounded-[32px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
-        <CardHeader className="p-8 pb-0 flex flex-row items-center justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
-              <Activity className="h-6 w-6 text-indigo-600" />
-              Customer Journey Impact
-            </CardTitle>
-            <p className="text-sm font-medium text-muted-foreground">Monthly experience impact score based on support signals</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-green-50 text-green-700 border-green-100 font-bold">Benefit</Badge>
-            <Badge className="bg-amber-50 text-amber-700 border-amber-100 font-bold">Neutral</Badge>
-            <Badge className="bg-red-50 text-red-700 border-red-100 font-bold">Pain</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-8">
-          <ImpactTimelineChart 
-            data={data.timeline} 
-            onMonthSelect={setSelectedMonth}
-            selectedMonth={currentMonth?.month}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Section 2: Issue Intelligence Summary */}
+    <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      {/* 1. Issue Intelligence Summary */}
       <div className="space-y-6">
         <div className="flex items-center gap-3 px-2">
           <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-            <Brain className="h-5 w-5 text-indigo-600" />
+            <Target className="h-5 w-5 text-indigo-600" />
           </div>
-          <h3 className="text-xl font-black tracking-tight">Customer Issue Intelligence</h3>
+          <h3 className="text-xl font-black tracking-tight">Issue Intelligence</h3>
         </div>
         
         <IssueIntelligenceSummary 
@@ -102,7 +79,29 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
         />
       </div>
 
-      {/* Section 3: AI Support Insight Panel */}
+      {/* 2. Issue Contribution Charts */}
+      {data.moduleStats && data.severityCounts && (
+        <IssueContributionCharts 
+          moduleStats={data.moduleStats}
+          severityCounts={data.severityCounts}
+        />
+      )}
+
+      {/* 3. Smart Issue Heatmap */}
+      {data.moduleStats && (
+        <SmartIssueHeatmap 
+          timeline={data.timeline} 
+          moduleStats={data.moduleStats}
+          onInvestigate={(module, month, count) => setInvestigationData({ module, month, count })}
+        />
+      )}
+
+      {/* 4. Module Trend Analysis */}
+      {data.moduleStats && (
+        <ModuleTrendAnalysis moduleStats={data.moduleStats} />
+      )}
+
+      {/* 5. AI Insights Panel */}
       <Card className="rounded-[32px] border-none bg-indigo-600 text-white shadow-glass-glow p-8">
         <div className="flex flex-col md:flex-row gap-8 items-start">
           <div className="p-4 rounded-[24px] bg-white/10 backdrop-blur-md shrink-0">
@@ -138,24 +137,7 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
         </div>
       </Card>
 
-      {/* Section 4: Contribution & Severity Charts */}
-      {data.moduleStats && data.severityCounts && (
-        <IssueContributionCharts 
-          moduleStats={data.moduleStats}
-          severityCounts={data.severityCounts}
-        />
-      )}
-
-      {/* Section 5: Smart Heatmap */}
-      {data.moduleStats && (
-        <SmartIssueHeatmap 
-          timeline={data.timeline} 
-          moduleStats={data.moduleStats}
-          onInvestigate={(module, month, count) => setInvestigationData({ module, month, count })}
-        />
-      )}
-
-      {/* Section 6: Resolution Performance */}
+      {/* 6. Resolution Performance */}
       {data.moduleStats && data.moduleStats.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center gap-3 px-2">
