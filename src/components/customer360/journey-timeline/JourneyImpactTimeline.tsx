@@ -59,7 +59,7 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
   const topModule = data.moduleStats && data.moduleStats.length > 0 ? data.moduleStats[0] : null;
 
   return (
-    <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* 1. Issue Intelligence Summary */}
       <div className="space-y-6">
@@ -86,7 +86,7 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
         />
       )}
 
-      {/* 3. Smart Issue Heatmap */}
+      {/* 3. Smart Issue Heatmap (Redesigned) */}
       {data.moduleStats && (
         <SmartIssueHeatmap 
           timeline={data.timeline} 
