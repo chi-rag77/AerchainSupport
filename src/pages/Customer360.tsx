@@ -41,7 +41,7 @@ const Customer360 = () => {
   const [activeTab, setActiveTab] = useState<'intelligence' | 'radar'>('radar');
   const [isExporting, setIsExporting] = useState(false);
 
-  const { data: allTickets, isLoading } = useQuery<Ticket[], Error>({
+  const { data: allTickets, isLoading, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["allFreshdeskTicketsFor360"],
     queryFn: async () => {
       const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('created_at', { ascending: false }).limit(10000);
