@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-  Brain, Sparkles, Send, User, Bot, 
-  FileText, ExternalLink, AlertCircle, 
-  MessageSquare, Loader2, ShieldAlert, ArrowRight
+  Brain, Send, User, Bot, 
+  FileText, ExternalLink, MessageSquare, 
+  Loader2, ShieldAlert, ArrowRight, Sparkles
 } from 'lucide-react';
+import { invokeEdgeFunction } from '@/lib/apiClient';
 
 interface Message {
   id: string;
@@ -48,21 +49,28 @@ const AIKnowledgeAssistant = () => {
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI Response
-    setTimeout(() => {
+    try {
+      const result = await invokeEdgeFunction<any>('knowledge-ai-assistant', {
+        body: { query: input, customerName: 'All' }
+      });
+
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "PR approval workflow supports multi-level approvals. For Acme Corp, the approval chain is configured as: Requester → Department Head → Finance → Procurement.",
-        confidence: 82,
-        sources: [
-          { title: "Acme Implementation BRD", section: "Section 4.2" },
-          { title: "Standard PR Workflow SOP", section: "Page 12" }
-        ]
+        content: result.answer,
+        confidence: result.confidence,
+        sources: result.sources
       };
       setMessages(prev => [...prev, assistantMsg]);
+    } catch (err: any) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "I encountered an error searching the knowledge base. Please try again."
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -77,14 +85,10 @@ const AIKnowledgeAssistant = () => {
               <CardTitle className="text-lg font-black tracking-tight">Support Brain AI</CardTitle>
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Knowledge Engine Online</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RAG Engine Online</span>
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="rounded-full font-bold text-xs gap-2">
-            <MessageSquare className="h-4 w-4" />
-            History
-          </Button>
         </div>
       </CardHeader>
 
@@ -112,13 +116,13 @@ const AIKnowledgeAssistant = () => {
                   <div className={cn(
                     "p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm",
                     m.role === 'assistant' 
-                      ? "bg-white dark:bg-gray-900 border border-border rounded-tl-none" 
+                      ? "bg-white dark:bg-gray-800 border border-border rounded-tl-none" 
                       : "bg-indigo-600 text-white rounded-tr-none"
                   )}>
                     {m.content}
                   </div>
 
-                  {m.role === 'assistant' && m.sources && (
+                  {m.role === 'assistant' && m.sources && m.sources.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 px-1">
                         <FileText className="h-3 w-3 text-muted-foreground" />
@@ -126,8 +130,8 @@ const AIKnowledgeAssistant = () => {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {m.sources.map((s, i) => (
-                          <Badge key={i} variant="outline" className="bg-gray-50 dark:bg-gray-900 border-border/50 text-[10px] font-bold py-1 px-2 gap-1.5 cursor-pointer hover:bg-indigo-50 transition-colors">
-                            {s.title} • {s.section}
+                          <Badge key={i} variant="outline" className="bg-gray-50 dark:bg-gray-900 border-border/50 text-[10px] font-bold py-1 px-2 gap-1.5">
+                            {s.title}
                             <ExternalLink className="h-2.5 w-2.5" />
                           </Badge>
                         ))}
@@ -170,7 +174,7 @@ const AIKnowledgeAssistant = () => {
         <div className="p-6 border-t border-border bg-gray-50/30 dark:bg-gray-900/30">
           <div className="relative group">
             <Input 
-              placeholder="Ask about PR workflows, Acme Corp config, or SOPs..." 
+              placeholder="Ask about product workflows or customer configs..." 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -184,18 +188,6 @@ const AIKnowledgeAssistant = () => {
             >
               <Send className="h-4 w-4" />
             </Button>
-          </div>
-          <div className="flex items-center gap-4 mt-4 px-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Quick Queries:</span>
-            {['PR Workflow', 'Acme Config', 'API Specs'].map(q => (
-              <button 
-                key={q} 
-                onClick={() => setInput(q)}
-                className="text-[10px] font-bold text-indigo-600 hover:underline"
-              >
-                {q}
-              </button>
-            ))}
           </div>
         </div>
       </CardContent>
