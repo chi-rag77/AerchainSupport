@@ -5,7 +5,7 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
   Users, Loader2, Handshake, RefreshCw, Target, ChevronUp, ChevronDown,
-  LayoutDashboard, BarChart3, Repeat, Globe
+  LayoutDashboard, BarChart3, Repeat, Globe, Download, FileText, FileSpreadsheet
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,20 +18,30 @@ import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import CustomerIntelligenceHeader from "@/components/customer360/intelligence-header/CustomerIntelligenceHeader";
 import JourneyImpactTimeline from "@/components/customer360/journey-timeline/JourneyImpactTimeline";
 import RecurringIssueRadar from "@/components/product-intelligence/RecurringIssueRadar";
+import { exportToPdf, exportToExcel } from "@/utils/customer360Export";
 
 const Customer360 = () => {
   const { session } = useSupabase();
   const user = session?.user;
   const queryClient = useQueryClient();
 
-  const [selectedCustomer, setSelectedCustomer] = useState<string | null>("All"); // Default to Global View
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>("All");
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<'intelligence' | 'radar'>('radar'); // Default to Radar as requested
+  const [activeTab, setActiveTab] = useState<'intelligence' | 'radar'>('radar');
+  const [isExporting, setIsExporting] = useState(false);
 
-  const { data: allTickets, isLoading, isFetching } = useQuery<Ticket[], Error>({
+  const { data: allTickets, isLoading } = useQuery<Ticket[], Error>({
     queryKey: ["allFreshdeskTicketsFor360"],
     queryFn: async () => {
       const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('created_at', { ascending: false }).limit(10000);
@@ -62,11 +72,53 @@ const Customer360 = () => {
     }
   };
 
+  const handleExportPdf = async () => {
+    if (!selectedCustomer) return;
+    setIsExporting(true);
+    const toastId = toast.loading("Generating high-fidelity PDF...");
+    try {
+      await exportToPdf('customer-360-content', `Customer360_${selectedCustomer}`);
+      toast.success("PDF exported successfully!", { id: toastId });
+    } catch (err) {
+      toast.error("Failed to generate PDF.", { id: toastId });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (!selectedCustomer) return;
+    setIsExporting(true);
+    const toastId = toast.loading("Preparing multi-sheet Excel report...");
+    try {
+      // Fetch all data needed for Excel sheets
+      const [intel, journey, radar] = await Promise.all([
+        selectedCustomer !== 'All' ? queryClient.fetchQuery({
+          queryKey: ['customerIntelligence', selectedCustomer],
+          queryFn: () => invokeEdgeFunction('get-customer-intelligence', { method: 'POST', body: { customerName: selectedCustomer } })
+        }) : Promise.resolve(null),
+        selectedCustomer !== 'All' ? queryClient.fetchQuery({
+          queryKey: ['customerJourneyImpact', selectedCustomer],
+          queryFn: () => invokeEdgeFunction('get-customer-journey-impact', { method: 'POST', body: { customerName: selectedCustomer } })
+        }) : Promise.resolve(null),
+        queryClient.fetchQuery({
+          queryKey: ['recurringIssueRadar', selectedCustomer],
+          queryFn: () => invokeEdgeFunction('get-recurring-issue-radar', { method: 'POST', body: { customerName: selectedCustomer } })
+        })
+      ]);
+
+      exportToExcel({ intelligence: intel, journey, radar }, `Customer360_${selectedCustomer}`);
+      toast.success("Excel report exported!", { id: toastId });
+    } catch (err) {
+      toast.error("Failed to generate Excel report.", { id: toastId });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleCustomerSelect = (val: string) => {
     setSelectedCustomer(val);
     setIsCollapsed(true);
-    // If switching to a specific customer, intelligence might be more relevant, 
-    // but we'll keep the user's current tab choice.
   };
 
   if (isLoading) {
@@ -157,14 +209,40 @@ const Customer360 = () => {
                       </Select>
                     </div>
 
-                    <Button 
-                      onClick={handleSync} 
-                      disabled={isFetching}
-                      className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-12 px-6 font-bold"
-                    >
-                      <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
-                      Sync Data
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        onClick={handleSync} 
+                        disabled={isFetching}
+                        className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-12 px-6 font-bold"
+                      >
+                        <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
+                        Sync Data
+                      </Button>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            disabled={isExporting || !selectedCustomer}
+                            className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 h-12 px-6 font-bold gap-2"
+                          >
+                            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                            Export
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-xl w-48">
+                          <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={handleExportPdf} className="cursor-pointer gap-2">
+                            <FileText className="h-4 w-4 text-red-500" />
+                            Export as PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleExportExcel} className="cursor-pointer gap-2">
+                            <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                            Export as Excel
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -190,10 +268,16 @@ const Customer360 = () => {
               <p className="text-xl font-bold">Select a customer account to begin analysis</p>
             </motion.div>
           ) : (
-            <motion.div key={selectedCustomer} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-20">
+            <motion.div 
+              key={selectedCustomer} 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className="space-y-20"
+              id="customer-360-content" // ID for PDF capture
+            >
               
               {/* Tab Switcher */}
-              <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-full w-fit border border-white/20">
+              <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-full w-fit border border-white/20 no-print">
                 <button
                   onClick={() => setActiveTab('intelligence')}
                   disabled={selectedCustomer === 'All'}
