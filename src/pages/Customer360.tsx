@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Users, Loader2, Handshake, RefreshCw, Target
+  Users, Loader2, Handshake, RefreshCw, Target, ChevronUp, ChevronDown
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,7 @@ const Customer360 = () => {
   const queryClient = useQueryClient();
 
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const { data: allTickets, isLoading, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["allFreshdeskTicketsFor360"],
@@ -70,52 +71,105 @@ const Customer360 = () => {
     <TooltipProvider>
       <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
         
-        <div className="relative w-full p-8 rounded-[24px] bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 shadow-glass overflow-hidden">
+        {/* Collapsible Header Panel */}
+        <motion.div 
+          initial={false}
+          animate={{ 
+            height: isCollapsed ? 64 : 'auto',
+            paddingTop: isCollapsed ? 12 : 32,
+            paddingBottom: isCollapsed ? 12 : 32
+          }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          className={cn(
+            "relative w-full px-8 rounded-[24px] shadow-glass overflow-hidden border border-white/20 dark:border-gray-700/30 backdrop-blur-xl",
+            "bg-gradient-to-br from-[#F8FAFF] to-[#F1F5FF] dark:from-gray-800/40 dark:to-gray-900/40"
+          )}
+        >
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl" />
           
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            <div className="space-y-4">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
-                  Customer 360 <Target className="h-8 w-8 text-indigo-600" />
-                </h1>
-                <p className="text-lg text-muted-foreground font-medium">A unified view of customer health and support activity.</p>
-              </div>
-              
-              <div className="flex flex-wrap gap-3">
-                <Badge variant="secondary" className="bg-white/50 dark:bg-gray-700/50 py-1 px-3 gap-1.5">
-                  <Users className="h-3.5 w-3.5" />
-                  {uniqueCustomers.length} Managed Accounts
-                </Badge>
-              </div>
-            </div>
+          <div className="relative z-10 flex items-center justify-between gap-8 h-full">
+            <AnimatePresence mode="wait">
+              {isCollapsed ? (
+                <motion.div 
+                  key="collapsed"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex items-center gap-3"
+                >
+                  <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white">
+                    Customer 360
+                  </h1>
+                  <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+                  <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                    {selectedCustomer || "No Account Selected"}
+                  </span>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="expanded"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 w-full"
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+                        Customer 360 <Target className="h-8 w-8 text-indigo-600" />
+                      </h1>
+                      <p className="text-lg text-muted-foreground font-medium">A unified view of customer health and support activity.</p>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-3">
+                      <Badge variant="secondary" className="bg-white/50 dark:bg-gray-700/50 py-1 px-3 gap-1.5">
+                        <Users className="h-3.5 w-3.5" />
+                        {uniqueCustomers.length} Managed Accounts
+                      </Badge>
+                    </div>
+                  </div>
 
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-3 bg-white/80 dark:bg-gray-900/80 p-2 rounded-2xl border border-border shadow-sm">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-2">Select Account:</span>
-                <Select value={selectedCustomer || ""} onValueChange={setSelectedCustomer}>
-                  <SelectTrigger className="w-[280px] border-none bg-transparent focus:ring-0 h-10 font-bold text-indigo-600">
-                    <SelectValue placeholder="Choose a customer..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-none shadow-2xl">
-                    {uniqueCustomers.map(customer => (
-                      <SelectItem key={customer} value={customer} className="font-medium">{customer}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-3 bg-white/80 dark:bg-gray-900/80 p-2 rounded-2xl border border-border shadow-sm">
+                      <span className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-2">Select Account:</span>
+                      <Select value={selectedCustomer || ""} onValueChange={setSelectedCustomer}>
+                        <SelectTrigger className="w-[280px] border-none bg-transparent focus:ring-0 h-10 font-bold text-indigo-600">
+                          <SelectValue placeholder="Choose a customer..." />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-none shadow-2xl">
+                          {uniqueCustomers.map(customer => (
+                            <SelectItem key={customer} value={customer} className="font-medium">{customer}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              <Button 
-                onClick={handleSync} 
-                disabled={isFetching}
-                className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-12 px-6 font-bold"
+                    <Button 
+                      onClick={handleSync} 
+                      disabled={isFetching}
+                      className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-12 px-6 font-bold"
+                    >
+                      <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
+                      Sync Data
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Collapse Toggle Button */}
+            {selectedCustomer && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="rounded-full h-10 w-10 bg-white/50 dark:bg-gray-800/50 hover:bg-[#EEF2FF] dark:hover:bg-indigo-900/30 hover:scale-105 transition-all shrink-0 shadow-sm"
               >
-                <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
-                Sync Data
+                {isCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
               </Button>
-            </div>
+            )}
           </div>
-        </div>
+        </motion.div>
 
         <AnimatePresence mode="wait">
           {!selectedCustomer ? (
