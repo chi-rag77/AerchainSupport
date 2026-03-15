@@ -45,7 +45,7 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
     );
   }
 
-  if (error || !data || data.empty) {
+  if (error || !data || data.empty || !data.timeline || data.timeline.length === 0) {
     return (
       <div className="p-12 text-center rounded-[32px] bg-gray-50 dark:bg-gray-900/50 border border-dashed">
         <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-20" />
@@ -56,7 +56,7 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
   }
 
   const currentMonth = selectedMonth || data.timeline[data.timeline.length - 1];
-  const topModule = data.moduleStats[0];
+  const topModule = data.moduleStats && data.moduleStats.length > 0 ? data.moduleStats[0] : null;
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -80,7 +80,7 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
           <ImpactTimelineChart 
             data={data.timeline} 
             onMonthSelect={setSelectedMonth}
-            selectedMonth={currentMonth.month}
+            selectedMonth={currentMonth?.month}
           />
         </CardContent>
       </Card>
@@ -98,7 +98,7 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
           totalTickets={data.timeline.reduce((acc: number, m: any) => acc + m.tickets, 0)}
           topModule={topModule?.name || 'N/A'}
           globalTrend={topModule?.trend || 0}
-          escalations={data.moduleStats.reduce((acc: number, m: any) => acc + m.escalated, 0)}
+          escalations={data.moduleStats ? data.moduleStats.reduce((acc: number, m: any) => acc + m.escalated, 0) : 0}
         />
       </div>
 
@@ -139,48 +139,54 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
       </Card>
 
       {/* Section 4: Contribution & Severity Charts */}
-      <IssueContributionCharts 
-        moduleStats={data.moduleStats}
-        severityCounts={data.severityCounts}
-      />
+      {data.moduleStats && data.severityCounts && (
+        <IssueContributionCharts 
+          moduleStats={data.moduleStats}
+          severityCounts={data.severityCounts}
+        />
+      )}
 
       {/* Section 5: Smart Heatmap */}
-      <SmartIssueHeatmap 
-        timeline={data.timeline} 
-        moduleStats={data.moduleStats}
-        onInvestigate={(module, month, count) => setInvestigationData({ module, month, count })}
-      />
+      {data.moduleStats && (
+        <SmartIssueHeatmap 
+          timeline={data.timeline} 
+          moduleStats={data.moduleStats}
+          onInvestigate={(module, month, count) => setInvestigationData({ module, month, count })}
+        />
+      )}
 
       {/* Section 6: Resolution Performance */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 px-2">
-          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
-            <Clock className="h-5 w-5 text-green-600" />
+      {data.moduleStats && data.moduleStats.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 px-2">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
+              <Clock className="h-5 w-5 text-green-600" />
+            </div>
+            <h3 className="text-xl font-black tracking-tight">Resolution Performance</h3>
           </div>
-          <h3 className="text-xl font-black tracking-tight">Resolution Performance</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {data.moduleStats.slice(0, 3).map((ms: any) => (
+              <Card key={ms.name} className="border-none shadow-sm bg-white dark:bg-gray-800 rounded-2xl p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">{ms.name}</span>
+                  <Badge variant="outline" className="font-bold">{ms.avgResolution} hrs</Badge>
+                </div>
+                <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full rounded-full",
+                      ms.avgResolution > 24 ? "bg-red-500" : ms.avgResolution > 12 ? "bg-amber-500" : "bg-green-500"
+                    )} 
+                    style={{ width: `${Math.min(100, (ms.avgResolution / 48) * 100)}%` }} 
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2 font-medium">Avg. Resolution Time</p>
+              </Card>
+            ))}
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {data.moduleStats.slice(0, 3).map((ms: any) => (
-            <Card key={ms.name} className="border-none shadow-sm bg-white dark:bg-gray-800 rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">{ms.name}</span>
-                <Badge variant="outline" className="font-bold">{ms.avgResolution} hrs</Badge>
-              </div>
-              <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div 
-                  className={cn(
-                    "h-full rounded-full",
-                    ms.avgResolution > 24 ? "bg-red-500" : ms.avgResolution > 12 ? "bg-amber-500" : "bg-green-500"
-                  )} 
-                  style={{ width: `${Math.min(100, (ms.avgResolution / 48) * 100)}%` }} 
-                />
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-2 font-medium">Avg. Resolution Time</p>
-            </Card>
-          ))}
-        </div>
-      </div>
+      )}
 
       <InvestigationModal 
         isOpen={!!investigationData}
