@@ -1,3 +1,4 @@
+// v1.2 - Customer Journey Impact with Gemini 2.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -46,13 +47,11 @@ serve(async (req) => {
       const module = t.cf_module || 'General';
       const priority = t.priority || 'Medium';
       
-      // Global Severity
       if (priority === 'Urgent') severityCounts.Critical++;
       else if (priority === 'High') severityCounts.High++;
       else if (priority === 'Medium') severityCounts.Medium++;
       else severityCounts.Low++;
 
-      // Monthly Aggregation
       if (!monthlyData[monthKey]) {
         monthlyData[monthKey] = {
           month: monthKey,
@@ -86,10 +85,8 @@ serve(async (req) => {
         m.escalated++;
       }
 
-      // Module specific monthly count
       m.modules[module] = (m.modules[module] || 0) + 1;
 
-      // Global Module Stats
       if (!moduleStats[module]) {
         moduleStats[module] = { name: module, total: 0, resolved: 0, totalResHours: 0, escalated: 0, history: [] };
       }
@@ -102,7 +99,6 @@ serve(async (req) => {
       if (t.priority.toLowerCase() === 'urgent' || statusLower === 'escalated') ms.escalated++;
     });
 
-    // Calculate Trends and Averages
     const timeline = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
     const modules = Object.keys(moduleStats);
 
@@ -121,7 +117,6 @@ serve(async (req) => {
       };
     }).sort((a, b) => b.total - a.total);
 
-    // AI Synthesis
     let aiAnalysis = null;
     if (geminiApiKey) {
       const context = {
@@ -143,7 +138,7 @@ serve(async (req) => {
         }
       `;
 
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

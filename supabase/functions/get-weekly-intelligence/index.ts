@@ -1,4 +1,4 @@
-// v2.2 - Weekly Intelligence with Stable Model
+// v2.4 - Weekly Intelligence with Gemini 2.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -79,7 +79,7 @@ serve(async (req) => {
         "actions": [{"title": "string", "reason": "string", "priority": "high|medium|low"}]
       }`;
 
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,7 +89,7 @@ serve(async (req) => {
       });
 
       if (geminiRes.ok) {
-        const aiData = await geminiRes.ok ? await geminiRes.json() : {};
+        const aiData = await geminiRes.json();
         const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
         const analysis = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
         deterministicResponse.aiNarrative = { ...analysis.narrative, confidence: 94 };

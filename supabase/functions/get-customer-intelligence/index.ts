@@ -1,4 +1,4 @@
-// v2.2 - Customer Intelligence with Robust Error Handling
+// v2.4 - Customer Intelligence with Gemini 2.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -70,7 +70,7 @@ serve(async (req) => {
 
     const healthScore = Math.round(slaAdherence * 0.6 + (100 - Math.min(100, openTickets.length * 5)) * 0.4);
 
-    // 3. AI Layer (Optional Fallback)
+    // 3. AI Layer (Using 2.5-flash)
     let aiSummary = {
       status: "AI Analysis Unavailable",
       key_drivers: ["Deterministic metrics indicate stable operations."],
@@ -96,7 +96,7 @@ serve(async (req) => {
           }
         `;
 
-        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -108,7 +108,7 @@ serve(async (req) => {
         if (geminiResponse.ok) {
           const geminiData = await geminiResponse.json();
           const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-          aiSummary = JSON.parse(rawText);
+          aiSummary = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
         }
       } catch (aiErr) {
         console.error("AI Synthesis failed, using deterministic fallback:", aiErr);
