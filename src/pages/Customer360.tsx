@@ -5,7 +5,7 @@ import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
   Users, Loader2, Handshake, RefreshCw, Target, ChevronUp, ChevronDown,
-  LayoutDashboard, BarChart3, Repeat
+  LayoutDashboard, BarChart3, Repeat, Globe
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,9 +27,9 @@ const Customer360 = () => {
   const user = session?.user;
   const queryClient = useQueryClient();
 
-  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>("All"); // Default to Global View
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<'intelligence' | 'radar'>('intelligence');
+  const [activeTab, setActiveTab] = useState<'intelligence' | 'radar'>('radar'); // Default to Radar as requested
 
   const { data: allTickets, isLoading, isFetching } = useQuery<Ticket[], Error>({
     queryKey: ["allFreshdeskTicketsFor360"],
@@ -65,6 +65,8 @@ const Customer360 = () => {
   const handleCustomerSelect = (val: string) => {
     setSelectedCustomer(val);
     setIsCollapsed(true);
+    // If switching to a specific customer, intelligence might be more relevant, 
+    // but we'll keep the user's current tab choice.
   };
 
   if (isLoading) {
@@ -110,8 +112,9 @@ const Customer360 = () => {
                     Customer 360
                   </h1>
                   <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
-                  <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                    {selectedCustomer || "No Account Selected"}
+                  <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                    {selectedCustomer === 'All' ? <Globe className="h-4 w-4" /> : null}
+                    {selectedCustomer === 'All' ? "Global Product View" : selectedCustomer}
                   </span>
                 </motion.div>
               ) : (
@@ -193,9 +196,11 @@ const Customer360 = () => {
               <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-full w-fit border border-white/20">
                 <button
                   onClick={() => setActiveTab('intelligence')}
+                  disabled={selectedCustomer === 'All'}
                   className={cn(
                     "relative flex items-center gap-2 px-8 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all duration-300",
-                    activeTab === 'intelligence' ? "text-white" : "text-muted-foreground hover:text-foreground"
+                    activeTab === 'intelligence' ? "text-white" : "text-muted-foreground hover:text-foreground",
+                    selectedCustomer === 'All' && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   {activeTab === 'intelligence' && (
@@ -224,7 +229,7 @@ const Customer360 = () => {
               </div>
 
               <AnimatePresence mode="wait">
-                {activeTab === 'intelligence' ? (
+                {activeTab === 'intelligence' && selectedCustomer !== 'All' ? (
                   <motion.div 
                     key="intelligence"
                     initial={{ opacity: 0, x: -20 }}
