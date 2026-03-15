@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ImpactTimelineChart from './ImpactTimelineChart';
-import SmartIssueHeatmap from './SmartIssueHeatmap';
+import SmartIssueHeatmap from '../issue-intelligence/SmartIssueHeatmap';
 import IssueIntelligenceSummary from '../issue-intelligence/IssueIntelligenceSummary';
 import IssueContributionCharts from '../issue-intelligence/IssueContributionCharts';
 import InvestigationModal from '../issue-intelligence/InvestigationModal';
