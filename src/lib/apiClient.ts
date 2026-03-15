@@ -5,7 +5,6 @@ import { ApiError } from './errorHandler';
 
 /**
  * Generic client for invoking Supabase Edge Functions.
- * Uses the official Supabase SDK for better reliability and auth handling.
  */
 export async function invokeEdgeFunction<T>(
   functionName: string,
@@ -16,6 +15,8 @@ export async function invokeEdgeFunction<T>(
     params?: Record<string, string | number | boolean>;
   } = {}
 ): Promise<T> {
+  console.log(`[apiClient] Invoking function: ${functionName}`, options.body || '');
+  
   try {
     const { data, error } = await supabase.functions.invoke(functionName, {
       method: options.method || 'POST',
@@ -25,8 +26,7 @@ export async function invokeEdgeFunction<T>(
     });
 
     if (error) {
-      // Handle Supabase-specific function errors
-      console.error(`Edge Function [${functionName}] Error:`, error);
+      console.error(`[apiClient] Edge Function [${functionName}] Error:`, error);
       throw new ApiError(
         error.message || `Function ${functionName} failed`,
         error.status || 500,
@@ -34,11 +34,12 @@ export async function invokeEdgeFunction<T>(
       );
     }
 
+    console.log(`[apiClient] Function [${functionName}] Success:`, data);
     return data as T;
   } catch (err: any) {
     if (err instanceof ApiError) throw err;
     
-    console.error(`Unexpected error invoking [${functionName}]:`, err);
+    console.error(`[apiClient] Unexpected error invoking [${functionName}]:`, err);
     throw new ApiError(
       err.message || 'Network error during Edge Function invocation.',
       500,

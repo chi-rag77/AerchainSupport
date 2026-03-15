@@ -4,7 +4,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { invokeEdgeFunction } from '@/lib/apiClient';
 import { CustomerIntelligenceData } from '@/features/customer360/types';
-import { Loader2, AlertTriangle, Info } from 'lucide-react';
+import { Loader2, AlertTriangle, Info, RefreshCw } from 'lucide-react';
 import CustomerMetadata from './CustomerMetadata';
 import MetricWidget from './MetricWidget';
 import AISummary from './AISummary';
@@ -16,7 +16,7 @@ interface CustomerIntelligenceHeaderProps {
 }
 
 const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeaderProps) => {
-  const { data, isLoading, error, refetch } = useQuery<CustomerIntelligenceData, Error>({
+  const { data, isLoading, error, refetch, isFetching } = useQuery<CustomerIntelligenceData, Error>({
     queryKey: ['customerIntelligence', customerName],
     queryFn: () => invokeEdgeFunction('get-customer-intelligence', {
       method: 'POST',
@@ -50,7 +50,14 @@ const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeader
                   : `We encountered an error while processing data for ${customerName}: ${error.message}`}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-white hover:bg-red-50 border-red-200 text-red-600">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => refetch()} 
+              disabled={isFetching}
+              className="bg-white hover:bg-red-50 border-red-200 text-red-600 gap-2"
+            >
+              {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               Try Again
             </Button>
           </div>
@@ -68,6 +75,7 @@ const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeader
           <p className="text-sm text-muted-foreground">
             {data?.ai_summary?.status || "Insufficient ticket history to generate a comprehensive intelligence profile."}
           </p>
+          <Button variant="link" onClick={() => refetch()} className="p-0 h-auto text-xs mt-2">Refresh Data</Button>
         </div>
       </div>
     );
@@ -75,9 +83,15 @@ const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeader
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold">{data.customer}</h2>
-        <CustomerMetadata metadata={data.metadata} />
+      <div className="flex justify-between items-start">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold">{data.customer}</h2>
+          <CustomerMetadata metadata={data.metadata} />
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isFetching} className="text-muted-foreground">
+          <RefreshCw className={cn("h-4 w-4 mr-2", isFetching && "animate-spin")} />
+          Sync
+        </Button>
       </div>
       
       <Separator />
