@@ -17,6 +17,7 @@ import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CustomerIntelligenceHeader from "@/components/customer360/intelligence-header/CustomerIntelligenceHeader";
+import JourneyImpactTimeline from "@/components/customer360/journey-timeline/JourneyImpactTimeline";
 
 const Customer360 = () => {
   const { session } = useSupabase();
@@ -123,8 +124,12 @@ const Customer360 = () => {
               <p className="text-xl font-bold">Select a customer account to begin analysis</p>
             </motion.div>
           ) : (
-            <motion.div key={selectedCustomer} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+            <motion.div key={selectedCustomer} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-16">
               <CustomerIntelligenceHeader customerName={selectedCustomer} />
+              
+              {/* New Module: Journey Impact Timeline */}
+              <JourneyImpactTimeline customerName={selectedCustomer} />
+              
               <div className="flex flex-col items-center justify-center py-24 text-muted-foreground border-2 border-dashed rounded-2xl">
                 <p className="text-lg font-bold">More modules coming soon...</p>
               </div>
