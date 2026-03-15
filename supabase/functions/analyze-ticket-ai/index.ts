@@ -20,7 +20,7 @@ serve(async (req) => {
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'Environment variables (SUPABASE_URL, SUPABASE_ANON_KEY, or GEMINI_API_KEY) not set in Supabase secrets.' }), {
+      return new Response(JSON.stringify({ error: 'Environment variables not set.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -39,7 +39,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'ticketId is required' }), { status: 400, headers: corsHeaders });
     }
 
-    // 1. Check Cache
     if (!forceRefresh) {
       const { data: cached } = await supabase
         .from('ai_ticket_analysis')
@@ -50,15 +49,12 @@ serve(async (req) => {
       if (cached) {
         const lastUpdated = new Date(cached.updated_at);
         const hoursSinceUpdate = (new Date().getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
-        
         if (hoursSinceUpdate < 24) {
-          console.log(`[analyze-ticket-ai] Returning cached analysis for ${ticketId}`);
           return new Response(JSON.stringify(cached), { status: 200, headers: corsHeaders });
         }
       }
     }
 
-    // 2. Fetch Messages
     const { data: messages, error: msgError } = await supabase
       .from('ticket_messages')
       .select('*')
@@ -69,14 +65,12 @@ serve(async (req) => {
     if (msgError) throw msgError;
 
     if (!messages || messages.length === 0) {
-      return new Response(JSON.stringify({ error: 'No conversation found to analyze. Please sync messages first.' }), { status: 404, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'No conversation found to analyze.' }), { status: 404, headers: corsHeaders });
     }
 
-    // 3. Call AI (Using gemini-1.5-pro-latest)
     const prompt = getAnalysisPrompt(customerName || 'Unknown', messages.reverse());
     
-    console.log(`[analyze-ticket-ai] Calling Gemini API for ticket ${ticketId}...`);
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -87,27 +81,13 @@ serve(async (req) => {
 
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
-      console.error(`[analyze-ticket-ai] Gemini API Error (${geminiResponse.status}):`, errorBody);
-      return new Response(JSON.stringify({ error: `AI Service Error (${geminiResponse.status}): ${errorBody}` }), {
-        status: geminiResponse.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      throw new Error(`AI Service Error (${geminiResponse.status}): ${errorBody}`);
     }
 
     const geminiData = await geminiResponse.json();
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    
-    // Clean JSON response (sometimes AI wraps in markdown)
-    const jsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    let analysis;
-    try {
-      analysis = JSON.parse(jsonStr);
-    } catch (parseErr) {
-      console.error("[analyze-ticket-ai] Failed to parse AI response:", rawText);
-      throw new Error("AI returned an invalid data format.");
-    }
+    const analysis = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
 
-    // 4. Save to DB
     const dbPayload = {
       ticket_id: ticketId,
       summary: analysis.summary,
@@ -122,21 +102,14 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
 
-    const { data: savedData, error: upsertError } = await supabase
-      .from('ai_ticket_analysis')
-      .upsert(dbPayload, { onConflict: 'ticket_id' })
-      .select()
-      .single();
+    await supabase.from('ai_ticket_analysis').upsert(dbPayload, { onConflict: 'ticket_id' });
 
-    if (upsertError) console.error('[analyze-ticket-ai] DB Upsert error:', upsertError);
-
-    return new Response(JSON.stringify(savedData || dbPayload), {
+    return new Response(JSON.stringify(dbPayload), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: any) {
-    console.error('[analyze-ticket-ai] Internal Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

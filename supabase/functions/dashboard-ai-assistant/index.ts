@@ -25,7 +25,6 @@ serve(async (req) => {
 
     const { query } = await req.json();
 
-    // 1. Fetch Live Dashboard Context
     const [
       { count: totalTickets },
       { count: openTickets },
@@ -40,7 +39,6 @@ serve(async (req) => {
       supabase.from('freshdesk_tickets').select('cf_country').limit(1000)
     ]);
 
-    // Process country distribution
     const countries: Record<string, number> = {};
     (countryData || []).forEach(t => {
       const c = t.cf_country || 'Unknown';
@@ -62,7 +60,6 @@ serve(async (req) => {
       - SLA Compliance: 85% (Stable)
     `;
 
-    // 2. Call Gemini AI
     const prompt = `
       You are an operations assistant for the Aerchain support dashboard.
       Answer questions about tickets, backlog, bugs, resolution metrics, geographic usage, and support performance.
@@ -74,11 +71,9 @@ serve(async (req) => {
       INSTRUCTIONS:
       - Use the provided data to answer accurately.
       - Keep answers short, professional, and operationally useful.
-      - If data is missing for a specific query, state that clearly.
-      - Do not expose internal system IDs or technical implementation details.
     `;
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -89,7 +84,6 @@ serve(async (req) => {
 
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
-      console.error(`[dashboard-ai-assistant] Gemini API Error (${geminiResponse.status}):`, errorBody);
       throw new Error(`AI Service Error (${geminiResponse.status}): ${errorBody}`);
     }
 

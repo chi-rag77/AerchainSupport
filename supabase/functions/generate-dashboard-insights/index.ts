@@ -46,7 +46,6 @@ serve(async (req) => {
       const lastUpdated = new Date(cached.updated_at);
       const hoursSinceUpdate = (new Date().getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
       if (hoursSinceUpdate < 6) {
-        // The cached data doesn't have an 'insights' field. We'll add a default one for consistency.
         const responsePayload = {
           ...cached,
           insights: [{ message: "SLA adherence is stable.", severity: "info", type: "trend" }]
@@ -96,7 +95,7 @@ serve(async (req) => {
       }
     `;
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

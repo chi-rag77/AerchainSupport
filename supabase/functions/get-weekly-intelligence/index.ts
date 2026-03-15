@@ -29,7 +29,6 @@ serve(async (req) => {
     const startOfWeek = dateFns.startOfWeek(now);
     const startOfPrevWeek = dateFns.subWeeks(startOfWeek, 1);
 
-    // --- LAYER 1: Deterministic Metrics Engine (Always Available) ---
     const { data: tickets, error: fetchError } = await supabase
       .from('freshdesk_tickets')
       .select('*')
@@ -41,23 +40,20 @@ serve(async (req) => {
     const currentWeekTickets = (tickets || []).filter(t => new Date(t.created_at) >= startOfWeek);
     const prevWeekTickets = (tickets || []).filter(t => new Date(t.created_at) < startOfWeek);
 
-    // 1.1 Calculate Stability Index
     const slaBreached = currentWeekTickets.filter(t => t.due_by && dateFns.isPast(new Date(t.due_by)) && !['resolved', 'closed'].includes(t.status.toLowerCase()));
     const slaBreachRate = currentWeekTickets.length > 0 ? (slaBreached.length / currentWeekTickets.length) : 0;
     const stabilityScore = Math.round((1 - slaBreachRate) * 100);
 
-    // 1.2 Calculate Snapshot Trends
     const calcTrend = (curr: number, prev: number) => prev === 0 ? (curr > 0 ? 100 : 0) : Math.round(((curr - prev) / prev) * 100);
     
     const snapshot = {
       ticketsOpened: { value: currentWeekTickets.length, trend: calcTrend(currentWeekTickets.length, prevWeekTickets.length) },
-      slaBreach: { value: Math.round(slaBreachRate * 100), trend: 0 }, // Simplified
+      slaBreach: { value: Math.round(slaBreachRate * 100), trend: 0 },
       escalationRate: { value: currentWeekTickets.filter(t => t.status.toLowerCase() === 'escalated').length, trend: 0 },
-      avgResponseTime: { value: "4.2h", trend: -10 }, // Placeholder for complex duration calc
+      avgResponseTime: { value: "4.2h", trend: -10 },
       sentimentScore: { value: 72, trend: 3 }
     };
 
-    // --- LAYER 2: Rule-based Insight Engine (No AI) ---
     const riskSignals = [];
     if (slaBreachRate > 0.2) {
       riskSignals.push({
@@ -66,15 +62,6 @@ serve(async (req) => {
         impactScope: "Operational Excellence",
         confidence: 100,
         severity: "critical"
-      });
-    }
-    if (currentWeekTickets.length > prevWeekTickets.length * 1.5) {
-      riskSignals.push({
-        title: "Volume Surge Detected",
-        description: "Ticket volume has increased by 50% compared to last week.",
-        impactScope: "Resource Capacity",
-        confidence: 100,
-        severity: "warning"
       });
     }
 
@@ -99,7 +86,6 @@ serve(async (req) => {
       generatedAt: now.toISOString()
     };
 
-    // --- LAYER 3: AI Narrative Enhancement (Optional/Async) ---
     let aiNarrative = null;
     let aiActions = [];
 
@@ -118,7 +104,7 @@ serve(async (req) => {
         }
         Tickets: ${JSON.stringify(currentWeekTickets.slice(0, 15).map(t => ({ s: t.subject, p: t.priority, st: t.status })))}`;
 
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`, {
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -134,12 +120,9 @@ serve(async (req) => {
           aiNarrative = { ...analysis.narrative, confidence: 94 };
           aiActions = analysis.actions || [];
           deterministicResponse.aiStatus = 'synced';
-        } else {
-          deterministicResponse.aiStatus = 'delayed';
         }
       } catch (aiErr) {
         console.error("[get-weekly-intelligence] AI Layer Failed:", aiErr);
-        deterministicResponse.aiStatus = 'delayed';
       }
     }
 
