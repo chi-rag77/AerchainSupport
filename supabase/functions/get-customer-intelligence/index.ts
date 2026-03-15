@@ -1,4 +1,4 @@
-// v3.0 - AI Operational Intelligence with Gemini 2.5 Flash
+// v2.4 - Customer Intelligence with Gemini 2.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -48,101 +48,70 @@ serve(async (req) => {
     if (!tickets || tickets.length < 3) {
       return new Response(JSON.stringify({
         customer: customerName,
+        ai_summary: { status: "Insufficient history to generate insights." },
+        health_score: 0,
         status: "No Data",
       }), { status: 200, headers: corsHeaders });
     }
 
-    // 2. Calculate Deterministic Metrics for AI Input
+    // 2. Calculate Deterministic Metrics
     const now = new Date();
     const openTickets = tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()));
-    
-    // Module Stats
-    const moduleMap: Record<string, number> = {};
-    tickets.forEach(t => {
-      const mod = t.cf_module || 'General';
-      moduleMap[mod] = (moduleMap[mod] || 0) + 1;
-    });
-    const topModule = Object.entries(moduleMap).sort((a, b) => b[1] - a[1])[0];
-    const modulePercent = Math.round((topModule[1] / tickets.length) * 100);
+    const ticketsLast7 = tickets.filter(t => differenceInDays(now, new Date(t.created_at)) <= 7).length;
+    const ticketsPrev7 = tickets.filter(t => {
+      const diff = differenceInDays(now, new Date(t.created_at));
+      return diff > 7 && diff <= 14;
+    }).length;
+    const ticketGrowth = ticketsPrev7 > 0 ? Math.round(((ticketsLast7 - ticketsPrev7) / ticketsPrev7) * 100) : 0;
 
-    // Type Stats
-    const typeMap = { bug: 0, query: 0, config: 0 };
-    tickets.forEach(t => {
-      const type = (t.type || '').toLowerCase();
-      if (type.includes('bug')) typeMap.bug++;
-      else if (type.includes('query')) typeMap.query++;
-      else typeMap.config++;
-    });
-    const total = tickets.length;
-    const typePercents = {
-      bug: Math.round((typeMap.bug / total) * 100),
-      query: Math.round((typeMap.query / total) * 100),
-      config: Math.round((typeMap.config / total) * 100),
-    };
-
-    // SLA Stats
     const slaTotal = tickets.filter(t => t.due_by && ['resolved', 'closed'].includes(t.status.toLowerCase())).length;
     const slaMet = tickets.filter(t => t.due_by && ['resolved', 'closed'].includes(t.status.toLowerCase()) && new Date(t.updated_at) <= new Date(t.due_by)).length;
-    const slaAdherence = slaTotal > 0 ? Math.round((slaMet / slaTotal) * 100) : 100;
+    const slaAdherence = slaTotal > 0 ? (slaMet / slaTotal) * 100 : 100;
 
     const healthScore = Math.round(slaAdherence * 0.6 + (100 - Math.min(100, openTickets.length * 5)) * 0.4);
 
     // 3. AI Layer (Using 2.5-flash)
-    let aiSummary = null;
+    let aiSummary = {
+      status: "AI Analysis Unavailable",
+      key_drivers: ["Deterministic metrics indicate stable operations."],
+      top_issues: ["Manual review recommended."],
+      recommended_actions: ["Check ticket queue for recent updates."]
+    };
 
     if (geminiApiKey) {
-      const prompt = `
-        Analyze support data for ${customerName}:
-        - Top Module: ${topModule[0]} (${modulePercent}% of load)
-        - Ticket Mix: ${typePercents.bug}% Bugs, ${typePercents.query}% Queries, ${typePercents.config}% Config
-        - SLA Adherence: ${slaAdherence}%
-        - Open Backlog: ${openTickets.length} tickets
-        
-        Return STRICT JSON for an "AI Operational Intelligence" panel:
-        {
-          "root_issue": {
-            "module": "string",
-            "percentage": number,
-            "description": "2 sentence summary of what's driving load",
-            "insight": "1 sentence structural vs isolated insight"
-          },
-          "composition": {
-            "bugs": number,
-            "queries": number,
-            "config": number,
-            "insight": "1 sentence insight on user struggle vs system failure"
-          },
-          "suggested_actions": [
-            {
-              "type": "engineering|education|risk",
-              "title": "string",
-              "description": "string",
-              "items": ["bullet point 1", "bullet point 2"]
-            }
-          ],
-          "operational_risk": {
-            "level": "Low|Medium|High",
-            "metric": "e.g. 19 hours avg resolution",
-            "target": "e.g. 8 hours target",
-            "description": "risk of backlog accumulation"
-          },
-          "reasoning": ["data point 1", "data point 2"]
+      try {
+        const prompt = `
+          Analyze this customer support intelligence for ${customerName}:
+          - Health score: ${healthScore}
+          - Open tickets: ${openTickets.length}
+          - Ticket growth: ${ticketGrowth}%
+          - SLA adherence: ${Math.round(slaAdherence)}%
+          
+          Return STRICT JSON:
+          {
+            "status": "string",
+            "key_drivers": ["string"],
+            "top_issues": ["string"],
+            "recommended_actions": ["string"]
+          }
+        `;
+
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { response_mime_type: "application/json" }
+          }),
+        });
+
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+          aiSummary = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
         }
-      `;
-
-      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { response_mime_type: "application/json" }
-        }),
-      });
-
-      if (geminiResponse.ok) {
-        const geminiData = await geminiResponse.json();
-        const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-        aiSummary = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
+      } catch (aiErr) {
+        console.error("AI Synthesis failed, using deterministic fallback:", aiErr);
       }
     }
 
@@ -151,11 +120,11 @@ serve(async (req) => {
       health_score: healthScore,
       status: healthScore > 80 ? "Healthy" : healthScore > 60 ? "Watchlist" : "At Risk",
       open_tickets: openTickets.length,
-      ticket_growth: "0%",
+      ticket_growth: `${ticketGrowth > 0 ? '+' : ''}${ticketGrowth}%`,
       sla_risk: slaAdherence < 80 ? "High" : "Low",
       ai_summary: aiSummary,
-      confidence: 84,
-      explainability: `Generated from ${tickets.length} tickets using AI synthesis.`,
+      confidence: geminiApiKey ? 84 : 60,
+      explainability: geminiApiKey ? `Generated from ${tickets.length} tickets using AI synthesis.` : `Generated using deterministic rule-set from ${tickets.length} tickets.`,
       health_score_components: {
         sla_adherence: { score: Math.round(slaAdherence), weight: 60 },
         sentiment: { score: 80, weight: 0 },
