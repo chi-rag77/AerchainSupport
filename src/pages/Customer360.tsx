@@ -91,7 +91,6 @@ const Customer360 = () => {
     setIsExporting(true);
     const toastId = toast.loading("Preparing multi-sheet Excel report...");
     try {
-      // Fetch all data needed for Excel sheets
       const [intel, journey, radar] = await Promise.all([
         selectedCustomer !== 'All' ? queryClient.fetchQuery({
           queryKey: ['customerIntelligence', selectedCustomer],
@@ -120,6 +119,44 @@ const Customer360 = () => {
     setSelectedCustomer(val);
     setIsCollapsed(true);
   };
+
+  const ActionButtons = () => (
+    <div className="flex items-center gap-2">
+      <Button 
+        onClick={handleSync} 
+        disabled={isFetching}
+        variant="outline"
+        className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-10 px-4 font-bold text-xs"
+      >
+        <RefreshCw className={cn("mr-2 h-3.5 w-3.5", isFetching && "animate-spin")} />
+        Sync
+      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            disabled={isExporting || !selectedCustomer}
+            className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 h-10 px-4 font-bold text-xs gap-2"
+          >
+            {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+            Export
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="rounded-xl w-48">
+          <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleExportPdf} className="cursor-pointer gap-2">
+            <FileText className="h-4 w-4 text-red-500" />
+            Export as PDF
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportExcel} className="cursor-pointer gap-2">
+            <FileSpreadsheet className="h-4 w-4 text-green-600" />
+            Export as Excel
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -158,16 +195,19 @@ const Customer360 = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="flex items-center gap-3"
+                  className="flex items-center justify-between w-full"
                 >
-                  <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white">
-                    Customer 360
-                  </h1>
-                  <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
-                  <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-                    {selectedCustomer === 'All' ? <Globe className="h-4 w-4" /> : null}
-                    {selectedCustomer === 'All' ? "Global Product View" : selectedCustomer}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white">
+                      Customer 360
+                    </h1>
+                    <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+                    <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                      {selectedCustomer === 'All' ? <Globe className="h-4 w-4" /> : null}
+                      {selectedCustomer === 'All' ? "Global Product View" : selectedCustomer}
+                    </span>
+                  </div>
+                  <ActionButtons />
                 </motion.div>
               ) : (
                 <motion.div 
@@ -208,41 +248,7 @@ const Customer360 = () => {
                         </SelectContent>
                       </Select>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        onClick={handleSync} 
-                        disabled={isFetching}
-                        className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-12 px-6 font-bold"
-                      >
-                        <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
-                        Sync Data
-                      </Button>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            disabled={isExporting || !selectedCustomer}
-                            className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 h-12 px-6 font-bold gap-2"
-                          >
-                            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                            Export
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-xl w-48">
-                          <DropdownMenuLabel>Export Options</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={handleExportPdf} className="cursor-pointer gap-2">
-                            <FileText className="h-4 w-4 text-red-500" />
-                            Export as PDF
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleExportExcel} className="cursor-pointer gap-2">
-                            <FileSpreadsheet className="h-4 w-4 text-green-600" />
-                            Export as Excel
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                    <ActionButtons />
                   </div>
                 </motion.div>
               )}
@@ -273,7 +279,7 @@ const Customer360 = () => {
               initial={{ opacity: 0, y: 20 }} 
               animate={{ opacity: 1, y: 0 }} 
               className="space-y-20"
-              id="customer-360-content" // ID for PDF capture
+              id="customer-360-content"
             >
               
               {/* Tab Switcher */}
