@@ -58,6 +58,12 @@ const Customer360 = () => {
     }
   };
 
+  const handleCustomerSelect = (val: string) => {
+    setSelectedCustomer(val);
+    // Automatically collapse header when a customer is selected
+    setIsCollapsed(true);
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
@@ -132,7 +138,7 @@ const Customer360 = () => {
                   <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-3 bg-white/80 dark:bg-gray-900/80 p-2 rounded-2xl border border-border shadow-sm">
                       <span className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-2">Select Account:</span>
-                      <Select value={selectedCustomer || ""} onValueChange={setSelectedCustomer}>
+                      <Select value={selectedCustomer || ""} onValueChange={handleCustomerSelect}>
                         <SelectTrigger className="w-[280px] border-none bg-transparent focus:ring-0 h-10 font-bold text-indigo-600">
                           <SelectValue placeholder="Choose a customer..." />
                         </SelectTrigger>
