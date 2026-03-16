@@ -1,4 +1,4 @@
-// v1.2 - Robust Knowledge AI Assistant
+// v1.3 - Robust Knowledge AI Assistant
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -27,11 +27,11 @@ serve(async (req) => {
     console.log(`[knowledge-ai-assistant] Query: "${query}" for customer: ${customerName}`);
 
     // 1. Embed the Query using v1 endpoint
+    // Structure: https://generativelanguage.googleapis.com/v1/models/{model}:embedContent
     const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: "models/text-embedding-004",
         content: { parts: [{ text: query }] }
       })
     });

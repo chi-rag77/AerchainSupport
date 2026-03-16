@@ -1,4 +1,4 @@
-// v1.2 - Robust Document Processor
+// v1.3 - Robust Document Processor
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -75,7 +75,6 @@ serve(async (req) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: "models/text-embedding-004",
           content: { parts: [{ text: chunk }] }
         })
       });
