@@ -26,8 +26,8 @@ serve(async (req) => {
 
     console.log(`[knowledge-ai-assistant] Query: "${query}" for customer: ${customerName}`);
 
-    // 1. Embed the Query using v1beta endpoint
-    const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
+    // 1. Embed the Query using v1beta endpoint and stable embedding-001 model
+    const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

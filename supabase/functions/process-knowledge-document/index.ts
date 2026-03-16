@@ -69,9 +69,9 @@ serve(async (req) => {
 
     console.log(`[process-knowledge-document] Generated ${chunks.length} chunks.`);
 
-    // 4. Generate Embeddings & Save using v1beta endpoint
+    // 4. Generate Embeddings & Save using v1beta endpoint and stable embedding-001 model
     for (const chunk of chunks) {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
