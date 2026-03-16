@@ -1,3 +1,4 @@
+// v1.1 - Robust Document Processor
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -19,6 +20,8 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
+    if (!geminiApiKey) throw new Error("GEMINI_API_KEY is not set.");
+
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
     // 1. Get Document Info
@@ -28,31 +31,29 @@ serve(async (req) => {
       .eq('id', documentId)
       .single();
 
-    if (docError || !doc) throw new Error("Document not found");
+    if (docError || !doc) throw new Error(`Document not found: ${docError?.message}`);
+
+    console.log(`[process-knowledge-document] Processing: ${doc.name}`);
 
     // 2. Download File from Storage
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('knowledge')
       .download(doc.file_path);
 
-    if (downloadError) throw downloadError;
+    if (downloadError) throw new Error(`Storage download failed: ${downloadError.message}`);
 
     let text = "";
-    const isExcel = doc.name.endsWith('.xlsx') || doc.name.endsWith('.xls') || doc.file_type.includes('spreadsheet');
+    const isExcel = doc.name.toLowerCase().endsWith('.xlsx') || doc.name.toLowerCase().endsWith('.xls') || doc.file_type?.includes('spreadsheet');
 
     if (isExcel) {
-      // Parse Excel
       const arrayBuffer = await fileData.arrayBuffer();
       const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
-      
-      // Convert each sheet to a text representation
       workbook.SheetNames.forEach((sheetName: string) => {
         const worksheet = workbook.Sheets[sheetName];
         const sheetText = XLSX.utils.sheet_to_txt(worksheet);
         text += `Sheet: ${sheetName}\n${sheetText}\n\n`;
       });
     } else {
-      // Assume text/markdown for other types
       text = await fileData.text();
     }
 
@@ -60,11 +61,13 @@ serve(async (req) => {
       throw new Error("No text content extracted from document.");
     }
 
-    // 3. Chunking (Simple 1000 char chunks with overlap)
+    // 3. Chunking (1000 char chunks with 200 char overlap)
     const chunks = [];
     for (let i = 0; i < text.length; i += 800) {
       chunks.push(text.slice(i, i + 1000));
     }
+
+    console.log(`[process-knowledge-document] Generated ${chunks.length} chunks.`);
 
     // 4. Generate Embeddings & Save
     for (const chunk of chunks) {
@@ -78,18 +81,22 @@ serve(async (req) => {
       });
 
       if (!res.ok) {
-        console.error(`Embedding failed for chunk: ${await res.text()}`);
+        console.error(`[process-knowledge-document] Embedding failed for chunk: ${await res.text()}`);
         continue;
       }
 
-      const { embedding } = await res.json();
+      const embedData = await res.json();
+      const embedding = embedData.embedding?.values;
 
-      await supabase.from('knowledge_chunks').insert({
-        document_id: documentId,
-        content: chunk,
-        embedding: embedding.values,
-        metadata: { customer: doc.customer_name, category: doc.category }
-      });
+      if (embedding) {
+        const { error: insertError } = await supabase.from('knowledge_chunks').insert({
+          document_id: documentId,
+          content: chunk,
+          embedding: embedding,
+          metadata: { customer: doc.customer_name, category: doc.category }
+        });
+        if (insertError) console.error("[process-knowledge-document] Insert Error:", insertError);
+      }
     }
 
     return new Response(JSON.stringify({ success: true, chunks: chunks.length }), {
@@ -98,7 +105,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error("[process-knowledge-document] Error:", error);
+    console.error("[process-knowledge-document] Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

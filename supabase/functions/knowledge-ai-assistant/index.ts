@@ -1,3 +1,4 @@
+// v1.1 - Robust Knowledge AI Assistant
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -17,9 +18,13 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
+    if (!geminiApiKey) throw new Error("GEMINI_API_KEY is not set in Supabase secrets.");
+
     const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
       global: { headers: { Authorization: req.headers.get('Authorization')! } },
     });
+
+    console.log(`[knowledge-ai-assistant] Query: "${query}" for customer: ${customerName}`);
 
     // 1. Embed the Query
     const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
@@ -30,20 +35,38 @@ serve(async (req) => {
         content: { parts: [{ text: query }] }
       })
     });
-    const { embedding } = await embedRes.json();
+
+    if (!embedRes.ok) {
+      const errorText = await embedRes.text();
+      throw new Error(`Gemini Embedding API failed: ${embedRes.status} - ${errorText}`);
+    }
+
+    const embedData = await embedRes.json();
+    const embedding = embedData.embedding?.values;
+
+    if (!embedding) {
+      throw new Error("Failed to generate embedding for the query.");
+    }
 
     // 2. Vector Search
     const { data: chunks, error: searchError } = await supabase.rpc('match_knowledge_chunks', {
-      query_embedding: embedding.values,
-      match_threshold: 0.5,
+      query_embedding: embedding,
+      match_threshold: 0.3, // Lowered threshold for better recall
       match_count: 5,
-      filter_customer_name: customerName === 'All' ? null : customerName
+      filter_customer_name: (customerName === 'All' || !customerName) ? null : customerName
     });
 
-    if (searchError) throw searchError;
+    if (searchError) {
+      console.error("[knowledge-ai-assistant] RPC Error:", searchError);
+      throw new Error(`Database search failed: ${searchError.message}`);
+    }
+
+    console.log(`[knowledge-ai-assistant] Found ${chunks?.length || 0} relevant chunks.`);
 
     // 3. Generate Answer with Context
-    const context = chunks.map((c: any) => `Source: ${c.document_name}\nContent: ${c.content}`).join('\n---\n');
+    const context = chunks && chunks.length > 0 
+      ? chunks.map((c: any) => `Source: ${c.document_name}\nContent: ${c.content}`).join('\n---\n')
+      : "No relevant documentation found.";
     
     const prompt = `
       You are the Support Brain AI. Use the following documentation context to answer the user's question.
@@ -67,9 +90,17 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
+        generationConfig: { 
+          response_mime_type: "application/json",
+          temperature: 0.1
+        }
       }),
     });
+
+    if (!geminiRes.ok) {
+      const errorText = await geminiRes.text();
+      throw new Error(`Gemini Generation API failed: ${geminiRes.status} - ${errorText}`);
+    }
 
     const aiData = await geminiRes.json();
     const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
@@ -81,6 +112,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
+    console.error("[knowledge-ai-assistant] Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

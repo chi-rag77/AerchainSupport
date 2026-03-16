@@ -54,6 +54,10 @@ const AIKnowledgeAssistant = () => {
         body: { query: input, customerName: 'All' }
       });
 
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -66,7 +70,7 @@ const AIKnowledgeAssistant = () => {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',
-        content: "I encountered an error searching the knowledge base. Please try again."
+        content: `Error: ${err.message || "I encountered an error searching the knowledge base. Please try again."}`
       }]);
     } finally {
       setIsLoading(false);
