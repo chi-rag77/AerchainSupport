@@ -40,13 +40,20 @@ const AIKnowledgeAssistant = () => {
   const [awaitingCustomer, setAwaitingCustomer] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch unique customers for the context picker
+  // Fetch unique customers from both tickets and documents
   const { data: uniqueCustomers = [] } = useQuery<string[]>({
     queryKey: ["uniqueCustomersForContext"],
     queryFn: async () => {
-      const { data, error } = await supabase.from('freshdesk_tickets').select('cf_company').limit(1000);
-      if (error) throw error;
-      return Array.from(new Set((data || []).map(t => t.cf_company).filter(Boolean))) as string[];
+      const [ticketsRes, docsRes] = await Promise.all([
+        supabase.from('freshdesk_tickets').select('cf_company').limit(1000),
+        supabase.from('knowledge_documents').select('customer_name').not('customer_name', 'is', null)
+      ]);
+      
+      const customers = new Set<string>();
+      (ticketsRes.data || []).forEach(t => t.cf_company && customers.add(t.cf_company));
+      (docsRes.data || []).forEach(d => d.customer_name && customers.add(d.customer_name));
+      
+      return Array.from(customers).sort();
     }
   });
 
@@ -172,7 +179,7 @@ const AIKnowledgeAssistant = () => {
                 <div className={cn(
                   "inline-block p-5 rounded-[24px] text-sm font-medium leading-relaxed shadow-sm border",
                   m.role === 'assistant' 
-                    ? "bg-white dark:bg-gray-900 border-border rounded-tl-none text-left" 
+                    ? "bg-white dark:bg-gray-800 border-border rounded-tl-none text-left" 
                     : "bg-indigo-600 text-white border-indigo-500 rounded-tr-none text-left"
                 )}>
                   {m.content}
@@ -188,7 +195,7 @@ const AIKnowledgeAssistant = () => {
                     >
                       <Globe className="h-3.5 w-3.5" /> Global Product Docs
                     </Button>
-                    {uniqueCustomers.slice(0, 5).map(c => (
+                    {uniqueCustomers.map(c => (
                       <Button 
                         key={c} 
                         variant="outline" 
