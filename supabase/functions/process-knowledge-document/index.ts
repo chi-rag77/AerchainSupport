@@ -1,4 +1,4 @@
-// v1.1 - Robust Document Processor
+// v1.2 - Robust Document Processor
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -69,9 +69,9 @@ serve(async (req) => {
 
     console.log(`[process-knowledge-document] Generated ${chunks.length} chunks.`);
 
-    // 4. Generate Embeddings & Save
+    // 4. Generate Embeddings & Save using v1 endpoint
     for (const chunk of chunks) {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

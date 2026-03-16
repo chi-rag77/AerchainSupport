@@ -1,4 +1,4 @@
-// v1.1 - Robust Knowledge AI Assistant
+// v1.2 - Robust Knowledge AI Assistant
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -26,8 +26,8 @@ serve(async (req) => {
 
     console.log(`[knowledge-ai-assistant] Query: "${query}" for customer: ${customerName}`);
 
-    // 1. Embed the Query
-    const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
+    // 1. Embed the Query using v1 endpoint
+    const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -51,7 +51,7 @@ serve(async (req) => {
     // 2. Vector Search
     const { data: chunks, error: searchError } = await supabase.rpc('match_knowledge_chunks', {
       query_embedding: embedding,
-      match_threshold: 0.3, // Lowered threshold for better recall
+      match_threshold: 0.3,
       match_count: 5,
       filter_customer_name: (customerName === 'All' || !customerName) ? null : customerName
     });
