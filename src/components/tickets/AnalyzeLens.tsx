@@ -153,10 +153,27 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
         </div>
       </ScrollArea>
 
-      {/* 3. Upgraded Input Bar */}
+      {/* 3. Upgraded Input Bar with Animated Border */}
       <div className="relative group pt-4">
-        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[32px] blur opacity-10 group-focus-within:opacity-25 transition duration-1000"></div>
-        <div className="relative flex items-center gap-3 p-2.5 bg-white dark:bg-gray-900 rounded-[28px] border border-border shadow-2xl transition-all group-focus-within:border-indigo-300">
+        {/* Animated "Strip Light" Border */}
+        <div className="absolute -inset-[1.5px] top-[17.5px] rounded-[30px] overflow-hidden pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-500">
+          <motion.div
+            animate={{
+              rotate: [0, 360],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_160deg,#818cf8_180deg,transparent_200deg,transparent_360deg)]"
+          />
+        </div>
+
+        {/* Static Glow (Fallback/Base) */}
+        <div className="absolute -inset-1 top-[17.5px] bg-gradient-to-r from-indigo-500/20 to-purple-600/20 rounded-[32px] blur opacity-0 group-focus-within:opacity-100 transition duration-1000"></div>
+        
+        <div className="relative flex items-center gap-3 p-2.5 bg-white dark:bg-gray-900 rounded-[28px] border border-border shadow-2xl transition-all group-focus-within:border-transparent">
           <div className="p-3.5 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
             <Brain className="h-6 w-6" />
           </div>
