@@ -162,7 +162,7 @@ const AIPriorityStrip = ({ onApplyFilter }: AIPriorityStripProps) => {
                         </div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-[#1A1F2E] border-white/10 text-white p-4 rounded-xl shadow-2xl max-w-xs">
+                    <TooltipContent side="bottom" className="bg-[#1A1F2E] border-white/10 text-white p-4 rounded-xl shadow-2xl max-w-xs z-[100]">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">AI Recommendation</span>
