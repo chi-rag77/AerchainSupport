@@ -1,6 +1,6 @@
 import { Ticket } from "@/features/tickets/types";
 
-export type QueueViewMode = 'list' | 'compact' | 'kanban';
+export type QueueViewMode = 'list' | 'compact' | 'kanban' | 'cluster' | 'focus';
 
 export interface QueueTicket extends Ticket {
   riskScore: number;
@@ -15,5 +15,5 @@ export interface QueueState {
   viewMode: QueueViewMode;
   selectedTicketIds: string[];
   isInsightsOpen: boolean;
-  sortBy: 'risk' | 'sla' | 'aging' | 'created';
+  sortBy: 'intent' | 'sla' | 'aging' | 'created';
 }

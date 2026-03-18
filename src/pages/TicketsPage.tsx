@@ -11,13 +11,15 @@ import KanbanBoard from "@/features/queue/components/KanbanBoard";
 import BulkActionBar from "@/features/queue/components/BulkActionBar";
 import QueueFilters from "@/features/queue/components/QueueFilters";
 import TicketDetailModal from "@/components/TicketDetailModal";
+import AIPriorityStrip from "@/features/queue/components/AIPriorityStrip";
 import DashboardMetricCardV2 from "@/components/DashboardMetricCardV2";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { 
   TicketIcon, Hourglass, Bug, Clock, ShieldAlert, 
-  Loader2, LayoutDashboard, SlidersHorizontal, ChevronLeft, ChevronRight 
+  Loader2, LayoutDashboard, SlidersHorizontal, ChevronLeft, ChevronRight,
+  Layers, ChevronDown, ChevronUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
@@ -28,6 +30,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { TicketFilters, Ticket } from "@/features/tickets/types";
 import { motion, AnimatePresence } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 
 const TicketsPage = () => {
   const { session } = useSupabase();
@@ -38,6 +41,7 @@ const TicketsPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const itemsPerPage = 20;
 
   const [filters, setFilters] = useState<TicketFilters>({
@@ -68,10 +72,23 @@ const TicketsPage = () => {
     searchTerm,
   }, currentPage);
 
-  // Reset to page 1 when search or filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filters]);
+  // Clustering Logic
+  const clusteredTickets = useMemo(() => {
+    const groups: Record<string, Ticket[]> = {};
+    tickets.forEach(t => {
+      const key = t.cf_module || 'General Issues';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(t);
+    });
+    return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+  }, [tickets]);
+
+  const toggleCluster = (key: string) => {
+    const newSet = new Set(expandedClusters);
+    if (newSet.has(key)) newSet.delete(key);
+    else newSet.add(key);
+    setExpandedClusters(newSet);
+  };
 
   const handleSync = async () => {
     toast.loading("Syncing Freshdesk...", { id: "sync-queue" });
@@ -124,7 +141,16 @@ const TicketsPage = () => {
   
   return (
     <div className="flex-1 flex flex-col p-8 space-y-8 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
-      {/* Section 1: Command Bar */}
+      
+      {/* Section 1: Live Intelligence Strip */}
+      <AIPriorityStrip 
+        approachingSlaCount={12}
+        recentEscalations={3}
+        spikeModule="Invoice Issues"
+        spikePercent={27}
+      />
+
+      {/* Section 2: Command Bar */}
       <QueueCommandBar 
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
@@ -134,9 +160,11 @@ const TicketsPage = () => {
         activeFilterCount={activeFilterCount}
         isSyncing={isFetching}
         onSync={handleSync}
+        sortBy={queueState.sortBy}
+        onSortChange={queueState.setSortBy}
       />
 
-      {/* Section 2: Intelligence Snapshot (KPIs) */}
+      {/* Section 3: Intelligence Snapshot (KPIs) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardMetricCardV2 
           title="Active Queue"
@@ -176,7 +204,7 @@ const TicketsPage = () => {
         />
       </div>
 
-      {/* Section 3: Ticket Workspace */}
+      {/* Section 4: Ticket Workspace */}
       <div className="flex flex-col gap-4">
         <AnimatePresence mode="wait">
           {isLoading ? (
@@ -196,33 +224,78 @@ const TicketsPage = () => {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
-              {queueState.viewMode === 'list' && (
-                <div className="rounded-[28px] border border-white/20 dark:border-gray-800/30 bg-white dark:bg-gray-900 shadow-glass">
-                  <div className="max-h-[600px] overflow-y-auto relative">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-none shadow-sm">
-                          <TableHead className="w-12 pl-6"></TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
-                          <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
-                          <TableHead className="w-24 pr-6"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {tickets.map((ticket) => (
-                          <TicketRow 
-                            key={ticket.id}
-                            ticket={ticket}
-                            isSelected={queueState.selectedTicketIds.includes(ticket.id)}
-                            onToggleSelect={() => queueState.toggleSelection(ticket.id)}
-                            onClick={() => { setSelectedTicket(ticket); }}
-                          />
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+              {(queueState.viewMode === 'list' || queueState.viewMode === 'focus') && (
+                <div className="rounded-[28px] border border-white/20 dark:border-gray-800/30 bg-white dark:bg-gray-900 shadow-glass overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50 dark:bg-gray-800 border-none shadow-sm">
+                        <TableHead className="w-12 pl-6"></TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase tracking-widest">AI Signals</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
+                        <TableHead className="w-24 pr-6"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(queueState.viewMode === 'focus' ? criticalTickets : tickets).map((ticket) => (
+                        <TicketRow 
+                          key={ticket.id}
+                          ticket={ticket}
+                          isSelected={queueState.selectedTicketIds.includes(ticket.id)}
+                          onToggleSelect={() => queueState.toggleSelection(ticket.id)}
+                          onClick={() => { setSelectedTicket(ticket); }}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {queueState.viewMode === 'cluster' && (
+                <div className="space-y-4">
+                  {clusteredTickets.map(([key, group]) => (
+                    <div key={key} className="rounded-[24px] border border-white/20 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+                      <button 
+                        onClick={() => toggleCluster(key)}
+                        className="w-full flex items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+                            <Layers className="h-5 w-5" />
+                          </div>
+                          <div className="text-left">
+                            <h4 className="font-black text-sm tracking-tight">{key}</h4>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{group.length} Related Tickets</p>
+                          </div>
+                        </div>
+                        {expandedClusters.has(key) ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                      </button>
+                      
+                      <AnimatePresence>
+                        {expandedClusters.has(key) && (
+                          <motion.div
+                            initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
+                            className="overflow-hidden border-t border-gray-50 dark:border-gray-800"
+                          >
+                            <Table>
+                              <TableBody>
+                                {group.map(ticket => (
+                                  <TicketRow 
+                                    key={ticket.id}
+                                    ticket={ticket}
+                                    isSelected={queueState.selectedTicketIds.includes(ticket.id)}
+                                    onToggleSelect={() => queueState.toggleSelection(ticket.id)}
+                                    onClick={() => { setSelectedTicket(ticket); }}
+                                  />
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -255,7 +328,7 @@ const TicketsPage = () => {
         </AnimatePresence>
 
         {/* Pagination Controls */}
-        {queueState.viewMode !== 'kanban' && (
+        {['list', 'compact', 'focus'].includes(queueState.viewMode) && (
           <div className="flex items-center justify-between px-4 py-2 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm rounded-2xl border border-white/20">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
               Page {currentPage}
