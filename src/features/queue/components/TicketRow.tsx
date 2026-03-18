@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Brain, Sparkles, Clock, Building2, User, ArrowRight,
   TrendingUp, ShieldAlert, MessageSquare, Repeat, Link as LinkIcon,
-  AlertCircle, Info, Heart
+  AlertCircle, Info, Heart, CheckCircle2, Hourglass
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNowStrict, parseISO, differenceInDays, isPast } from 'date-fns';
@@ -58,6 +58,37 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
 
     return { riskScore: Math.min(100, score), ageDays: days, aiSignals: signals };
   }, [ticket]);
+
+  const getStatusBadgeClasses = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'open (being processed)':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'pending (awaiting your reply)':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'resolved':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      case 'escalated':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'waiting on customer':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'on tech':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+      case 'on product':
+        return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    const s = status.toLowerCase();
+    if (s.includes('open')) return <Hourglass className="h-3 w-3 mr-1" />;
+    if (s.includes('resolved')) return <CheckCircle2 className="h-3 w-3 mr-1" />;
+    if (s.includes('escalated')) return <AlertCircle className="h-3 w-3 mr-1" />;
+    return <Clock className="h-3 w-3 mr-1" />;
+  };
 
   const renderHeatmap = (score: number) => {
     const bars = 5;
@@ -140,6 +171,13 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
         </TableCell>
 
         <TableCell>
+          <Badge className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border-none", getStatusBadgeClasses(ticket.status))}>
+            {getStatusIcon(ticket.status)}
+            {ticket.status === 'Pending (Awaiting your Reply)' ? 'In Progress' : ticket.status}
+          </Badge>
+        </TableCell>
+
+        <TableCell>
           <div className="flex flex-col items-end gap-1.5">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Risk</span>
@@ -181,7 +219,7 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
       <AnimatePresence>
         {isExpanded && (
           <TableRow className="bg-white dark:bg-gray-800 border-none hover:bg-white dark:hover:bg-gray-800">
-            <TableCell colSpan={6} className="p-0">
+            <TableCell colSpan={7} className="p-0">
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}

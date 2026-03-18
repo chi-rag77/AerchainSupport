@@ -192,6 +192,7 @@ const TicketsPage = () => {
                         <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
                         <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
                         <TableHead className="font-bold text-[10px] uppercase tracking-widest">AI Signals</TableHead>
+                        <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
                         <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
                         <TableHead className="w-24 pr-6"></TableHead>
                       </TableRow>
