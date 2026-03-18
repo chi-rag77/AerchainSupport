@@ -8,25 +8,45 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from '@/lib/utils';
 import { 
   Brain, Send, Target, FileText, 
-  MessageSquare, Search, Zap, Loader2, Bot
+  MessageSquare, Search, Zap, Loader2, Bot,
+  Layout, Eye, EyeOff, Sparkles, ShieldAlert,
+  ChevronRight, ListFilter
 } from 'lucide-react';
 import AnalyzeMessage from './AnalyzeMessage';
 import { useTicketChat } from '@/features/ticket-ai/hooks/useTicketChat';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AnalyzeLensProps {
   ticket: Ticket;
 }
 
-const SUGGESTED_PROMPTS = [
-  { label: "Summarize Issue", icon: FileText, query: "Summarize this ticket and its current state." },
-  { label: "Find Root Cause", icon: Target, query: "What is the likely root cause of this issue?" },
-  { label: "Check Sentiment", icon: MessageSquare, query: "Analyze the customer's sentiment and tone." },
-  { label: "Suggest Resolution", icon: Zap, query: "What are the next steps to resolve this?" },
-  { label: "Similar Issues", icon: Search, query: "Are there any similar past cases?" },
+const SUGGESTION_GROUPS = [
+  {
+    label: "Understand",
+    items: [
+      { label: "Summarize Issue", icon: FileText, query: "Summarize this ticket and its current state." },
+      { label: "Find Root Cause", icon: Target, query: "What is the likely root cause of this issue?" },
+    ]
+  },
+  {
+    label: "Analyze",
+    items: [
+      { label: "Check Sentiment", icon: MessageSquare, query: "Analyze the customer's sentiment and tone." },
+      { label: "Impact Analysis", icon: ShieldAlert, query: "What is the operational impact of this issue?" },
+    ]
+  },
+  {
+    label: "Act",
+    items: [
+      { label: "Suggest Resolution", icon: Zap, query: "What are the next steps to resolve this?" },
+      { label: "Similar Cases", icon: Search, query: "Are there any similar past cases?" },
+    ]
+  }
 ];
 
 const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
   const [input, setInput] = useState("");
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, sendMessage } = useTicketChat(ticket.id);
 
@@ -42,32 +62,72 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full space-y-6">
-      {/* 1. Suggested Prompt Chips */}
-      <div className="flex flex-wrap gap-2 px-1">
-        {SUGGESTED_PROMPTS.map((prompt) => (
-          <button
-            key={prompt.label}
-            onClick={() => handleSend(prompt.query)}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-border hover:border-indigo-300 hover:bg-indigo-50/50 transition-all text-xs font-bold text-muted-foreground hover:text-indigo-600 shadow-sm"
-          >
-            <prompt.icon className="h-3.5 w-3.5" />
-            {prompt.label}
-          </button>
-        ))}
+    <div className="flex flex-col h-full space-y-6 relative">
+      {/* 1. Categorized Suggestion Chips & Focus Toggle */}
+      <div className="flex items-center justify-between gap-4 px-1">
+        <AnimatePresence>
+          {!isFocusMode && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex-1 overflow-x-auto no-scrollbar"
+            >
+              <div className="flex gap-6 min-w-max pb-1">
+                {SUGGESTION_GROUPS.map((group) => (
+                  <div key={group.label} className="flex flex-col gap-2">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 px-1">
+                      {group.label}
+                    </span>
+                    <div className="flex gap-2">
+                      {group.items.map((item) => (
+                        <button
+                          key={item.label}
+                          onClick={() => handleSend(item.query)}
+                          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-border hover:border-indigo-300 hover:bg-indigo-50/50 transition-all text-[11px] font-bold text-muted-foreground hover:text-indigo-600 shadow-sm whitespace-nowrap"
+                        >
+                          <item.icon className="h-3.5 w-3.5" />
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setIsFocusMode(!isFocusMode)}
+          className={cn(
+            "rounded-xl h-9 px-3 gap-2 font-bold text-[10px] uppercase tracking-widest shrink-0",
+            isFocusMode ? "bg-indigo-600 text-white hover:bg-indigo-700" : "text-muted-foreground hover:bg-accent"
+          )}
+        >
+          {isFocusMode ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+          {isFocusMode ? "Exit Focus" : "Focus Mode"}
+        </Button>
       </div>
 
       {/* 2. Chat Thread */}
       <ScrollArea className="flex-1 pr-4 -mr-4">
-        <div className="space-y-8 py-4" ref={scrollRef}>
+        <div className="space-y-10 py-4" ref={scrollRef}>
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 opacity-40">
-              <div className="p-4 rounded-3xl bg-indigo-100 dark:bg-indigo-900/30">
-                <Brain className="h-12 w-12 text-indigo-600" />
+            <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-2xl animate-pulse" />
+                <div className="relative p-6 rounded-[32px] bg-white dark:bg-gray-800 border border-indigo-100 dark:border-indigo-900 shadow-xl">
+                  <Brain className="h-12 w-12 text-indigo-600" />
+                </div>
               </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-black">AI Intelligence Workspace</h3>
-                <p className="text-sm font-medium max-w-xs">Ask anything about this ticket to generate deep insights and resolution paths.</p>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black tracking-tight">AI Intelligence Workspace</h3>
+                <p className="text-sm font-medium text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                  Ask anything about this ticket to generate deep insights, root causes, and resolution paths.
+                </p>
               </div>
             </div>
           ) : (
@@ -81,37 +141,37 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
           )}
           {isLoading && (
             <div className="flex gap-4">
-              <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0">
-                <Bot className="h-4 w-4 text-white" />
+              <div className="h-10 w-10 rounded-2xl bg-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
+                <Bot className="h-5 w-5 text-white" />
               </div>
-              <div className="flex items-center gap-2 p-4 rounded-2xl bg-white dark:bg-gray-800 border border-border">
+              <div className="flex items-center gap-3 p-5 rounded-[24px] bg-white dark:bg-gray-800 border border-border shadow-sm">
                 <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
-                <span className="text-xs font-bold text-muted-foreground animate-pulse uppercase tracking-widest">Analyzing Ticket...</span>
+                <span className="text-xs font-black text-muted-foreground animate-pulse uppercase tracking-[0.2em]">Synthesizing Intelligence...</span>
               </div>
             </div>
           )}
         </div>
       </ScrollArea>
 
-      {/* 3. Input Bar */}
+      {/* 3. Upgraded Input Bar */}
       <div className="relative group pt-4">
-        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[28px] blur opacity-10 group-focus-within:opacity-30 transition duration-1000"></div>
-        <div className="relative flex items-center gap-3 p-2 bg-white dark:bg-gray-900 rounded-[24px] border border-border shadow-xl">
-          <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg">
+        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[32px] blur opacity-10 group-focus-within:opacity-25 transition duration-1000"></div>
+        <div className="relative flex items-center gap-3 p-2.5 bg-white dark:bg-gray-900 rounded-[28px] border border-border shadow-2xl transition-all group-focus-within:border-indigo-300">
+          <div className="p-3.5 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
             <Brain className="h-6 w-6" />
           </div>
           <Input 
-            placeholder="Ask anything about this ticket..." 
+            placeholder="Ask about root cause, impact, or next steps..." 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
-            className="flex-1 border-none bg-transparent focus-visible:ring-0 text-base font-medium placeholder:text-muted-foreground/40"
+            className="flex-1 border-none bg-transparent focus-visible:ring-0 text-base font-bold placeholder:text-muted-foreground/30 h-12"
           />
           <Button 
             size="icon" 
             onClick={() => handleSend(input)}
             disabled={!input.trim() || isLoading}
-            className="h-12 w-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all active:scale-95"
+            className="h-12 w-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all active:scale-95 disabled:opacity-50"
           >
             <Send className="h-5 w-5" />
           </Button>
