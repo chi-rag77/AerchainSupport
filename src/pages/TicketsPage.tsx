@@ -12,7 +12,6 @@ import BulkActionBar from "@/features/queue/components/BulkActionBar";
 import QueueFilters from "@/features/queue/components/QueueFilters";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import AIPriorityStrip from "@/features/queue/components/AIPriorityStrip";
-import DashboardMetricCardV2 from "@/components/DashboardMetricCardV2";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
@@ -164,47 +163,7 @@ const TicketsPage = () => {
         onSortChange={queueState.setSortBy}
       />
 
-      {/* Section 3: Intelligence Snapshot (KPIs) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <DashboardMetricCardV2 
-          title="Active Queue"
-          value={metrics?.totalActiveTickets || 0}
-          icon={TicketIcon}
-          archetype="volume"
-          subtext="Total tickets in progress"
-          onClick={() => {}}
-          isLoading={isLoading}
-        />
-        <DashboardMetricCardV2 
-          title="SLA Risk"
-          value={criticalTickets.length}
-          icon={ShieldAlert}
-          archetype="attention"
-          subtext="Tickets near breach"
-          onClick={() => {}}
-          isLoading={isLoading}
-        />
-        <DashboardMetricCardV2 
-          title="Open Backlog"
-          value={metrics?.openTicketsSpecific || 0}
-          icon={Clock}
-          archetype="health"
-          subtext="Awaiting initial response"
-          onClick={() => {}}
-          isLoading={isLoading}
-        />
-        <DashboardMetricCardV2 
-          title="Bug Reports"
-          value={metrics?.bugsReceivedOverall || 0}
-          icon={Bug}
-          archetype="volume"
-          subtext="Technical issues reported"
-          onClick={() => {}}
-          isLoading={isLoading}
-        />
-      </div>
-
-      {/* Section 4: Ticket Workspace */}
+      {/* Section 3: Ticket Workspace */}
       <div className="flex flex-col gap-4">
         <AnimatePresence mode="wait">
           {isLoading ? (
