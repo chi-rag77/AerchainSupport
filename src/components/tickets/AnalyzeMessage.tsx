@@ -3,7 +3,10 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Bot, User, ArrowRight, Sparkles, Info } from 'lucide-react';
+import { 
+  Bot, User, ArrowRight, Sparkles, Info, 
+  Target, MessageSquare, Zap, ShieldAlert 
+} from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +19,14 @@ interface AnalyzeMessageProps {
   };
   onFollowUp: (query: string) => void;
 }
+
+const iconMap: Record<string, any> = {
+  Target,
+  MessageSquare,
+  Zap,
+  ShieldAlert,
+  Info
+};
 
 const AnalyzeMessage = ({ message, onFollowUp }: AnalyzeMessageProps) => {
   const isAssistant = message.role === 'assistant';
@@ -50,27 +61,30 @@ const AnalyzeMessage = ({ message, onFollowUp }: AnalyzeMessageProps) => {
         {/* Dynamic Cards */}
         {isAssistant && message.cards && message.cards.length > 0 && (
           <div className="space-y-3 mt-2">
-            {message.cards.map((card, i) => (
-              <Card key={i} className={cn(
-                "border-none shadow-sm rounded-2xl overflow-hidden",
-                card.status === 'critical' ? "bg-rose-50 dark:bg-rose-950/20" : "bg-indigo-50/50 dark:bg-indigo-950/20"
-              )}>
-                <CardContent className="p-5 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <card.icon className={cn("h-4 w-4", card.status === 'critical' ? "text-rose-600" : "text-indigo-600")} />
-                    <span className={cn(
-                      "text-[10px] font-black uppercase tracking-widest",
-                      card.status === 'critical' ? "text-rose-600" : "text-indigo-600"
-                    )}>
-                      {card.title}
-                    </span>
-                  </div>
-                  <p className="text-sm font-bold leading-relaxed text-foreground/90">
-                    {card.content}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+            {message.cards.map((card, i) => {
+              const Icon = iconMap[card.icon] || Info;
+              return (
+                <Card key={i} className={cn(
+                  "border-none shadow-sm rounded-2xl overflow-hidden",
+                  card.status === 'critical' ? "bg-rose-50 dark:bg-rose-950/20" : "bg-indigo-50/50 dark:bg-indigo-950/20"
+                )}>
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Icon className={cn("h-4 w-4", card.status === 'critical' ? "text-rose-600" : "text-indigo-600")} />
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-widest",
+                        card.status === 'critical' ? "text-rose-600" : "text-indigo-600"
+                      )}>
+                        {card.title}
+                      </span>
+                    </div>
+                    <p className="text-sm font-bold leading-relaxed text-foreground/90">
+                      {card.content}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
 

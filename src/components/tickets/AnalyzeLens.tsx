@@ -5,29 +5,16 @@ import { Ticket } from '@/features/tickets/types';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Brain, Send, Sparkles, Target, FileText, 
-  MessageSquare, ShieldAlert, ArrowRight, 
-  RefreshCw, Bot, User, Search, Zap, Info,
-  Loader2
+  Brain, Send, Target, FileText, 
+  MessageSquare, Search, Zap, Loader2, Bot
 } from 'lucide-react';
 import AnalyzeMessage from './AnalyzeMessage';
+import { useTicketChat } from '@/features/ticket-ai/hooks/useTicketChat';
 
 interface AnalyzeLensProps {
   ticket: Ticket;
-}
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  type?: 'text' | 'hybrid';
-  cards?: any[];
-  followUps?: string[];
-  isLoading?: boolean;
 }
 
 const SUGGESTED_PROMPTS = [
@@ -39,83 +26,19 @@ const SUGGESTED_PROMPTS = [
 ];
 
 const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { messages, isLoading, sendMessage } = useTicketChat(ticket.id);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping]);
+  }, [messages, isLoading]);
 
-  const handleSend = async (query: string) => {
-    if (!query.trim() || isTyping) return;
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: query
-    };
-
-    setMessages(prev => [...prev, userMsg]);
+  const handleSend = (query: string) => {
+    sendMessage(query);
     setInput("");
-    setIsTyping(true);
-
-    // Simulate AI Response Logic
-    setTimeout(() => {
-      const aiMsg: Message = generateMockResponse(query, ticket);
-      setMessages(prev => [...prev, aiMsg]);
-      setIsTyping(false);
-    }, 1200);
-  };
-
-  // Mock response generator based on query keywords
-  const generateMockResponse = (query: string, ticket: Ticket): Message => {
-    const q = query.toLowerCase();
-    let content = "I've analyzed the ticket context. ";
-    let cards = [];
-    let followUps = ["What should I reply?", "Is this critical?"];
-
-    if (q.includes('summarize')) {
-      content = "Here is the executive summary of the current situation:";
-      cards.push({
-        type: 'summary',
-        title: 'Executive Summary',
-        content: `The customer is reporting that PR#${ticket.id.substring(0,6)} was cancelled unexpectedly. No pending actions are visible in the portal.`,
-        icon: FileText
-      });
-    } else if (q.includes('root cause')) {
-      content = "Based on system logs and conversation patterns, I've identified a likely cause:";
-      cards.push({
-        type: 'root_cause',
-        title: 'Likely Root Cause',
-        content: "Database lock contention detected during the RFQ cancellation workflow, causing a timeout in the UI state update.",
-        icon: Target
-      });
-      followUps = ["Show technical logs", "Suggest a fix"];
-    } else if (q.includes('sentiment')) {
-      content = "The conversation intelligence indicates a shift in tone:";
-      cards.push({
-        type: 'sentiment',
-        title: 'Conversation Insight',
-        content: "Customer tone shifted to Frustrated in the last message. They mentioned this is a 'production blocker'.",
-        icon: MessageSquare,
-        status: 'critical'
-      });
-      followUps = ["Draft empathetic reply", "Escalate to manager"];
-    } else {
-      content = "I'm looking into that. Based on the ticket data, this relates to the " + (ticket.cf_module || "core") + " module.";
-    }
-
-    return {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content,
-      cards,
-      followUps
-    };
   };
 
   return (
@@ -156,21 +79,21 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
               />
             ))
           )}
-          {isTyping && (
+          {isLoading && (
             <div className="flex gap-4">
               <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0">
                 <Bot className="h-4 w-4 text-white" />
               </div>
               <div className="flex items-center gap-2 p-4 rounded-2xl bg-white dark:bg-gray-800 border border-border">
                 <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
-                <span className="text-xs font-bold text-muted-foreground animate-pulse uppercase tracking-widest">Synthesizing...</span>
+                <span className="text-xs font-bold text-muted-foreground animate-pulse uppercase tracking-widest">Analyzing Ticket...</span>
               </div>
             </div>
           )}
         </div>
       </ScrollArea>
 
-      {/* 3. Upgraded Input Bar */}
+      {/* 3. Input Bar */}
       <div className="relative group pt-4">
         <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[28px] blur opacity-10 group-focus-within:opacity-30 transition duration-1000"></div>
         <div className="relative flex items-center gap-3 p-2 bg-white dark:bg-gray-900 rounded-[24px] border border-border shadow-xl">
@@ -187,7 +110,7 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
           <Button 
             size="icon" 
             onClick={() => handleSend(input)}
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isLoading}
             className="h-12 w-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all active:scale-95"
           >
             <Send className="h-5 w-5" />
