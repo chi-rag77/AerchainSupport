@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Search, List, LayoutGrid, Kanban, SlidersHorizontal, 
   ArrowUpDown, RefreshCw, X, Filter, Zap, Loader2,
-  Target, Brain, Layers, Eye
+  Target, Brain, Layers, Eye, Clock
 } from 'lucide-react';
 import { QueueViewMode } from '../types';
 import { cn } from '@/lib/utils';
