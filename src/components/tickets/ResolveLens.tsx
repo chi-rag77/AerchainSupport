@@ -84,24 +84,6 @@ const ResolveLens = ({ ticket, messages, onGenerateReply }: ResolveLensProps) =>
           </div>
         ))}
       </div>
-
-      {/* 3. Smart Reply Assistant Trigger */}
-      <div className="sticky bottom-0 pt-4 bg-background/80 backdrop-blur-sm">
-        <div className="p-4 rounded-2xl border-2 border-dashed border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-950/10 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-indigo-600 text-white">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold">Smart Reply Assistant</p>
-              <p className="text-[10px] text-muted-foreground">Generate a contextual response based on thread history.</p>
-            </div>
-          </div>
-          <Button onClick={onGenerateReply} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase tracking-widest h-9 px-4 rounded-xl gap-2">
-            Generate Reply <Zap className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
     </div>
   );
 };
