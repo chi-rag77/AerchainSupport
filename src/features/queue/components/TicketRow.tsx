@@ -11,7 +11,7 @@ import {
   AlertCircle, Info, Heart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNowStrict, parseISO, differenceInDays, isPast } from 'date-fns';
+import { format, formatDistanceToNowStrict, parseISO, differenceInDays, isPast } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
