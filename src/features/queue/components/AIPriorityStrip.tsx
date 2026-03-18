@@ -1,14 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { 
-  Brain, Sparkles, ArrowRight, ShieldAlert, Zap, 
-  TrendingUp, AlertTriangle, Clock, Info 
+  ArrowRight, TrendingUp, AlertTriangle, Zap 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Badge } from '@/components/ui/badge';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -43,7 +41,6 @@ const AIPriorityStrip = ({ approachingSlaCount, recentEscalations, spikeModule, 
           onMouseLeave={() => setIsHovered(false)}
         >
           {/* 1. Layered Background Effects */}
-          {/* Moving Gradient Base */}
           <motion.div 
             animate={{ 
               background: [
@@ -56,7 +53,6 @@ const AIPriorityStrip = ({ approachingSlaCount, recentEscalations, spikeModule, 
             className="absolute inset-0 pointer-events-none"
           />
 
-          {/* Moving Shimmer Effect */}
           <motion.div
             animate={{ x: ['-100%', '200%'] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 4 }}
@@ -104,8 +100,8 @@ const AIPriorityStrip = ({ approachingSlaCount, recentEscalations, spikeModule, 
                   <div className="space-y-2">
                     <p className="text-xs font-bold text-amber-400">SLA Risk Breakdown</p>
                     <ul className="text-[10px] space-y-1 text-white/70">
-                      <li>• 5 tickets due in < 1 hour</li>
-                      <li>• 7 tickets inactive > 2 hours</li>
+                      <li>• 5 tickets due in less than 1 hour</li>
+                      <li>• 7 tickets inactive more than 2 hours</li>
                     </ul>
                   </div>
                 </TooltipContent>
@@ -143,7 +139,6 @@ const AIPriorityStrip = ({ approachingSlaCount, recentEscalations, spikeModule, 
                     <p className="text-sm font-medium text-white/90">
                       Spike in <span className="text-[#34D399] font-black">"{spikeModule}"</span> (+{spikePercent}%)
                     </p>
-                    {/* Mini Sparkline Mock */}
                     <div className="flex items-end gap-0.5 h-4 ml-1">
                       {[3, 5, 4, 7, 9].map((h, i) => (
                         <motion.div 
