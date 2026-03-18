@@ -160,19 +160,19 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
         {/* Animated "Running Light" Border Container */}
         <div className={cn(
           "absolute -inset-[2px] top-[17px] rounded-[22px] overflow-hidden pointer-events-none transition-opacity duration-500",
-          isFocused ? "opacity-100" : "opacity-60 group-hover:opacity-90"
+          isFocused ? "opacity-100" : "opacity-40 group-hover:opacity-80"
         )}>
           <motion.div
             animate={{ rotate: [0, 360] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,#7C6CF6,#5BA8FF,#F2A6FF,#5BA8FF,#7C6CF6)]"
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_100deg,#7C6CF6_120deg,#5BA8FF_180deg,#F2A6FF_240deg,transparent_260deg,transparent_360deg)]"
           />
         </div>
 
         {/* Diffused Outer Glow */}
         <div className={cn(
           "absolute -inset-3 top-[15px] rounded-[24px] blur-2xl transition-opacity duration-700 pointer-events-none",
-          isFocused ? "opacity-60 bg-indigo-500/40" : "opacity-0"
+          isFocused ? "opacity-50 bg-indigo-500/30" : "opacity-0"
         )} />
         
         {/* Main Input Container */}
