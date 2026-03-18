@@ -5,6 +5,7 @@ import { Ticket } from '@/features/tickets/types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { 
   ShieldAlert, Clock, Users, Zap, TrendingUp, 
   AlertTriangle, CheckCircle2, UserPlus, Flag,
