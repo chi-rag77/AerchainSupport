@@ -15,7 +15,7 @@ import { format, isPast, parseISO, formatDistanceToNowStrict } from 'date-fns';
 import {
   Loader2, AlertCircle, Copy, CheckCircle, Hourglass, Clock, Users, Shield, Laptop, XCircle,
   Tag, Building2, MessageSquare, CalendarDays, User, Info, RefreshCw, Brain, Sparkles, Timer,
-  Archive, Bell, Play, Search, LayoutDashboard, ShieldAlert, Zap, ChevronRight
+  Archive, Bell, Play, Search, LayoutDashboard, ShieldAlert, Zap, ChevronRight, ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
