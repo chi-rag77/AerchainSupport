@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-interface QueueAlert {
+export interface QueueAlert {
   type: 'sla_risk' | 'escalation' | 'spike' | 'backlog' | 'anomaly' | 'agent_overload';
   title: string;
   description: string;
@@ -32,7 +32,11 @@ interface QueueAlert {
   filter_query: string;
 }
 
-const AIPriorityStrip = () => {
+interface AIPriorityStripProps {
+  onApplyFilter: (alert: QueueAlert) => void;
+}
+
+const AIPriorityStrip = ({ onApplyFilter }: AIPriorityStripProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -50,7 +54,7 @@ const AIPriorityStrip = () => {
     if (alerts.length <= 1 || isHovered) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % alerts.length);
-    }, 6000);
+    }, 20000);
     return () => clearInterval(timer);
   }, [alerts.length, isHovered]);
 
@@ -195,9 +199,23 @@ const AIPriorityStrip = () => {
                   </Button>
                 </div>
               )}
-              <Button className="bg-white text-[#0B1220] hover:bg-indigo-50 font-black text-[10px] uppercase tracking-widest h-11 px-8 rounded-xl gap-2 shadow-xl transition-all hover:scale-105 active:scale-95">
-                {currentAlert.cta_label} <ArrowRight className="h-4 w-4" />
-              </Button>
+              
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentIndex}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Button 
+                    onClick={() => onApplyFilter(currentAlert)}
+                    className="bg-white text-[#0B1220] hover:bg-indigo-50 font-black text-[10px] uppercase tracking-widest h-11 px-8 rounded-xl gap-2 shadow-xl transition-all hover:scale-105 active:scale-95"
+                  >
+                    {currentAlert.cta_label} <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
         </Card>

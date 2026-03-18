@@ -11,7 +11,7 @@ import KanbanBoard from "@/features/queue/components/KanbanBoard";
 import BulkActionBar from "@/features/queue/components/BulkActionBar";
 import QueueFilters from "@/features/queue/components/QueueFilters";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import AIPriorityStrip from "@/features/queue/components/AIPriorityStrip";
+import AIPriorityStrip, { QueueAlert } from "@/features/queue/components/AIPriorityStrip";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
@@ -122,6 +122,36 @@ const TicketsPage = () => {
     toast.success("Filters reset to default.");
   };
 
+  const handleApplyAlertFilter = (alert: QueueAlert) => {
+    const newFilters = { ...filters };
+    // Reset specific focus filters first
+    newFilters.slaBreached = false;
+    newFilters.highPriority = false;
+    newFilters.status = "All";
+    newFilters.priority = "All";
+
+    if (alert.type === 'sla_risk') {
+      newFilters.slaBreached = true;
+    } else if (alert.type === 'escalation') {
+      newFilters.status = 'Escalated';
+    } else if (alert.type === 'spike') {
+      // Try to extract module/type from title or filter_query
+      const typeMatch = alert.title.match(/Spike in (.*) Issues/i);
+      if (typeMatch && typeMatch[1]) {
+        setSearchTerm(typeMatch[1]);
+      } else {
+        setSearchTerm(alert.value);
+      }
+    } else if (alert.type === 'backlog') {
+      newFilters.status = 'Open (Being Processed)';
+    } else if (alert.type === 'anomaly') {
+      newFilters.highPriority = true;
+    }
+
+    setFilters(newFilters);
+    toast.info(`Applied filter: ${alert.title}`);
+  };
+
   const activeFilterCount = useMemo(() => {
     return [
       filters.status !== "All",
@@ -142,12 +172,7 @@ const TicketsPage = () => {
     <div className="flex-1 flex flex-col p-8 space-y-8 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
       
       {/* Section 1: Live Intelligence Strip */}
-      <AIPriorityStrip 
-        approachingSlaCount={12}
-        recentEscalations={3}
-        spikeModule="Invoice Issues"
-        spikePercent={27}
-      />
+      <AIPriorityStrip onApplyFilter={handleApplyAlertFilter} />
 
       {/* Section 2: Command Bar */}
       <QueueCommandBar 
