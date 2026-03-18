@@ -1,4 +1,4 @@
-// v1.2 - Performance Optimized AI Recurring Issue Radar
+// v1.3 - Performance Optimized AI Recurring Issue Radar with Gemini 1.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -52,7 +52,7 @@ serve(async (req) => {
       }
     });
 
-    // 3. AI Clustering (Gemini 2.5 Flash is very fast)
+    // 3. AI Clustering (Gemini 1.5 Flash is very fast)
     const prompt = `
       Analyze these ticket subjects grouped by module and identify the top 5 RECURRING product issues.
       Data: ${JSON.stringify(moduleGroups)}
@@ -80,7 +80,7 @@ serve(async (req) => {
       }
     `;
 
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

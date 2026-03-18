@@ -1,4 +1,4 @@
-// v2.4 - Customer Intelligence with Gemini 2.5 Flash
+// v2.5 - Customer Intelligence with Gemini 1.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -70,7 +70,7 @@ serve(async (req) => {
 
     const healthScore = Math.round(slaAdherence * 0.6 + (100 - Math.min(100, openTickets.length * 5)) * 0.4);
 
-    // 3. AI Layer (Using 2.5-flash)
+    // 3. AI Layer (Using 1.5-flash)
     let aiSummary = {
       status: "AI Analysis Unavailable",
       key_drivers: ["Deterministic metrics indicate stable operations."],
@@ -96,7 +96,7 @@ serve(async (req) => {
           }
         `;
 
-        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

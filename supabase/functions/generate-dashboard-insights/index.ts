@@ -1,4 +1,4 @@
-// v2.7 - AI Dashboard Insights with Gemini 2.5 Flash
+// v2.8 - AI Dashboard Insights with Gemini 1.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -76,7 +76,7 @@ serve(async (req) => {
       }), { status: 200, headers: corsHeaders });
     }
 
-    // 3. Call Gemini (Using 2.5-flash via v1beta)
+    // 3. Call Gemini (Using 1.5-flash via v1beta)
     const context = `Support data (30 days): Total: ${tickets.length}, Open: ${tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase())).length}`;
     const prompt = `Analyze this support data and return STRICT JSON:
     {
@@ -89,7 +89,7 @@ serve(async (req) => {
     }
     Data: ${context}`;
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

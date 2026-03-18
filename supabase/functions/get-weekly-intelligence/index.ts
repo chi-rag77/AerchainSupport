@@ -1,4 +1,4 @@
-// v2.6 - Weekly Intelligence with Gemini 2.5 Flash
+// v2.7 - Weekly Intelligence with Gemini 1.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -79,7 +79,7 @@ serve(async (req) => {
         "actions": [{"title": "string", "reason": "string", "priority": "high|medium|low"}]
       }`;
 
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
