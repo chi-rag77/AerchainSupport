@@ -52,7 +52,7 @@ const AIWorkspacePanel = ({ isOpen, onClose, ticket }: AIWorkspacePanelProps) =>
             </Button>
             <Button variant="outline" className="justify-start gap-3 h-11 rounded-xl font-bold text-xs border-indigo-100 text-indigo-600 hover:bg-indigo-50 transition-all">
               <ShieldAlert className="h-4 w-4" /> Risk Assessment
-            </Badge>
+            </Button>
           </div>
         </div>
 
