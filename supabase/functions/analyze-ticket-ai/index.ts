@@ -1,4 +1,4 @@
-// v2.8 - Ticket AI Analyzer with Gemini 2.0 Flash
+// v2.8 - Ticket AI Analyzer with Gemini 2.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -75,10 +75,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No conversation found to analyze. Please sync messages first.' }), { status: 404, headers: corsHeaders });
     }
 
-    // 3. Call Gemini (Using 2.0-flash via v1beta)
+    // 3. Call Gemini (Using 2.5-flash via v1beta)
     const prompt = getAnalysisPrompt(customerName || 'Unknown', messages.reverse());
     
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
