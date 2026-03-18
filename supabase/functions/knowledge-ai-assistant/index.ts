@@ -1,4 +1,4 @@
-// v1.8 - Robust Knowledge AI Assistant with Gemini 2.5 Flash
+// v1.9 - Updated to text-embedding-004
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -26,8 +26,8 @@ serve(async (req) => {
 
     console.log(`[knowledge-ai-assistant] Query: "${query}" for customer: ${customerName}`);
 
-    // 1. Embed the Query using v1beta endpoint and stable embedding-001 model
-    const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${geminiApiKey}`, {
+    // 1. Embed the Query using text-embedding-004
+    const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
