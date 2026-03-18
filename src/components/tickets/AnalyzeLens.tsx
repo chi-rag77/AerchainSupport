@@ -47,6 +47,7 @@ const SUGGESTION_GROUPS = [
 const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
   const [input, setInput] = useState("");
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, sendMessage } = useTicketChat(ticket.id);
 
@@ -57,6 +58,7 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
   }, [messages, isLoading]);
 
   const handleSend = (query: string) => {
+    if (!query.trim()) return;
     sendMessage(query);
     setInput("");
   };
@@ -124,7 +126,7 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-black tracking-tight">AI Intelligence Workspace</h3>
+                <h3 className="text-xl font-black tracking-tight text-foreground">AI Intelligence Workspace</h3>
                 <p className="text-sm font-medium text-muted-foreground max-w-xs mx-auto leading-relaxed">
                   Ask anything about this ticket to generate deep insights, root causes, and resolution paths.
                 </p>
@@ -153,44 +155,60 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
         </div>
       </ScrollArea>
 
-      {/* 3. Upgraded Input Bar with Animated Border */}
+      {/* 3. Premium Redesigned Input Bar */}
       <div className="relative group pt-4">
-        {/* Animated "Strip Light" Border */}
-        <div className="absolute -inset-[1.5px] top-[17.5px] rounded-[30px] overflow-hidden pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity duration-500">
+        {/* Animated "Running Light" Border Container */}
+        <div className={cn(
+          "absolute -inset-[1.5px] top-[17.5px] rounded-[22px] overflow-hidden pointer-events-none transition-opacity duration-500",
+          isFocused ? "opacity-100" : "opacity-20 group-hover:opacity-50"
+        )}>
           <motion.div
-            animate={{
-              rotate: [0, 360],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-            className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_160deg,#818cf8_180deg,transparent_200deg,transparent_360deg)]"
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_120deg,#7C6CF6_140deg,#5BA8FF_180deg,#F2A6FF_220deg,transparent_240deg,transparent_360deg)]"
           />
         </div>
 
-        {/* Static Glow (Fallback/Base) */}
-        <div className="absolute -inset-1 top-[17.5px] bg-gradient-to-r from-indigo-500/20 to-purple-600/20 rounded-[32px] blur opacity-0 group-focus-within:opacity-100 transition duration-1000"></div>
+        {/* Diffused Outer Glow */}
+        <div className={cn(
+          "absolute -inset-2 top-[16.5px] rounded-[24px] blur-xl transition-opacity duration-700 pointer-events-none",
+          isFocused ? "opacity-30 bg-indigo-500/20" : "opacity-0"
+        )} />
         
-        <div className="relative flex items-center gap-3 p-2.5 bg-white dark:bg-gray-900 rounded-[28px] border border-border shadow-2xl transition-all group-focus-within:border-transparent">
-          <div className="p-3.5 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
-            <Brain className="h-6 w-6" />
+        {/* Main Input Container */}
+        <div className={cn(
+          "relative flex items-center gap-3 p-2 bg-[#FDFDFF] dark:bg-gray-900 rounded-[20px] border border-border/50 shadow-sm transition-all duration-300",
+          isFocused ? "shadow-lg ring-1 ring-indigo-500/10" : "hover:border-border"
+        )}>
+          {/* Left: AI Icon Container */}
+          <div className="p-3 rounded-full bg-gradient-to-br from-[#7C6CF6] to-[#5BA8FF] text-white shadow-md shrink-0">
+            <Brain className="h-5 w-5" />
           </div>
+
+          {/* Center: Input Field */}
           <Input 
             placeholder="Ask about root cause, impact, or next steps..." 
             value={input}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
-            className="flex-1 border-none bg-transparent focus-visible:ring-0 text-base font-bold placeholder:text-muted-foreground/30 h-12"
+            className="flex-1 border-none bg-transparent focus-visible:ring-0 text-base font-medium placeholder:text-slate-400 h-12"
           />
+
+          {/* Right: Send Button */}
           <Button 
             size="icon" 
             onClick={() => handleSend(input)}
             disabled={!input.trim() || isLoading}
-            className="h-12 w-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all active:scale-95 disabled:opacity-50"
+            className={cn(
+              "h-10 w-10 rounded-2xl transition-all active:scale-95 disabled:opacity-30 shrink-0",
+              input.trim() 
+                ? "bg-gradient-to-br from-[#7C6CF6] to-[#5BA8FF] text-white shadow-lg shadow-indigo-500/20" 
+                : "bg-slate-100 dark:bg-gray-800 text-slate-400"
+            )}
           >
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4" />
           </Button>
         </div>
       </div>
