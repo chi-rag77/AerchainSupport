@@ -1,4 +1,4 @@
-// v1.6 - Robust Knowledge AI Assistant with Gemini 1.5 Flash
+// v1.7 - Robust Knowledge AI Assistant with Gemini 2.0 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -84,7 +84,7 @@ serve(async (req) => {
       }
     `;
 
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

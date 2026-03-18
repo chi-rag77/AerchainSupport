@@ -11,7 +11,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, Send, Sparkles, Target, FileText, 
   MessageSquare, ShieldAlert, ArrowRight, 
-  RefreshCw, Bot, User, Search, Zap, Info
+  RefreshCw, Bot, User, Search, Zap, Info,
+  Loader2
 } from 'lucide-react';
 import AnalyzeMessage from './AnalyzeMessage';
 
@@ -134,8 +135,8 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
       </div>
 
       {/* 2. Chat Thread */}
-      <ScrollArea className="flex-1 pr-4 -mr-4" viewportRef={scrollRef}>
-        <div className="space-y-8 py-4">
+      <ScrollArea className="flex-1 pr-4 -mr-4">
+        <div className="space-y-8 py-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 opacity-40">
               <div className="p-4 rounded-3xl bg-indigo-100 dark:bg-indigo-900/30">
