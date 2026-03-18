@@ -1,4 +1,4 @@
-// v2.8 - AI Assistant with Gemini 2.0 Flash
+// v2.9 - AI Assistant with Gemini 2.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -41,7 +41,7 @@ serve(async (req) => {
     const context = `Data: Total: ${totalTickets}, Open: ${openTickets}, Resolved: ${resolvedTickets}, Bugs: ${bugTickets}`;
     const prompt = `You are an operations assistant. Answer accurately based on this data: ${context}. Query: "${query}"`;
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
