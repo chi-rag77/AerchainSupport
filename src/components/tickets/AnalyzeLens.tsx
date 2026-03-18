@@ -159,26 +159,26 @@ const AnalyzeLens = ({ ticket }: AnalyzeLensProps) => {
       <div className="relative group pt-4">
         {/* Animated "Running Light" Border Container */}
         <div className={cn(
-          "absolute -inset-[1.5px] top-[17.5px] rounded-[22px] overflow-hidden pointer-events-none transition-opacity duration-500",
-          isFocused ? "opacity-100" : "opacity-20 group-hover:opacity-50"
+          "absolute -inset-[2px] top-[17px] rounded-[22px] overflow-hidden pointer-events-none transition-opacity duration-500",
+          isFocused ? "opacity-100" : "opacity-40 group-hover:opacity-80"
         )}>
           <motion.div
             animate={{ rotate: [0, 360] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_120deg,#7C6CF6_140deg,#5BA8FF_180deg,#F2A6FF_220deg,transparent_240deg,transparent_360deg)]"
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_100deg,#7C6CF6_120deg,#5BA8FF_180deg,#F2A6FF_240deg,transparent_260deg,transparent_360deg)]"
           />
         </div>
 
         {/* Diffused Outer Glow */}
         <div className={cn(
-          "absolute -inset-2 top-[16.5px] rounded-[24px] blur-xl transition-opacity duration-700 pointer-events-none",
-          isFocused ? "opacity-30 bg-indigo-500/20" : "opacity-0"
+          "absolute -inset-3 top-[15px] rounded-[24px] blur-2xl transition-opacity duration-700 pointer-events-none",
+          isFocused ? "opacity-50 bg-indigo-500/30" : "opacity-0"
         )} />
         
         {/* Main Input Container */}
         <div className={cn(
           "relative flex items-center gap-3 p-2 bg-[#FDFDFF] dark:bg-gray-900 rounded-[20px] border border-border/50 shadow-sm transition-all duration-300",
-          isFocused ? "shadow-lg ring-1 ring-indigo-500/10" : "hover:border-border"
+          isFocused ? "shadow-xl ring-1 ring-indigo-500/20" : "hover:border-border"
         )}>
           {/* Left: AI Icon Container */}
           <div className="p-3 rounded-full bg-gradient-to-br from-[#7C6CF6] to-[#5BA8FF] text-white shadow-md shrink-0">
