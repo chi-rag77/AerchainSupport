@@ -1,4 +1,4 @@
-// v1.9 - Updated to text-embedding-004
+// v2.0 - Updated to stable v1 API and improved retrieval quality
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -24,14 +24,15 @@ serve(async (req) => {
       global: { headers: { Authorization: req.headers.get('Authorization')! } },
     });
 
-    console.log(`[knowledge-ai-assistant] Query: "${query}" for customer: ${customerName}`);
+    // 1. Clean and Embed the Query using stable v1 endpoint
+    const cleanQuery = query.trim().toLowerCase();
+    console.log(`[knowledge-ai-assistant] Query: "${cleanQuery}" for customer: ${customerName}`);
 
-    // 1. Embed the Query using text-embedding-004
-    const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
+    const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        content: { parts: [{ text: query }] }
+        content: { parts: [{ text: cleanQuery }] }
       })
     });
 
@@ -47,10 +48,10 @@ serve(async (req) => {
       throw new Error("Failed to generate embedding for the query.");
     }
 
-    // 2. Vector Search
+    // 2. Vector Search with increased threshold (0.5)
     const { data: chunks, error: searchError } = await supabase.rpc('match_knowledge_chunks', {
       query_embedding: embedding,
-      match_threshold: 0.3,
+      match_threshold: 0.5,
       match_count: 5,
       filter_customer_name: (customerName === 'All' || !customerName) ? null : customerName
     });
@@ -60,12 +61,22 @@ serve(async (req) => {
       throw new Error(`Database search failed: ${searchError.message}`);
     }
 
-    console.log(`[knowledge-ai-assistant] Found ${chunks?.length || 0} relevant chunks.`);
+    // 3. Fallback if no chunks found
+    if (!chunks || chunks.length === 0) {
+      return new Response(JSON.stringify({
+        answer: "I couldn't find any relevant documentation in the Support Brain to answer your question. I recommend escalating this to a product expert or implementation lead.",
+        confidence: 0,
+        sources: []
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // 3. Generate Answer with Context
-    const context = chunks && chunks.length > 0 
-      ? chunks.map((c: any) => `Source: ${c.document_name}\nContent: ${c.content}`).join('\n---\n')
-      : "No relevant documentation found.";
+    console.log(`[knowledge-ai-assistant] Found ${chunks.length} relevant chunks.`);
+
+    // 4. Generate Answer with Context
+    const context = chunks.map((c: any) => `Source: ${c.document_name}\nContent: ${c.content}`).join('\n---\n');
     
     const prompt = `
       You are the Support Brain AI. Use the following documentation context to answer the user's question.
