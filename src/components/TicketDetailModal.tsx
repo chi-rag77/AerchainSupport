@@ -14,7 +14,8 @@ import { format, isPast, parseISO, formatDistanceToNowStrict } from 'date-fns';
 import {
   Loader2, AlertCircle, CheckCircle, Hourglass, Clock, Users, Shield, Laptop, XCircle,
   Tag, Building2, MessageSquare, CalendarDays, User, Info, RefreshCw, Brain, Sparkles, Timer,
-  Archive, Bell, Play, Search, ShieldAlert, Zap, Maximize2, Minimize2, ExternalLink, ChevronDown
+  Archive, Bell, Play, Search, ShieldAlert, Zap, Maximize2, Minimize2, ExternalLink, ChevronDown,
+  History, Fingerprint, Activity, Layout, Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -75,6 +76,14 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
     setIsExpanded(true);
   };
 
+  const getStatusIcon = (status: string) => {
+    const s = status.toLowerCase();
+    if (s.includes('open')) return <Hourglass className="h-3 w-3" />;
+    if (s.includes('resolved')) return <CheckCircle className="h-3 w-3" />;
+    if (s.includes('escalated')) return <ShieldAlert className="h-3 w-3" />;
+    return <Activity className="h-3 w-3" />;
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
@@ -90,15 +99,24 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
         <SheetHeader className="p-5 bg-card border-b border-border sticky top-0 z-20">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="text-xl font-black tracking-tighter text-indigo-600 shrink-0">#{ticket.id}</span>
-              <SheetTitle className="text-lg font-bold truncate text-foreground">{ticket.subject}</SheetTitle>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Badge variant="secondary" className="h-5 px-2 text-[9px] font-black uppercase tracking-widest bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-                  {ticket.status}
-                </Badge>
-                <Badge variant="secondary" className="h-5 px-2 text-[9px] font-black uppercase tracking-widest bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300">
-                  {ticket.priority}
-                </Badge>
+              <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 shrink-0">
+                <Fingerprint className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black tracking-widest text-muted-foreground uppercase">Ticket #{ticket.id}</span>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="secondary" className="h-5 px-2 text-[9px] font-black uppercase tracking-widest bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 gap-1">
+                      {getStatusIcon(ticket.status)}
+                      {ticket.status}
+                    </Badge>
+                    <Badge variant="secondary" className="h-5 px-2 text-[9px] font-black uppercase tracking-widest bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300 gap-1">
+                      <Zap className="h-3 w-3" />
+                      {ticket.priority}
+                    </Badge>
+                  </div>
+                </div>
+                <SheetTitle className="text-lg font-bold truncate text-foreground mt-0.5">{ticket.subject}</SheetTitle>
               </div>
             </div>
 
@@ -107,19 +125,19 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="h-8 w-8 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground"
+                className="h-9 w-9 rounded-xl hover:bg-accent text-muted-foreground hover:text-foreground"
               >
                 {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </Button>
-              <Separator orientation="vertical" className="h-4 mx-1" />
+              <Separator orientation="vertical" className="h-5 mx-1" />
               <Button 
                 onClick={handleAIAnalyze} 
                 disabled={isAnalyzing}
                 variant="ghost"
-                className="h-8 px-3 rounded-lg text-[10px] font-black uppercase tracking-widest gap-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                className="h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest gap-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
               >
-                {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
-                AI Analyze
+                {isAnalyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                AI Intelligence
               </Button>
             </div>
           </div>
@@ -129,38 +147,41 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
           <div className="flex-1 flex flex-col overflow-hidden">
             
             {/* 2. Mode Switcher */}
-            <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-muted/30">
+            <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-muted/20">
               <div className="flex items-center p-1 bg-background rounded-xl border border-border shadow-sm">
                 {(['agent', 'manager', 'ai'] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setActiveMode(mode)}
                     className={cn(
-                      "h-7 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                      "h-7 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
                       activeMode === mode 
                         ? "bg-indigo-600 text-white shadow-sm" 
                         : "text-muted-foreground hover:text-foreground"
                     )}
                   >
+                    {mode === 'agent' && <User className="h-3 w-3" />}
+                    {mode === 'manager' && <Shield className="h-3 w-3" />}
+                    {mode === 'ai' && <Brain className="h-3 w-3" />}
                     {mode}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-bold gap-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
-                  <Search className="h-3.5 w-3.5" /> KB
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-bold gap-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg">
+                  <Search className="h-3.5 w-3.5" /> Knowledge Base
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setIsAIWorkspaceOpen(!isAIWorkspaceOpen)}
                   className={cn(
-                    "h-8 px-3 text-[10px] font-bold gap-1.5 rounded-lg transition-all", 
+                    "h-8 px-3 text-[10px] font-bold gap-2 rounded-lg transition-all", 
                     isAIWorkspaceOpen ? "bg-indigo-600 text-white" : "text-muted-foreground hover:bg-accent"
                   )}
                 >
-                  <Brain className="h-3.5 w-3.5" /> Workspace
+                  <Layout className="h-3.5 w-3.5" /> Workspace
                 </Button>
               </div>
             </div>
@@ -168,31 +189,41 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
             <div className="flex-1 overflow-y-auto p-6 space-y-8">
               {/* 3. Metadata Tiles */}
               <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-card border border-border shadow-sm space-y-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <div className="p-4 rounded-2xl bg-blue-50/30 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 shadow-sm space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5" /> Requester
                   </span>
-                  <p className="text-sm font-bold truncate text-foreground">{ticket.requester_email}</p>
-                  <p className="text-[11px] font-bold text-indigo-600 uppercase tracking-tighter">{ticket.cf_company || 'No Company'}</p>
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-bold truncate text-foreground">{ticket.requester_email}</p>
+                    <p className="text-[11px] font-bold text-blue-500 uppercase tracking-tighter flex items-center gap-1">
+                      <Building2 className="h-3 w-3" /> {ticket.cf_company || 'No Company'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-card border border-border shadow-sm space-y-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <div className="p-4 rounded-2xl bg-purple-50/30 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-900/30 shadow-sm space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-purple-600 flex items-center gap-1.5">
                     <CalendarDays className="h-3.5 w-3.5" /> Timeline
                   </span>
-                  <p className="text-sm font-bold text-foreground">Created {format(new Date(ticket.created_at), 'MMM dd')}</p>
-                  <p className="text-[11px] font-medium text-muted-foreground">Updated {formatDistanceToNowStrict(parseISO(ticket.updated_at))} ago</p>
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-bold text-foreground">Created {format(new Date(ticket.created_at), 'MMM dd')}</p>
+                    <p className="text-[11px] font-medium text-purple-500 flex items-center gap-1">
+                      <History className="h-3 w-3" /> Updated {formatDistanceToNowStrict(parseISO(ticket.updated_at))} ago
+                    </p>
+                  </div>
                 </div>
 
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 shadow-sm space-y-1.5 cursor-help">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 flex items-center gap-1.5">
+                      <div className="p-4 rounded-2xl bg-amber-50/30 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 shadow-sm space-y-2 cursor-help">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-1.5">
                           <Timer className="h-3.5 w-3.5" /> Status Aging
                         </span>
-                        <p className="text-sm font-black text-indigo-700 dark:text-indigo-300">{ticket.status}</p>
-                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-tighter">Active: {formatDistanceToNowStrict(parseISO(ticket.updated_at))}</p>
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-black text-amber-700 dark:text-amber-300">{ticket.status}</p>
+                          <p className="text-[11px] font-bold text-amber-500 uppercase tracking-tighter">Active: {formatDistanceToNowStrict(parseISO(ticket.updated_at))}</p>
+                        </div>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="p-4 rounded-2xl shadow-2xl border-none bg-gray-900 text-white">
@@ -209,8 +240,8 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
               {/* 4. Inline Action */}
               {!isExpanded && (
                 <div className="flex justify-center">
-                  <Button variant="outline" className="h-9 px-6 rounded-full text-[10px] font-black uppercase tracking-widest gap-2 border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
-                    <Search className="h-3.5 w-3.5" /> Check Impact
+                  <Button variant="outline" className="h-10 px-8 rounded-full text-[10px] font-black uppercase tracking-widest gap-2 border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 shadow-sm">
+                    <Search className="h-4 w-4" /> Check Impact Lens
                   </Button>
                 </div>
               )}
@@ -222,11 +253,11 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
                 <div className="flex items-center justify-between px-1">
                   <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-foreground">
                     <MessageSquare className="h-4 w-4 text-indigo-600" />
-                    Conversation
+                    Conversation Thread
                   </h3>
                   {!isExpanded && (
-                    <Button variant="link" size="sm" onClick={() => setIsExpanded(true)} className="h-auto p-0 text-[10px] font-bold text-indigo-600">
-                      View Full Thread <ChevronDown className="h-3.5 w-3.5 ml-1" />
+                    <Button variant="link" size="sm" onClick={() => setIsExpanded(true)} className="h-auto p-0 text-[10px] font-bold text-indigo-600 gap-1">
+                      View Full History <ChevronDown className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </div>
@@ -237,13 +268,13 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
                     <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Loading Thread...</p>
                   </div>
                 ) : (
-                  <div className="space-y-8 relative before:absolute before:left-5 before:top-0 before:h-full before:w-0.5 before:bg-border">
+                  <div className="space-y-8 relative before:absolute before:left-5 before:top-0 before:h-full before:w-0.5 before:bg-gray-100 dark:before:bg-gray-800">
                     {allMessages.map((message) => (
                       <div key={message.id} className={cn("relative flex gap-5 group", message.is_agent ? "flex-row-reverse" : "flex-row")}>
                         <div className="absolute left-5 top-2.5 h-2 w-2 rounded-full bg-indigo-600 z-10 ring-4 ring-background" />
                         
-                        <Avatar className="h-10 w-10 flex-shrink-0 border-2 border-background shadow-sm">
-                          <AvatarFallback className={cn("text-[10px] font-black", message.is_agent ? "bg-indigo-600 text-white" : "bg-muted text-muted-foreground")}>
+                        <Avatar className="h-10 w-10 flex-shrink-0 border-2 border-background shadow-md">
+                          <AvatarFallback className={cn("text-[10px] font-black", message.is_agent ? "bg-indigo-600 text-white" : "bg-gray-100 text-muted-foreground")}>
                             {message.sender.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -257,8 +288,8 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
                           <div className={cn(
                             "inline-block p-5 rounded-2xl text-sm font-medium leading-relaxed shadow-sm border transition-all group-hover:shadow-md",
                             message.is_agent 
-                              ? "bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800 rounded-tr-none" 
-                              : "bg-card border-border rounded-tl-none"
+                              ? "bg-indigo-50/40 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800 rounded-tr-none" 
+                              : "bg-white dark:bg-gray-800 border-border rounded-tl-none"
                           )}>
                             <div dangerouslySetInnerHTML={{ __html: message.body_html || '' }} className="prose prose-sm dark:prose-invert max-w-none break-words text-foreground" />
                             <MessageAIAction 
@@ -287,15 +318,15 @@ const TicketDetailModal = ({ isOpen, onClose, ticket }: TicketDetailModalProps) 
         <div className="p-4 bg-card border-t border-border flex justify-between items-center">
           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             <Info className="h-3.5 w-3.5" />
-            Triage Mode
+            Triage Mode Active
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="h-10 px-5 rounded-xl font-bold text-xs border-border" asChild>
+            <Button variant="outline" className="h-10 px-5 rounded-xl font-bold text-xs border-border gap-2" asChild>
               <a href={`http://aerchain.freshdesk.com/a/tickets/${ticket.id}`} target="_blank" rel="noopener noreferrer">
-                Freshdesk <ExternalLink className="ml-2 h-3.5 w-3.5" />
+                Freshdesk <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </Button>
-            <Button onClick={onClose} className="h-10 px-8 rounded-xl font-bold text-xs bg-foreground text-background hover:opacity-90">Close</Button>
+            <Button onClick={onClose} className="h-10 px-8 rounded-xl font-bold text-xs bg-gray-900 text-white hover:bg-gray-800 shadow-lg shadow-gray-900/10">Close Workspace</Button>
           </div>
         </div>
       </SheetContent>
