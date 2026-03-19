@@ -2,18 +2,44 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DailyActivity } from '@/features/customer-pulse/types';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Activity, TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { 
+  Activity, TrendingUp, TrendingDown, AlertCircle, 
+  Sparkles, Info, Circle, Triangle, AlertTriangle 
+} from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface BehavioralTimelineProps {
-  data: DailyActivity[];
+interface DailyData {
+  day: string;
+  created: number;
+  resolved: number;
+  sla_risk: 'low' | 'medium' | 'high';
+  trend: 'normal' | 'spike' | 'drop';
 }
 
-const BehavioralTimeline = ({ data }: BehavioralTimelineProps) => {
-  const maxVal = Math.max(...data.map(d => Math.max(d.created, d.resolved)), 1);
+interface BehavioralTimelineProps {
+  data: DailyData[];
+  aiInsights: {
+    summary: string;
+    highlights: { day: string; event: string; reason: string }[];
+  };
+}
+
+const BehavioralTimeline = ({ data, aiInsights }: BehavioralTimelineProps) => {
+  const getMarker = (item: DailyData) => {
+    if (item.sla_risk === 'high') return <AlertTriangle className="h-5 w-5 text-rose-500 animate-pulse" />;
+    if (item.trend === 'spike') return <Triangle className="h-5 w-5 fill-rose-500 text-rose-500" />;
+    if (item.trend === 'drop') return <Triangle className="h-5 w-5 fill-amber-500 text-amber-500 rotate-180" />;
+    return <Circle className="h-4 w-4 fill-indigo-600 text-indigo-600" />;
+  };
+
+  const getMarkerLabel = (item: DailyData) => {
+    if (item.sla_risk === 'high') return "SLA Risk";
+    if (item.trend === 'spike') return "Spike";
+    if (item.trend === 'drop') return "Drop";
+    return "Normal";
+  };
 
   return (
     <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden h-full">
@@ -25,81 +51,94 @@ const BehavioralTimeline = ({ data }: BehavioralTimelineProps) => {
             </div>
             <CardTitle className="text-xl font-black tracking-tight">Behavioral Timeline</CardTitle>
           </div>
-          <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full bg-indigo-600" /> Created
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" /> Resolved
-            </div>
+          <div className="flex items-center gap-4">
+            <Badge variant="outline" className="bg-indigo-50/50 text-indigo-700 border-none font-bold text-[9px] uppercase tracking-widest">
+              Mon – Fri Activity
+            </Badge>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="p-8 pt-6 space-y-10">
-        <div className="flex items-end justify-between h-48 gap-4">
-          {data.map((day, i) => (
-            <div key={day.day} className="flex-1 flex flex-col items-center gap-4 group">
-              <div className="w-full flex justify-center gap-1.5 h-full items-end">
-                {/* Created Bar */}
+        {/* Timeline Visualization */}
+        <div className="relative">
+          {/* Connecting Line */}
+          <div className="absolute top-1/2 left-0 w-full h-px bg-gray-100 dark:bg-gray-800 -translate-y-1/2 z-0" />
+          
+          <div className="relative z-10 flex justify-between items-center">
+            {data.map((item, i) => (
+              <div key={item.day} className="flex flex-col items-center gap-6 flex-1">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                  {item.day}
+                </span>
+
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <motion.div 
-                      initial={{ height: 0 }}
-                      animate={{ height: `${(day.created / maxVal) * 100}%` }}
-                      transition={{ duration: 1, delay: i * 0.1 }}
-                      className={cn(
-                        "w-4 rounded-t-lg transition-all group-hover:brightness-110",
-                        day.isSpike ? "bg-rose-500 shadow-lg shadow-rose-500/20" : "bg-indigo-600"
-                      )}
-                    />
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: i * 0.1, type: "spring" }}
+                      className="cursor-pointer hover:scale-125 transition-transform"
+                    >
+                      {getMarker(item)}
+                    </motion.div>
                   </TooltipTrigger>
-                  <TooltipContent className="font-bold">{day.created} Tickets Created</TooltipContent>
+                  <TooltipContent className="p-3 rounded-xl shadow-2xl border-none bg-white dark:bg-gray-800">
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{item.day} Activity</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase">Created</p>
+                          <p className="text-lg font-black">{item.created}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase">Resolved</p>
+                          <p className="text-lg font-black text-green-600">{item.resolved}</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="w-full justify-center text-[8px] font-black uppercase">
+                        Status: {getMarkerLabel(item)}
+                      </Badge>
+                    </div>
+                  </TooltipContent>
                 </Tooltip>
 
-                {/* Resolved Bar */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <motion.div 
-                      initial={{ height: 0 }}
-                      animate={{ height: `${(day.resolved / maxVal) * 100}%` }}
-                      transition={{ duration: 1, delay: (i * 0.1) + 0.2 }}
-                      className={cn(
-                        "w-4 rounded-t-lg transition-all group-hover:brightness-110",
-                        day.isDip ? "bg-amber-400 shadow-lg shadow-amber-500/20" : "bg-emerald-500"
-                      )}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent className="font-bold">{day.resolved} Tickets Resolved</TooltipContent>
-                </Tooltip>
+                <div className="text-center space-y-0.5">
+                  <p className="text-sm font-black tracking-tighter">
+                    {item.created}<span className="text-muted-foreground mx-0.5">/</span>{item.resolved}
+                  </p>
+                  <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">C/R Ratio</p>
+                </div>
               </div>
-
-              <div className="space-y-1 text-center">
-                <span className="text-xs font-black uppercase tracking-widest text-foreground">{day.day}</span>
-                {day.isSpike && (
-                  <div className="flex items-center justify-center gap-1 text-[8px] font-black text-rose-600 uppercase">
-                    <TrendingUp className="h-2 w-2" /> Spike
-                  </div>
-                )}
-                {day.isDip && (
-                  <div className="flex items-center justify-center gap-1 text-[8px] font-black text-amber-600 uppercase">
-                    <TrendingDown className="h-2 w-2" /> Dip
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-border flex items-start gap-3">
-          <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-          <p className="text-[11px] font-medium text-muted-foreground leading-relaxed">
-            Activity peaked on <span className="font-bold text-foreground">Tuesday</span> with a significant volume spike, while resolution efficiency dipped on <span className="font-bold text-foreground">Friday</span>, likely due to pending technical dependencies.
-          </p>
+        {/* Intelligence Layer */}
+        <div className="p-5 rounded-[24px] bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50">
+          <div className="flex items-start gap-4">
+            <div className="p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm shrink-0">
+              <Sparkles className="h-4 w-4 text-indigo-600" />
+            </div>
+            <div className="space-y-2">
+              <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Behavioral Insight</h5>
+              <p className="text-sm font-bold leading-relaxed text-indigo-900 dark:text-indigo-200">
+                {aiInsights.summary}
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {aiInsights.highlights.map((h, i) => (
+                  <Badge key={i} variant="outline" className="bg-white/50 dark:bg-gray-800/50 border-indigo-100 text-[9px] font-bold py-0.5 px-2">
+                    {h.day}: {h.reason}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 };
 
+import { Badge } from '@/components/ui/badge';
 export default BehavioralTimeline;

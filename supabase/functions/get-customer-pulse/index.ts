@@ -1,4 +1,4 @@
-// v1.0 - Customer Pulse Intelligence Engine
+// v1.1 - Enhanced Behavioral Intelligence Engine
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -25,7 +25,7 @@ serve(async (req) => {
 
     const { customerName, weekOffset = 0 } = await req.json();
 
-    // 1. Define Time Windows
+    // 1. Define Time Windows (Mon-Fri focus)
     const now = new Date();
     const startOfThisWeek = dateFns.startOfWeek(dateFns.subWeeks(now, weekOffset), { weekStartsOn: 1 });
     const endOfThisWeek = dateFns.endOfWeek(startOfThisWeek, { weekStartsOn: 1 });
@@ -42,61 +42,61 @@ serve(async (req) => {
     const thisWeekTickets = (tickets || []).filter(t => new Date(t.created_at) >= startOfThisWeek);
     const lastWeekTickets = (tickets || []).filter(t => new Date(t.created_at) < startOfThisWeek);
 
-    // --- 3. Calculate Metrics ---
-    const total = thisWeekTickets.length;
-    const resolved = thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length;
-    const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
-    
-    const lastTotal = lastWeekTickets.length;
-    const lastResolved = lastWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length;
-    const lastRate = lastTotal > 0 ? Math.round((lastResolved / lastTotal) * 100) : 0;
-
-    // --- 4. Behavioral Timeline ---
+    // --- 3. Calculate Daily Behavioral Data ---
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    const totalCreated = thisWeekTickets.length;
+    const avgCreatedPerDay = totalCreated / 5;
+
     const timeline = days.map((day, i) => {
       const dDate = dateFns.addDays(startOfThisWeek, i);
       const dayTickets = thisWeekTickets.filter(t => dateFns.isSameDay(new Date(t.created_at), dDate));
-      const dayResolved = thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase()) && dateFns.isSameDay(new Date(t.updated_at), dDate));
+      const dayResolved = thisWeekTickets.filter(t => 
+        ['resolved', 'closed'].includes(t.status.toLowerCase()) && 
+        dateFns.isSameDay(new Date(t.updated_at), dDate)
+      );
+
+      // Identify SLA Stress (Urgent tickets or breached ones)
+      const slaStressCount = dayTickets.filter(t => 
+        t.priority === 'Urgent' || (t.due_by && dateFns.isPast(new Date(t.due_by)))
+      ).length;
+
+      // Trend Logic
+      let trend: 'normal' | 'spike' | 'drop' = 'normal';
+      if (dayTickets.length > avgCreatedPerDay * 1.5) trend = 'spike';
+      else if (dayTickets.length < avgCreatedPerDay * 0.5 && dayTickets.length > 0) trend = 'drop';
+
       return {
         day,
         created: dayTickets.length,
         resolved: dayResolved.length,
-        isSpike: dayTickets.length > (total / 5) * 1.5,
-        isDip: dayResolved.length < (resolved / 5) * 0.5
+        sla_risk: slaStressCount > 2 ? 'high' : slaStressCount > 0 ? 'medium' : 'low',
+        trend
       };
     });
 
-    // --- 5. AI Intelligence Layer ---
+    // --- 4. AI Intelligence Layer ---
     let aiResponse = {
-      insights: ["Operational trends are stable."],
-      rootCause: "No significant anomalies detected.",
-      recommendations: ["Continue standard monitoring."],
-      status: 'Healthy' as any,
-      healthScore: 85
+      summary: "Activity is stable across the week.",
+      highlights: []
     };
 
-    if (geminiApiKey && total > 0) {
-      const context = {
-        customer: customerName,
-        thisWeek: { total, resolved, rate },
-        lastWeek: { total: lastTotal, resolved: lastResolved, rate: lastRate },
-        topModules: thisWeekTickets.reduce((acc: any, t) => {
-          acc[t.cf_module || 'General'] = (acc[t.cf_module || 'General'] || 0) + 1;
-          return acc;
-        }, {})
-      };
-
+    if (geminiApiKey && totalCreated > 0) {
       const prompt = `
-        Analyze this weekly support performance for "${customerName}".
-        Data: ${JSON.stringify(context)}
+        You are a support operations analyst. Analyze this weekly ticket activity for "${customerName}":
+        ${JSON.stringify(timeline)}
+
+        Generate insights:
+        1. Identify spikes or drops in ticket creation.
+        2. Identify days where resolution efficiency dropped.
+        3. Highlight SLA risk patterns.
+        4. Provide a short explanation (2–3 lines).
 
         Return STRICT JSON:
         {
-          "insights": ["3 specific observations about trends/recurrence"],
-          "rootCause": "Identify the primary technical or operational bottleneck",
-          "recommendations": ["3 specific actions to take"],
-          "status": "Healthy|Watch|Critical",
-          "healthScore": 0-100
+          "summary": "Overall weekly narrative",
+          "highlights": [
+            { "day": "DayName", "event": "spike | drop | risk", "reason": "Short reason" }
+          ]
         }
       `;
 
@@ -115,47 +115,31 @@ serve(async (req) => {
       }
     }
 
+    // --- 5. Global Metrics ---
+    const resolved = thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length;
+    const rate = totalCreated > 0 ? Math.round((resolved / totalCreated) * 100) : 0;
+    const lastRate = lastWeekTickets.length > 0 ? Math.round((lastWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length / lastWeekTickets.length) * 100) : 0;
+
     return new Response(JSON.stringify({
       customer: customerName,
       weekRange: `${dateFns.format(startOfThisWeek, 'MMM dd')} – ${dateFns.format(endOfThisWeek, 'MMM dd')}`,
-      healthScore: aiResponse.healthScore,
-      status: aiResponse.status,
-      confidenceScore: 92,
+      status: rate > 80 ? 'Healthy' : rate > 60 ? 'Watch' : 'Critical',
+      confidenceScore: 94,
       metrics: {
-        total,
+        total: totalCreated,
         resolved,
         rate,
         rateTrend: rate - lastRate,
-        primaryIssue: "Invoice Queries", // Mocked for now
+        primaryIssue: "Invoice Queries", // Mocked
         primaryIssuePercent: 41
       },
-      comparison: {
-        ticketsTrend: lastTotal > 0 ? Math.round(((total - lastTotal) / lastTotal) * 100) : 0,
-        resolutionTrend: rate - lastRate,
-        recurringTrend: 9
-      },
       timeline,
-      aiInsights: {
-        keyPoints: aiResponse.insights,
-        rootCause: aiResponse.rootCause,
-        recommendations: aiResponse.recommendations
-      },
-      recurringIssues: [
-        { id: '1', title: 'Invoice mismatch', count: 18, trend: 'up', firstSeen: '3 weeks ago', impact: 'High', frequency: 'Daily' },
-        { id: '2', title: 'GRN delay', count: 12, trend: 'repeat', firstSeen: '2 months ago', impact: 'Medium', frequency: 'Weekly' }
-      ],
-      agents: [
-        { name: 'Shwetha', handled: 78, resolved: 61, efficiency: 78, strength: 'Fast response time', concern: 'High dependency tickets pending' }
-      ],
+      aiInsights: aiResponse,
       efficiency: {
         avgResolutionTime: "6.2 hrs",
         slaCompliance: 82,
         trendReason: "due to tech dependencies"
-      },
-      actions: [
-        { id: '1', title: 'Assign invoice issues to dedicated agent', type: 'assign' },
-        { id: '2', title: 'Escalate PO sync issue to Tech', type: 'escalate' }
-      ]
+      }
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
