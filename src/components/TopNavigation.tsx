@@ -209,13 +209,21 @@ const TopNavigation = () => {
           </div>
         </div>
 
-        {/* Energy Line (Animated Border) */}
-        <div className="h-px w-full bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
+        {/* Energy Line (Animated Border) - Enhanced Visibility */}
+        <div className="h-[2px] w-full bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
+          {/* Primary Bright Light */}
           <motion.div 
             initial={{ x: '-100%' }}
             animate={{ x: '100%' }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-0 w-1/3 h-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50"
+            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-100 z-10"
+          />
+          {/* Secondary Diffused Glow */}
+          <motion.div 
+            initial={{ x: '-100%' }}
+            animate={{ x: '100%' }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 w-2/3 h-full bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent blur-md opacity-100"
           />
         </div>
       </div>
