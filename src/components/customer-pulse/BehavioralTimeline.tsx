@@ -40,7 +40,7 @@ const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimel
   };
 
   return (
-    <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden h-full">
+    <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden">
       <CardHeader className="p-8 pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

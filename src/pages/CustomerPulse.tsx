@@ -157,8 +157,8 @@ const CustomerPulse = () => {
           >
             <SnapshotStrip data={data} />
 
-            {/* Core Engines: Always Side-by-Side */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Core Engines: Side-by-Side with items-start to prevent stretching */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
               <BehavioralTimeline 
                 data={data.timeline} 
                 summary={behavioralSummary}
@@ -189,7 +189,7 @@ const CustomerPulse = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start"
                 >
                   <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
                     Next: Recurring Issue Detector
