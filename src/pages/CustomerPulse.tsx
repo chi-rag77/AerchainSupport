@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Loader2, Target, RefreshCw, LayoutDashboard, Brain, Activity
+  Loader2, Target, RefreshCw, LayoutDashboard, Brain
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PulseData } from "@/features/customer-pulse/types";
@@ -19,7 +19,6 @@ import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
 import ResolutionEfficiency from "@/components/customer-pulse/ResolutionEfficiency";
 import AIInsightPanel from "@/components/customer-pulse/AIInsightPanel";
 import AgentPerformancePulse from "@/components/customer-pulse/AgentPerformancePulse";
-import RecurringIssueDetector from "@/components/customer-pulse/RecurringIssueDetector";
 
 const CustomerPulse = () => {
   const { session } = useSupabase();
@@ -68,7 +67,7 @@ const CustomerPulse = () => {
     if (!data) return null;
     return {
       keyPoints: [
-        ...(data.aiInsights?.highlights?.map((h: any) => `${h.day}: ${h.reason}`) || []),
+        ...(data.aiInsights?.highlights?.map(h => `${h.day}: ${h.reason}`) || []),
         ...(data.efficiency?.insights?.issues || [])
       ],
       rootCause: data.efficiency?.insights?.summary || "Stable operations detected.",
@@ -155,7 +154,7 @@ const CustomerPulse = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
-            className="space-y-20"
+            className="space-y-12"
           >
             <SnapshotStrip data={data} />
 
@@ -174,24 +173,9 @@ const CustomerPulse = () => {
               />
             </div>
 
-            {/* ROW 2: Issue Movement */}
-            <div className="space-y-6">
-              <RecurringIssueDetector issues={data.recurringIssues} />
-            </div>
-
-            {/* ROW 3: Agent Performance Pulse (Standalone Section) */}
-            <div className="space-y-6">
-              <AgentPerformancePulse 
-                primary={data.agentPerformance.primary}
-                team={data.agentPerformance.team}
-                insights={data.agentPerformance.insights}
-                recommendations={data.agentPerformance.recommendations}
-              />
-            </div>
-
-            {/* ROW 4: AI Intelligence Layer (Conditional) */}
+            {/* ROW 2: Intelligence Layer */}
             <AnimatePresence mode="wait">
-              {intelligenceMode === 'ai' && (
+              {intelligenceMode === 'ai' ? (
                 <motion.div
                   key="ai-report"
                   initial={{ opacity: 0, y: 20 }}
@@ -199,6 +183,25 @@ const CustomerPulse = () => {
                   exit={{ opacity: 0, y: -20 }}
                 >
                   {reportData && <AIInsightPanel insights={reportData} />}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="summary-cards"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-12"
+                >
+                  <AgentPerformancePulse 
+                    primary={data.agentPerformance.primary}
+                    team={data.agentPerformance.team}
+                    insights={data.agentPerformance.insights}
+                    recommendations={data.agentPerformance.recommendations}
+                  />
+                  
+                  <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                    Next: Decision Layer (“What should we do”)
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
