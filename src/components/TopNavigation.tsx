@@ -103,7 +103,8 @@ const TopNavigation = () => {
       <div className="container mx-auto relative z-10">
         {/* Main Nav Row */}
         <div className="flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-8">
+          {/* Left: Logo */}
+          <div className="flex-1 flex justify-start">
             <Link to="/" className="flex items-center gap-2 group">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -111,13 +112,15 @@ const TopNavigation = () => {
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground hidden sm:block">Aerchain</span>
             </Link>
-
-            <div className="hidden md:block">
-              <NavPill items={navItems} activePath={location.pathname} />
-            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Center: Navigation */}
+          <div className="hidden md:block flex-shrink-0">
+            <NavPill items={navItems} activePath={location.pathname} />
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex-1 flex items-center justify-end gap-3">
             {/* Command Hint */}
             <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100/50 dark:bg-gray-800/50 border border-border/50 text-[10px] font-black text-muted-foreground">
               <Command className="h-3 w-3" />
