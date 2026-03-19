@@ -4,26 +4,17 @@ import React, { useState } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Loader2, Target, RefreshCw, Brain, Sparkles, 
-  Zap, TrendingDown, ArrowRight, Activity
+  Loader2, Target, RefreshCw
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PulseData } from "@/features/customer-pulse/types";
-import { toast } from 'sonner';
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Card, CardContent } from "@/components/ui/card";
 import SmartCustomerSelector from "@/components/customer-pulse/SmartCustomerSelector";
 import SnapshotStrip from "@/components/customer-pulse/SnapshotStrip";
-import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
-import AIInsightPanel from "@/components/customer-pulse/AIInsightPanel";
-import RecurringIssueDetector from "@/components/customer-pulse/RecurringIssueDetector";
-import ActionCenter from "@/components/customer-pulse/ActionCenter";
-import AgentPerformancePulse from "@/components/customer-pulse/AgentPerformancePulse";
 
 const CustomerPulse = () => {
   const { session } = useSupabase();
@@ -118,120 +109,9 @@ const CustomerPulse = () => {
             {/* 1. Hero Snapshot */}
             <SnapshotStrip data={data} />
 
-            {/* 2. Unified Intelligence Grid (12 Columns) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              
-              {/* LEFT COLUMN (7 cols) - Stacks vertically */}
-              <div className="lg:col-span-7 space-y-8">
-                {/* Row 1: Timeline */}
-                <BehavioralTimeline data={data.timeline} />
-                
-                {/* Row 2: Composition & Efficiency */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-800 p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Issue Composition</h4>
-                      <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-tighter border-none bg-gray-50">Smart Breakdown</Badge>
-                    </div>
-                    <div className="space-y-4">
-                      {[
-                        { label: 'Query', percent: 41, trend: 12, color: 'bg-indigo-600' },
-                        { label: 'Bug', percent: 32, trend: 0, color: 'bg-rose-500' },
-                        { label: 'Requirement', percent: 27, trend: -5, color: 'bg-amber-500' },
-                      ].map((item) => (
-                        <div key={item.label} className="space-y-1.5">
-                          <div className="flex justify-between items-end">
-                            <span className="text-xs font-black">{item.label}</span>
-                            <span className="text-sm font-black">{item.percent}%</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
-                            <div className={cn("h-full rounded-full", item.color)} style={{ width: `${item.percent}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-
-                  <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-800 p-6 space-y-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Resolution Efficiency</h4>
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Avg Res Time</p>
-                          <p className="text-2xl font-black tracking-tighter">{data.efficiency.avgResolutionTime}</p>
-                        </div>
-                        <div className="h-10 w-px bg-gray-100 dark:bg-gray-800" />
-                        <div className="space-y-0.5 text-right">
-                          <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">SLA Compliance</p>
-                          <p className="text-2xl font-black tracking-tighter text-indigo-600">{data.efficiency.slaCompliance}%</p>
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/50 flex items-center gap-2">
-                        <TrendingDown className="h-3.5 w-3.5 text-rose-600" />
-                        <p className="text-[9px] font-bold text-rose-900 dark:text-rose-200 uppercase tracking-tighter">
-                          Trend: {data.efficiency.trendReason}
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-
-                {/* Row 3: Recurring Patterns */}
-                <RecurringIssueDetector issues={data.recurringIssues} />
-              </div>
-
-              {/* RIGHT COLUMN (5 cols) - Stacks vertically */}
-              <div className="lg:col-span-5 space-y-8">
-                {/* Row 1: AI Insights (Tall) */}
-                <AIInsightPanel insights={data.aiInsights} />
-
-                {/* Row 2: Agent Performance */}
-                <AgentPerformancePulse agents={data.agents} />
-              </div>
-            </div>
-
-            {/* 3. Decision Layer (Full Width) */}
-            <ActionCenter actions={data.actions} />
-
-            {/* 4. Comparison Footer */}
-            <div className="p-8 rounded-[32px] bg-white dark:bg-gray-900 shadow-glass border border-white/20 flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-indigo-50 rounded-xl">
-                  <Activity className="h-5 w-5 text-indigo-600" />
-                </div>
-                <div className="space-y-0.5">
-                  <h3 className="text-lg font-black tracking-tight">Weekly Comparison</h3>
-                  <p className="text-xs font-medium text-muted-foreground">Strategic movement across key operational pillars.</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-10">
-                <div className="space-y-0.5">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Tickets</p>
-                  <p className={cn("text-xl font-black tracking-tighter", data.comparison.ticketsTrend > 0 ? 'text-rose-600' : 'text-green-600')}>
-                    {data.comparison.ticketsTrend > 0 ? '↑' : '↓'} {Math.abs(data.comparison.ticketsTrend)}%
-                  </p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Resolution</p>
-                  <p className={cn("text-xl font-black tracking-tighter", data.comparison.resolutionTrend >= 0 ? 'text-green-600' : 'text-rose-600')}>
-                    {data.comparison.resolutionTrend >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.resolutionTrend)}%
-                  </p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Recurring</p>
-                  <p className={cn("text-xl font-black tracking-tighter", data.comparison.recurringTrend > 0 ? 'text-rose-600' : 'text-green-600')}>
-                    {data.comparison.recurringTrend > 0 ? '↑' : '↓'} {Math.abs(data.comparison.recurringTrend)}%
-                  </p>
-                </div>
-              </div>
-
-              <Button className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest text-[9px] h-12 px-8 shadow-xl shadow-indigo-500/20 gap-3">
-                Generate Full Report <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+            {/* Rest of the sections removed for step-by-step build */}
+            
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-30">End of Intelligence Brief</p>
             </div>
           </motion.div>
