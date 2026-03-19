@@ -17,7 +17,7 @@ interface AgentPerformancePulseProps {
   team: TeamMember[];
 }
 
-const AgentPerformancePulse = ({ primary, team }: AgentPerformancePulseProps) => {
+const AgentPerformancePulse = ({ primary, team = [] }: AgentPerformancePulseProps) => {
   const getSignalColor = (signal: string) => {
     switch (signal) {
       case 'Strong': return "text-green-600 bg-green-50 border-green-100";
@@ -34,6 +34,10 @@ const AgentPerformancePulse = ({ primary, team }: AgentPerformancePulseProps) =>
       default: return "text-green-600";
     }
   };
+
+  // Ensure primary and its nested arrays exist
+  if (!primary) return null;
+  const taskMix = primary.taskMix || [];
 
   return (
     <div className="space-y-4">
@@ -52,7 +56,7 @@ const AgentPerformancePulse = ({ primary, team }: AgentPerformancePulseProps) =>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-lg font-black text-indigo-600 shadow-inner">
-                  {primary.name.substring(0, 2).toUpperCase()}
+                  {primary.name?.substring(0, 2).toUpperCase() || '??'}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -128,15 +132,19 @@ const AgentPerformancePulse = ({ primary, team }: AgentPerformancePulseProps) =>
           <Card className="border-none shadow-glass rounded-[24px] bg-white dark:bg-gray-900 p-5 h-[152px] flex flex-col justify-between">
             <h4 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Load Distribution</h4>
             <div className="space-y-3">
-              {team.slice(0, 2).map((member) => (
-                <div key={member.name} className="space-y-1">
-                  <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-bold text-foreground truncate max-w-[100px]">{member.name}</span>
-                    <span className="text-[10px] font-black text-indigo-600">{member.percent}%</span>
+              {team.length > 0 ? (
+                team.slice(0, 2).map((member) => (
+                  <div key={member.name} className="space-y-1">
+                    <div className="flex justify-between items-end">
+                      <span className="text-[10px] font-bold text-foreground truncate max-w-[100px]">{member.name}</span>
+                      <span className="text-[10px] font-black text-indigo-600">{member.percent}%</span>
+                    </div>
+                    <Progress value={member.percent} className="h-1" indicatorClassName="bg-indigo-600" />
                   </div>
-                  <Progress value={member.percent} className="h-1" indicatorClassName="bg-indigo-600" />
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-[10px] text-muted-foreground italic">No team data</p>
+              )}
               {team.length === 1 && (
                 <div className="flex items-center gap-1.5 text-[9px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-1.5 rounded-lg">
                   <ShieldAlert className="h-3 w-3" />
@@ -150,17 +158,21 @@ const AgentPerformancePulse = ({ primary, team }: AgentPerformancePulseProps) =>
           <Card className="border-none shadow-glass rounded-[24px] bg-white dark:bg-gray-900 p-5 h-[152px] flex flex-col justify-between">
             <h4 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Task Mix</h4>
             <div className="space-y-2.5">
-              {primary.taskMix.slice(0, 3).map((task) => (
-                <div key={task.label} className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-muted-foreground">{task.label}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1 bg-gray-50 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-400" style={{ width: `${task.percent}%` }} />
+              {taskMix.length > 0 ? (
+                taskMix.slice(0, 3).map((task) => (
+                  <div key={task.label} className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-muted-foreground">{task.label}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1 bg-gray-50 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-indigo-400" style={{ width: `${task.percent}%` }} />
+                      </div>
+                      <span className="text-[10px] font-black text-foreground">{task.percent}%</span>
                     </div>
-                    <span className="text-[10px] font-black text-foreground">{task.percent}%</span>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-[10px] text-muted-foreground italic">No task data</p>
+              )}
             </div>
           </Card>
         </div>
