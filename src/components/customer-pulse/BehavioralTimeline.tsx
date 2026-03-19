@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { 
   Activity, Circle, Triangle, AlertTriangle, ListFilter,
-  TrendingUp, TrendingDown, Minus
+  TrendingUp, TrendingDown, Minus, ArrowDownLeft, ArrowUpRight
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +48,7 @@ const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimel
       };
     } else if (delta < 0) {
       return {
-        label: `${delta} cleared`,
+        label: `${Math.abs(delta)} cleared`,
         color: "text-green-600",
         icon: TrendingDown
       };
@@ -84,16 +84,16 @@ const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimel
       </CardHeader>
 
       <CardContent className="p-8 pt-6 flex-1 flex flex-col">
-        <div className="relative mb-12">
-          <div className="absolute top-1/2 left-0 w-full h-px bg-gray-100 dark:bg-gray-800 -translate-y-1/2 z-0" />
+        <div className="relative mb-8">
+          <div className="absolute top-[44px] left-0 w-full h-px bg-gray-100 dark:bg-gray-800 z-0" />
           
-          <div className="relative z-10 flex justify-between items-center">
+          <div className="relative z-10 flex justify-between items-start">
             {data?.map((item, i) => {
               const delta = getDeltaInfo(item);
               const DeltaIcon = delta.icon;
 
               return (
-                <div key={item.day} className="flex flex-col items-center gap-6 flex-1">
+                <div key={item.day} className="flex flex-col items-center gap-4 flex-1">
                   <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                     {item.day}
                   </span>
@@ -104,30 +104,14 @@ const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimel
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: i * 0.1, type: "spring" }}
-                        className="cursor-pointer hover:scale-125 transition-transform"
+                        className="cursor-pointer hover:scale-125 transition-transform z-10 bg-white dark:bg-gray-900 p-1 rounded-full"
                       >
                         {getMarker(item)}
                       </motion.div>
                     </TooltipTrigger>
                     <TooltipContent className="p-4 rounded-2xl shadow-2xl border-none bg-white dark:bg-gray-900">
-                      <div className="space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{item.day} Detailed Activity</p>
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center gap-8">
-                            <span className="text-xs font-bold text-muted-foreground">Tickets Created</span>
-                            <span className="text-sm font-black">{item.created}</span>
-                          </div>
-                          <div className="flex justify-between items-center gap-8">
-                            <span className="text-xs font-bold text-muted-foreground">Tickets Resolved</span>
-                            <span className="text-sm font-black text-green-600">{item.resolved}</span>
-                          </div>
-                        </div>
-                        <Separator className="opacity-50" />
-                        <div className={cn("flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest", delta.color)}>
-                          <DeltaIcon className="h-3 w-3" />
-                          {delta.label}
-                        </div>
-                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">{item.day} Status</p>
+                      <p className="text-xs font-bold">SLA Risk: {item.sla_risk.toUpperCase()}</p>
                     </TooltipContent>
                   </Tooltip>
 
@@ -156,6 +140,18 @@ const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimel
                     <DeltaIcon className="h-2.5 w-2.5" />
                     {delta.label}
                   </div>
+
+                  {/* Daily Performance Matrix (Fills the blank space) */}
+                  <div className="mt-4 w-full px-2 space-y-2">
+                    <div className="flex flex-col items-center py-2 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 border border-border/30 group hover:border-indigo-200 transition-colors">
+                      <span className="text-xs font-black text-indigo-600">{item.created}</span>
+                      <span className="text-[7px] font-black uppercase tracking-widest text-muted-foreground/60">Created</span>
+                    </div>
+                    <div className="flex flex-col items-center py-2 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 border border-border/30 group hover:border-green-200 transition-colors">
+                      <span className="text-xs font-black text-green-600">{item.resolved}</span>
+                      <span className="text-[7px] font-black uppercase tracking-widest text-muted-foreground/60">Resolved</span>
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -169,8 +165,7 @@ const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimel
             <span className="text-[10px] font-black uppercase tracking-widest">Activity Summary</span>
           </div>
           <p className={cn(
-            "text-sm font-bold leading-relaxed text-foreground/80",
-            mode === 'summary' && "line-clamp-2"
+            "text-sm font-bold leading-relaxed text-foreground/80 line-clamp-2"
           )}>
             {summary}
           </p>
