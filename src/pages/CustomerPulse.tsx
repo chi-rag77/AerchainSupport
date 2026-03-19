@@ -135,38 +135,52 @@ const CustomerPulse = () => {
             <SnapshotStrip data={data} />
 
             {/* 2. Main Intelligence Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              
-              {/* LEFT COLUMN (7 or 8 cols depending on mode) */}
-              <div className={cn("space-y-8", intelligenceMode === 'summary' ? "lg:col-span-7" : "lg:col-span-8")}>
-                <BehavioralTimeline 
-                  data={data.timeline} 
-                  aiInsights={data.aiInsights} 
-                  mode={intelligenceMode}
-                />
-                <ResolutionEfficiency 
-                  data={data.efficiency} 
-                  timeline={data.timeline} 
-                  mode={intelligenceMode}
-                />
-              </div>
-
-              {/* RIGHT COLUMN (5 or 4 cols depending on mode) */}
-              <div className={cn(intelligenceMode === 'summary' ? "lg:col-span-5" : "lg:col-span-4")}>
-                {intelligenceMode === 'summary' ? (
-                  <div className="space-y-8">
-                    <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                      Next: Recurring Issue Detector
-                    </div>
-                    <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                      Next: Agent Performance Pulse
-                    </div>
+            {intelligenceMode === 'summary' ? (
+              <div className="space-y-8">
+                {/* Summary Mode: Side-by-Side Engines */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <BehavioralTimeline 
+                    data={data.timeline} 
+                    aiInsights={data.aiInsights} 
+                    mode="summary"
+                  />
+                  <ResolutionEfficiency 
+                    data={data.efficiency} 
+                    timeline={data.timeline} 
+                    mode="summary"
+                  />
+                </div>
+                
+                {/* Secondary Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                    Next: Recurring Issue Detector
                   </div>
-                ) : (
-                  reportData && <AIInsightPanel insights={reportData} />
-                )}
+                  <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                    Next: Agent Performance Pulse
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* AI Intelligence Mode: Vertical Engines + Report Panel */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 space-y-8">
+                  <BehavioralTimeline 
+                    data={data.timeline} 
+                    aiInsights={data.aiInsights} 
+                    mode="ai"
+                  />
+                  <ResolutionEfficiency 
+                    data={data.efficiency} 
+                    timeline={data.timeline} 
+                    mode="ai"
+                  />
+                </div>
+                <div className="lg:col-span-4">
+                  {reportData && <AIInsightPanel insights={reportData} />}
+                </div>
+              </div>
+            )}
             
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-30">End of Intelligence Brief</p>
