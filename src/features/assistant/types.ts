@@ -1,17 +1,27 @@
 export type MessageRole = 'user' | 'assistant';
 
+export interface AIAction {
+  label: string;
+  type: 'filter' | 'navigate' | 'api';
+  payload: any;
+}
+
 export interface ChatMessage {
   id: string;
   role: MessageRole;
   content: string;
   timestamp: string;
+  type?: 'insight' | 'action' | 'navigation' | 'knowledge';
+  title?: string;
+  bullets?: string[];
+  actions?: AIAction[];
   mode?: 'ai' | 'rule';
 }
 
 export const SMART_SUGGESTIONS = [
-  "How many tickets were created today?",
-  "What is the current backlog status?",
-  "Which countries are using Aerchain?",
-  "How many bugs were reported today?",
-  "Show me the resolution performance."
+  "Why is the backlog high?",
+  "Show me all SLA risks",
+  "How do I fix invoice sync errors?",
+  "Assign urgent tickets to me",
+  "What is the resolution trend?"
 ];
