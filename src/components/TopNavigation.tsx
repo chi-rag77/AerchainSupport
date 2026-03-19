@@ -41,16 +41,17 @@ const TopNavigation = () => {
   const location = useLocation();
   const [isNotificationsSheetOpen, setIsNotificationsSheetOpen] = useState(false);
 
-  // Hide navigation on login and signup pages
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
-  if (isAuthPage) return null;
-
   const { data: unreadCount = 0 } = useQuery<number, Error>({
     queryKey: ["unreadNotificationsCount", user?.id],
     queryFn: () => fetchUnreadNotificationsCount(user?.id),
     enabled: !!user?.id,
     refetchInterval: 30000,
   } as UseQueryOptions<number, Error>);
+
+  // Hide navigation on login and signup pages
+  // This check must come AFTER all hooks are declared
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  if (isAuthPage) return null;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
