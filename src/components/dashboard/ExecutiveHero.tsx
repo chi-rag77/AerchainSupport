@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Brain, CalendarDays, Clock } from 'lucide-react';
+import { RefreshCw, Brain, CalendarDays, Clock, Eye, EyeOff, History } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useDashboard } from '@/features/dashboard/DashboardContext';
+import { useDashboard, TimeTravelPeriod } from '@/features/dashboard/DashboardContext';
 import LiveActivityTicker from './LiveActivityTicker';
 import { motion } from 'framer-motion';
 
@@ -27,7 +27,7 @@ interface ExecutiveHeroProps {
 }
 
 const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsights }: ExecutiveHeroProps) => {
-  const { dateRange, setDateRange, datePreset, setDatePreset } = useDashboard();
+  const { dateRange, setDateRange, datePreset, setDatePreset, filters, toggleFocusMode, setTimePeriod } = useDashboard();
 
   const timeContext = useMemo(() => {
     const hour = new Date().getHours();
@@ -88,40 +88,36 @@ const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsig
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-white/80 dark:bg-gray-900/80 p-1 rounded-full border border-border shadow-sm">
-            <Select value={datePreset} onValueChange={setDatePreset}>
-              <SelectTrigger className="w-[140px] border-none bg-transparent focus:ring-0 h-9 rounded-full text-xs font-bold uppercase tracking-wider">
-                <CalendarDays className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                <SelectValue placeholder="Date Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="last7days">Last 7 Days</SelectItem>
-                <SelectItem value="last30days">Last 30 Days</SelectItem>
-                <SelectItem value="thismonth">This Month</SelectItem>
-                <SelectItem value="lastmonth">Last Month</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {datePreset === 'custom' && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 rounded-full text-[10px] font-black px-3">
-                    {dateRange.from ? format(dateRange.from, 'MMM dd') : ''} - {dateRange.to ? format(dateRange.to, 'MMM dd, yyyy') : ''}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={(range) => range && setDateRange(range)}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
+          {/* Time Travel Toggle */}
+          <div className="flex items-center p-1 bg-white/80 dark:bg-gray-900/80 rounded-full border border-border shadow-sm">
+            {(['today', 'yesterday', 'lastweek'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setTimePeriod(p)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                  filters.timePeriod === p 
+                    ? "bg-indigo-600 text-white shadow-md" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {p === 'lastweek' ? '7D' : p}
+              </button>
+            ))}
           </div>
+
+          {/* Focus Mode Toggle */}
+          <Button 
+            variant="outline" 
+            onClick={toggleFocusMode}
+            className={cn(
+              "rounded-full h-11 px-6 font-bold gap-2 border-border transition-all",
+              filters.isFocusMode ? "bg-rose-50 text-rose-600 border-rose-200 shadow-inner" : "bg-white dark:bg-gray-900"
+            )}
+          >
+            {filters.isFocusMode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            {filters.isFocusMode ? "Focus: Critical" : "Focus Mode"}
+          </Button>
 
           <div className="flex items-center gap-2">
             <Button 
