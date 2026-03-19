@@ -1,4 +1,4 @@
-// v1.0 - Support Copilot Core Engine
+// v1.1 - Support Copilot Core Engine (Fixed Syntax)
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -16,6 +16,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
+    if (!geminiApiKey) throw new Error("GEMINI_API_KEY is not set.");
 
     const authHeader = req.headers.get('Authorization');
     const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
@@ -42,7 +44,7 @@ serve(async (req) => {
       User Query: "${query}"
     `;
 
-    const intentRes = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${geminiApiKey}\`, {
+    const intentRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -89,7 +91,7 @@ serve(async (req) => {
       }
     `;
 
-    const finalRes = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${geminiApiKey}\`, {
+    const finalRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
