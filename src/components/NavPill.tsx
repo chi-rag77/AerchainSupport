@@ -1,8 +1,9 @@
 "use client";
 import React from "react";
-import { Home, Layers, BarChart2, Users } from "lucide-react"; // Import Users icon
+import { Home, Layers, BarChart2, Users, Activity, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom"; // Import Link for navigation
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 interface NavItem {
   icon: React.ElementType;
@@ -17,62 +18,49 @@ interface NavPillProps {
 
 export default function NavPill({ items, activePath }: NavPillProps) {
   return (
-    <nav aria-label="Primary" className="p-3">
-      <div
-        className="relative inline-flex items-center rounded-full px-1.5 py-1 bg-[linear-gradient(135deg,rgba(255,255,255,0.26),rgba(255,255,255,0.12))] 
-                   backdrop-blur-md bg-noise border border-white/20 shadow-glass
-                   dark:bg-[linear-gradient(135deg,rgba(30,30,30,0.26),rgba(30,30,30,0.12))] dark:border-gray-700/20"
-        style={{ WebkitBackdropFilter: "blur(12px)", backdropFilter: "blur(12px)" }}
-      >
-        {/* subtle top-left glossy sheen (pseudo-element style implemented here as absolute div) */}
-        <div className="pointer-events-none absolute left-0 top-0 h-full w-full rounded-full overflow-hidden">
-          <div
-            aria-hidden
-            className="absolute -left-6 -top-6 h-20 w-40 rounded-full opacity-[0.06] bg-gradient-to-r from-white/40 to-transparent blur-[24px]"
-            style={{ mixBlendMode: "overlay" }}
-          />
-          {/* optional noise texture overlay from your uploaded file */}
-          <div className="absolute inset-0 opacity-20 bg-no-repeat bg-center bg-cover" style={{ backgroundImage: "url('/a7087093-d4e0-4854-8db6-d6c44cb24e88.png')" }} />
-        </div>
-
+    <nav aria-label="Primary" className="p-1">
+      <div className="relative inline-flex items-center rounded-full p-1 bg-gray-100/50 dark:bg-gray-800/50 border border-white/20 dark:border-gray-700/20 shadow-inner">
         {items.map((it) => {
           const isActive = activePath === it.path;
           const IconComponent = it.icon;
+          
           return (
-            <Link // Using Link for navigation
+            <Link
               key={it.path}
               to={it.path}
               className={cn(
-                "relative z-10 flex items-center gap-2 rounded-full px-4 py-2 mx-1",
-                "text-sm font-medium text-slate-800 hover:text-slate-900",
-                "dark:text-slate-200 dark:hover:text-white",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-300",
-                "transition-transform duration-180 ease-out",
-                "hover:-translate-y-0.5 active:scale-95"
+                "relative z-10 flex items-center gap-2 rounded-full px-4 py-2 mx-0.5 transition-all duration-300 group",
+                isActive ? "text-white" : "text-muted-foreground hover:text-foreground"
               )}
-              aria-current={isActive ? "page" : undefined}
             >
-              {/* active indicator: a colorful filled pill behind active item */}
+              {/* Active Pill Background */}
               {isActive && (
-                <span
-                  aria-hidden
-                  className="absolute inset-0 -z-10 rounded-full"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, rgba(99,102,241,0.14) 0%, rgba(99,102,241,0.08) 40%, rgba(99,102,241,0.02) 100%)",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)"
-                  }}
+                <motion.div
+                  layoutId="nav-active-pill"
+                  className="absolute inset-0 bg-indigo-600 rounded-full shadow-lg shadow-indigo-500/20"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
 
-              <span className="flex items-center gap-2">
+              {/* Magnetic Hover Glow */}
+              <div className="absolute inset-0 rounded-full bg-indigo-500/0 group-hover:bg-indigo-500/5 transition-colors duration-300" />
+
+              <span className="relative z-10 flex items-center gap-2">
                 <span className={cn(
-                  "h-6 w-6 inline-flex items-center justify-center rounded-full shadow-sm",
-                  isActive ? "bg-indigo-500 text-white" : "bg-white/60 text-indigo-600 dark:bg-gray-700/60 dark:text-indigo-300"
+                  "h-6 w-6 inline-flex items-center justify-center rounded-full transition-all duration-300",
+                  isActive ? "bg-white/20 text-white" : "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm group-hover:scale-110"
                 )}>
-                  <IconComponent className="h-4 w-4" />
+                  <IconComponent className={cn(
+                    "h-3.5 w-3.5",
+                    it.label === 'Pulse' && !isActive && "animate-pulse" // Heartbeat for Pulse
+                  )} />
                 </span>
-                <span className={cn(isActive ? "font-semibold" : "font-medium")}>{it.label}</span>
+                <span className={cn(
+                  "text-[11px] font-black uppercase tracking-widest transition-all",
+                  isActive ? "opacity-100" : "opacity-70 group-hover:opacity-100"
+                )}>
+                  {it.label}
+                </span>
               </span>
             </Link>
           );

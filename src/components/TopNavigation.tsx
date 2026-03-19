@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, Bell, LogOut, Home, Layers, 
-  Settings, Users, KeyRound, Brain, Activity 
+  Bell, LogOut, Home, Layers, 
+  Settings, Users, KeyRound, Brain, Activity,
+  Search, Command, ShieldCheck, Zap, Clock, Target
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,6 +21,7 @@ import NotificationsSheet from './NotificationsSheet';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { useOrgData } from '@/hooks/use-org-user';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 
 const fetchUnreadNotificationsCount = async (userId: string | undefined): Promise<number> => {
   if (!userId) return 0;
@@ -41,6 +43,11 @@ const TopNavigation = () => {
   const location = useLocation();
   const [isNotificationsSheetOpen, setIsNotificationsSheetOpen] = useState(false);
 
+  const { scrollY } = useScroll();
+  const navHeight = useTransform(scrollY, [0, 50], [80, 64]);
+  const navBlur = useTransform(scrollY, [0, 50], [4, 12]);
+  const navShadow = useTransform(scrollY, [0, 50], ["0px 0px 0px rgba(0,0,0,0)", "0px 4px 20px rgba(0,0,0,0.05)"]);
+
   const { data: unreadCount = 0 } = useQuery<number, Error>({
     queryKey: ["unreadNotificationsCount", user?.id],
     queryFn: () => fetchUnreadNotificationsCount(user?.id),
@@ -48,7 +55,6 @@ const TopNavigation = () => {
     refetchInterval: 30000,
   } as UseQueryOptions<number, Error>);
 
-  // Hide navigation on login and signup pages
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
   if (isAuthPage) return null;
 
@@ -66,95 +72,233 @@ const TopNavigation = () => {
 
   const canViewSettings = orgUser && (orgUser.role === 'admin' || orgUser.role === 'manager');
 
+  // --- Context Bar Logic ---
+  const contextInfo = useMemo(() => {
+    if (location.pathname === '/pulse') {
+      return {
+        label: "Danone",
+        detail: "Week: Mar 11–15",
+        status: "⚠️ Medium Risk",
+        metric: "82% SLA",
+        color: "bg-purple-500"
+      };
+    }
+    if (location.pathname === '/tickets') {
+      return {
+        label: "Active Queue",
+        detail: "248 Tickets",
+        status: "⚡ 12 Urgent",
+        metric: "4.2h Avg Res",
+        color: "bg-blue-500"
+      };
+    }
+    if (location.pathname === '/customer360') {
+      return {
+        label: "Enterprise View",
+        detail: "12 Managed Accounts",
+        status: "✅ System Stable",
+        metric: "94% Health",
+        color: "bg-indigo-500"
+      };
+    }
+    return null;
+  }, [location.pathname]);
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return `Good Morning, ${fullName.split(' ')[0]} 👋`;
+    if (hour < 18) return `Good Afternoon, ${fullName.split(' ')[0]} 👋`;
+    return `Good Evening, ${fullName.split(' ')[0]} 👋`;
+  }, [fullName]);
+
   return (
-    <nav className="sticky top-0 z-40 w-full bg-background border-b border-border shadow-sm">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center space-x-2">
-          <Link to="/" className="flex items-center space-x-2">
-            <Logo className="h-6 w-auto text-primary fill-current" />
-            <Badge variant="secondary" className="text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-              v2.0
-            </Badge>
-          </Link>
+    <header className="sticky top-0 z-50 w-full">
+      {/* Liquid Background Layer */}
+      <motion.div 
+        style={{ height: navHeight, backdropFilter: `blur(${navBlur}px)`, boxShadow: navShadow }}
+        className="absolute inset-0 bg-white/70 dark:bg-gray-950/70 border-b border-white/20 dark:border-gray-800/30 transition-colors duration-500"
+      >
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+          <motion.div 
+            animate={{ 
+              x: [0, 100, 0],
+              y: [0, 50, 0],
+              scale: [1, 1.2, 1]
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-200/40 dark:bg-indigo-900/20 rounded-full blur-[100px]" 
+          />
+          <motion.div 
+            animate={{ 
+              x: [0, -100, 0],
+              y: [0, -50, 0],
+              scale: [1, 1.3, 1]
+            }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            className="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-200/40 dark:bg-purple-900/20 rounded-full blur-[100px]" 
+          />
         </div>
+      </motion.div>
 
-        <NavPill items={navItems} activePath={location.pathname} />
+      <div className="container mx-auto relative z-10">
+        {/* Main Nav Row */}
+        <div className="flex h-16 items-center justify-between px-4">
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Logo className="h-6 w-auto text-primary fill-current relative z-10 transition-transform group-hover:scale-110" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground hidden sm:block">Aerchain</span>
+            </Link>
 
-        <div className="flex items-center space-x-4">
-          {canViewSettings && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full" asChild>
-                  <Link to="/settings">
-                    <Settings className="h-5 w-5 text-muted-foreground" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Settings</TooltipContent>
-            </Tooltip>
-          )}
+            <div className="hidden md:block">
+              <NavPill items={navItems} activePath={location.pathname} />
+            </div>
+          </div>
 
-          <Button variant="ghost" size="icon" className="rounded-full relative" onClick={() => setIsNotificationsSheetOpen(true)}>
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-              </span>
-            )}
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* Personality Greeting */}
+            <div className="hidden lg:flex flex-col items-end mr-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">{greeting}</span>
+              <div className="flex items-center gap-1.5">
+                <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[9px] font-bold text-foreground/80 uppercase tracking-tighter">System Stable • Sync Active</span>
+              </div>
+            </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={user?.user_metadata?.avatar_url || "https://github.com/shadcn.png"} alt={fullName} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{fullName}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {orgUser && (
-                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                  <KeyRound className="mr-2 h-4 w-4" />
-                  <span>Role: {orgUser.role.charAt(0).toUpperCase() + orgUser.role.slice(1)}</span>
-                </DropdownMenuItem>
+            {/* Command Hint */}
+            <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100/50 dark:bg-gray-800/50 border border-border/50 text-[10px] font-black text-muted-foreground">
+              <Command className="h-3 w-3" />
+              <span>K</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              {canViewSettings && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" asChild>
+                      <Link to="/settings">
+                        <Settings className="h-5 w-5 text-muted-foreground" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Settings</TooltipContent>
+                </Tooltip>
               )}
-              <DropdownMenuItem asChild>
-                <Link to="/settings" className="cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <ThemeToggle />
-                <span className="ml-2">Toggle Theme</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full relative hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" 
+                onClick={() => setIsNotificationsSheetOpen(true)}
+              >
+                <Bell className="h-5 w-5 text-muted-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white dark:border-gray-950"></span>
+                  </span>
+                )}
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative h-9 w-9 rounded-full overflow-hidden border-2 border-transparent hover:border-indigo-500 transition-all ml-2"
+                  >
+                    <Avatar className="h-full w-full">
+                      <AvatarImage src={user?.user_metadata?.avatar_url} alt={fullName} />
+                      <AvatarFallback className="bg-indigo-600 text-white font-black text-xs">
+                        {fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </motion.button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64 rounded-2xl shadow-2xl border-none p-2" align="end">
+                  <DropdownMenuLabel className="p-4">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-black leading-none">{fullName}</p>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800" />
+                  <DropdownMenuItem asChild className="rounded-xl cursor-pointer p-3">
+                    <Link to="/settings" className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"><Settings className="h-4 w-4" /></div>
+                      <span className="font-bold text-sm">Workspace Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="rounded-xl p-3">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"><Zap className="h-4 w-4" /></div>
+                        <span className="font-bold text-sm">Theme</span>
+                      </div>
+                      <ThemeToggle />
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800" />
+                  <DropdownMenuItem onClick={handleLogout} className="rounded-xl cursor-pointer p-3 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/30"><LogOut className="h-4 w-4" /></div>
+                      <span className="font-bold text-sm">Sign Out</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
+
+        {/* Energy Line (Animated Border) */}
+        <div className="h-px w-full bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
+          <motion.div 
+            initial={{ x: '-100%' }}
+            animate={{ x: '100%' }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className={cn(
+              "absolute inset-0 w-1/3 h-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50",
+              contextInfo?.color && `via-${contextInfo.color.split('-')[1]}-500`
+            )}
+          />
+        </div>
+
+        {/* Active Context Bar */}
+        <AnimatePresence>
+          {contextInfo && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 32, opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="flex items-center justify-center bg-gray-50/50 dark:bg-gray-900/30 backdrop-blur-sm overflow-hidden"
+            >
+              <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-widest">
+                <div className="flex items-center gap-2">
+                  <div className={cn("h-1.5 w-1.5 rounded-full", contextInfo.color)} />
+                  <span className="text-foreground">{contextInfo.label}</span>
+                </div>
+                <div className="h-3 w-px bg-border" />
+                <span className="text-muted-foreground">{contextInfo.detail}</span>
+                <div className="h-3 w-px bg-border" />
+                <span className="text-amber-600">{contextInfo.status}</span>
+                <div className="h-3 w-px bg-border" />
+                <span className="text-indigo-600">{contextInfo.metric}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
       <NotificationsSheet
         isOpen={isNotificationsSheetOpen}
         onClose={() => setIsNotificationsSheetOpen(false)}
       />
-    </nav>
+    </header>
   );
 };
 
