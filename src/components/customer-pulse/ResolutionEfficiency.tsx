@@ -21,7 +21,14 @@ interface ResolutionEfficiencyProps {
 }
 
 const ResolutionEfficiency = ({ data, timeline }: ResolutionEfficiencyProps) => {
-  const { avg_resolution_time, sla_compliance, first_response_time, efficiency_score, bottlenecks, insights } = data;
+  const { 
+    avg_resolution_time = 0, 
+    sla_compliance = 0, 
+    first_response_time = 0, 
+    efficiency_score = 0, 
+    bottlenecks = [], 
+    insights = { summary: "Analyzing performance...", recommendations: [] } 
+  } = data || {};
 
   const metrics = [
     { label: "Avg Resolution", value: `${avg_resolution_time}h`, icon: Clock, color: "text-blue-600" },
@@ -81,7 +88,7 @@ const ResolutionEfficiency = ({ data, timeline }: ResolutionEfficiencyProps) => 
             
             <div className="h-[240px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <LineChart data={timeline || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                   <XAxis dataKey="day" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                   <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
@@ -140,7 +147,7 @@ const ResolutionEfficiency = ({ data, timeline }: ResolutionEfficiencyProps) => 
               <span className="text-[10px] font-black uppercase tracking-widest">Performance Insight</span>
             </div>
             <p className="text-xs font-bold leading-relaxed text-muted-foreground">
-              {insights.summary}
+              {insights?.summary || "Analyzing performance patterns..."}
             </p>
           </div>
           <div className="space-y-3">
@@ -149,11 +156,11 @@ const ResolutionEfficiency = ({ data, timeline }: ResolutionEfficiencyProps) => 
               <span className="text-[10px] font-black uppercase tracking-widest">Actionable Recs</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {insights.recommendations.map((rec: string, i: number) => (
+              {insights?.recommendations?.map((rec: string, i: number) => (
                 <Badge key={i} variant="secondary" className="bg-amber-50 text-amber-700 border-none text-[9px] font-bold py-1 px-2">
                   {rec}
                 </Badge>
-              ))}
+              )) || <span className="text-[10px] text-muted-foreground italic">No recommendations yet.</span>}
             </div>
           </div>
         </div>
