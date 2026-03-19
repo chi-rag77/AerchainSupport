@@ -18,6 +18,7 @@ import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SmartCustomerSelector from "@/components/customer-pulse/SmartCustomerSelector";
 import SnapshotStrip from "@/components/customer-pulse/SnapshotStrip";
 import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
