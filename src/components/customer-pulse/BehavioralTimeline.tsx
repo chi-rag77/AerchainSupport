@@ -40,7 +40,7 @@ const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimel
   };
 
   return (
-    <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden">
+    <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden h-full flex flex-col">
       <CardHeader className="p-8 pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -55,8 +55,8 @@ const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimel
         </div>
       </CardHeader>
 
-      <CardContent className="p-8 pt-6 space-y-10">
-        <div className="relative">
+      <CardContent className="p-8 pt-6 flex-1 flex flex-col">
+        <div className="relative mb-10">
           <div className="absolute top-1/2 left-0 w-full h-px bg-gray-100 dark:bg-gray-800 -translate-y-1/2 z-0" />
           
           <div className="relative z-10 flex justify-between items-center">
@@ -108,15 +108,14 @@ const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimel
           </div>
         </div>
 
-        {/* Deterministic Summary Layer */}
-        <div className="p-5 rounded-[24px] bg-gray-50 dark:bg-gray-900/50 border border-border space-y-3">
+        {/* Deterministic Summary Layer - Pushed to bottom */}
+        <div className="mt-auto p-5 rounded-[24px] bg-gray-50 dark:bg-gray-900/50 border border-border space-y-3">
           <div className="flex items-center gap-2 text-muted-foreground">
             <ListFilter className="h-4 w-4" />
             <span className="text-[10px] font-black uppercase tracking-widest">Activity Summary</span>
           </div>
           <p className={cn(
-            "text-sm font-bold leading-relaxed text-foreground/80",
-            mode === 'summary' && "line-clamp-2"
+            "text-sm font-bold leading-relaxed text-foreground/80 line-clamp-2"
           )}>
             {summary}
           </p>

@@ -157,8 +157,8 @@ const CustomerPulse = () => {
           >
             <SnapshotStrip data={data} />
 
-            {/* Core Engines: Side-by-Side with items-start to prevent stretching */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            {/* Core Engines: Side-by-Side with items-stretch for equal height */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
               <BehavioralTimeline 
                 data={data.timeline} 
                 summary={behavioralSummary}

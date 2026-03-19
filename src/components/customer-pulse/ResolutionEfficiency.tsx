@@ -38,7 +38,7 @@ const ResolutionEfficiency = ({ data, timeline, summary, mode = 'summary' }: Res
   ];
 
   return (
-    <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden">
+    <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden h-full flex flex-col">
       <CardHeader className="p-8 pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -64,7 +64,7 @@ const ResolutionEfficiency = ({ data, timeline, summary, mode = 'summary' }: Res
         </div>
       </CardHeader>
 
-      <CardContent className="p-8 pt-6 space-y-8">
+      <CardContent className="p-8 pt-6 flex-1 flex flex-col space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-7 space-y-4">
             <div className="flex items-center justify-between px-1">
@@ -130,15 +130,14 @@ const ResolutionEfficiency = ({ data, timeline, summary, mode = 'summary' }: Res
           </div>
         </div>
 
-        {/* Deterministic Summary Layer */}
-        <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
+        {/* Deterministic Summary Layer - Pushed to bottom */}
+        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
           <div className="flex items-center gap-2 text-muted-foreground">
             <ListFilter className="h-4 w-4" />
             <span className="text-[10px] font-black uppercase tracking-widest">Efficiency Summary</span>
           </div>
           <p className={cn(
-            "text-sm font-bold leading-relaxed text-foreground/80",
-            mode === 'summary' && "line-clamp-2"
+            "text-sm font-bold leading-relaxed text-foreground/80 line-clamp-2"
           )}>
             {summary}
           </p>
