@@ -16,7 +16,6 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Logo from '@/components/Logo';
-import SocialAuthButtons from '@/components/SocialAuthButtons';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ThemeProvider } from '@/hooks/use-theme';
 import { Eye, EyeOff, Lock, Mail, ArrowRight, Sparkles, ShieldCheck, Zap, AlertCircle } from 'lucide-react';
@@ -79,11 +78,6 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleAuthSuccess = () => {
-    toast.success("Successfully signed in!");
-    navigate('/');
   };
 
   return (
@@ -331,17 +325,6 @@ const Login = () => {
                     </AnimatePresence>
                   </Button>
                 </form>
-
-                <div className="relative my-10">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full opacity-50" />
-                  </div>
-                  <div className="relative flex justify-center text-[10px] font-black uppercase tracking-[0.3em]">
-                    <span className="bg-white dark:bg-slate-900 px-4 text-muted-foreground">Secure Access</span>
-                  </div>
-                </div>
-
-                <SocialAuthButtons onAuthSuccess={handleAuthSuccess} />
 
                 <p className="text-center text-xs font-bold text-muted-foreground mt-10">
                   New to Aerchain?{" "}
