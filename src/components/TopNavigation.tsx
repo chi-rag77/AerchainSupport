@@ -72,38 +72,6 @@ const TopNavigation = () => {
 
   const canViewSettings = orgUser && (orgUser.role === 'admin' || orgUser.role === 'manager');
 
-  // --- Context Bar Logic ---
-  const contextInfo = useMemo(() => {
-    if (location.pathname === '/pulse') {
-      return {
-        label: "Danone",
-        detail: "Week: Mar 11–15",
-        status: "⚠️ Medium Risk",
-        metric: "82% SLA",
-        color: "bg-purple-500"
-      };
-    }
-    if (location.pathname === '/tickets') {
-      return {
-        label: "Active Queue",
-        detail: "248 Tickets",
-        status: "⚡ 12 Urgent",
-        metric: "4.2h Avg Res",
-        color: "bg-blue-500"
-      };
-    }
-    if (location.pathname === '/customer360') {
-      return {
-        label: "Enterprise View",
-        detail: "12 Managed Accounts",
-        status: "✅ System Stable",
-        metric: "94% Health",
-        color: "bg-indigo-500"
-      };
-    }
-    return null;
-  }, [location.pathname]);
-
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return `Good Morning, ${fullName.split(' ')[0]} 👋`;
@@ -261,37 +229,9 @@ const TopNavigation = () => {
             initial={{ x: '-100%' }}
             animate={{ x: '100%' }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            className={cn(
-              "absolute inset-0 w-1/3 h-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50",
-              contextInfo?.color && `via-${contextInfo.color.split('-')[1]}-500`
-            )}
+            className="absolute inset-0 w-1/3 h-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50"
           />
         </div>
-
-        {/* Active Context Bar */}
-        <AnimatePresence>
-          {contextInfo && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 32, opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="flex items-center justify-center bg-gray-50/50 dark:bg-gray-900/30 backdrop-blur-sm overflow-hidden"
-            >
-              <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-widest">
-                <div className="flex items-center gap-2">
-                  <div className={cn("h-1.5 w-1.5 rounded-full", contextInfo.color)} />
-                  <span className="text-foreground">{contextInfo.label}</span>
-                </div>
-                <div className="h-3 w-px bg-border" />
-                <span className="text-muted-foreground">{contextInfo.detail}</span>
-                <div className="h-3 w-px bg-border" />
-                <span className="text-amber-600">{contextInfo.status}</span>
-                <div className="h-3 w-px bg-border" />
-                <span className="text-indigo-600">{contextInfo.metric}</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       <NotificationsSheet
