@@ -45,7 +45,6 @@ const TopNavigation = () => {
 
   const { scrollY } = useScroll();
   const navHeight = useTransform(scrollY, [0, 50], [80, 64]);
-  const navBlur = useTransform(scrollY, [0, 50], [4, 12]);
   const navShadow = useTransform(scrollY, [0, 50], ["0px 0px 0px rgba(0,0,0,0)", "0px 4px 20px rgba(0,0,0,0.05)"]);
 
   const { data: unreadCount = 0 } = useQuery<number, Error>({
@@ -72,19 +71,12 @@ const TopNavigation = () => {
 
   const canViewSettings = orgUser && (orgUser.role === 'admin' || orgUser.role === 'manager');
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return `Good Morning, ${fullName.split(' ')[0]} 👋`;
-    if (hour < 18) return `Good Afternoon, ${fullName.split(' ')[0]} 👋`;
-    return `Good Evening, ${fullName.split(' ')[0]} 👋`;
-  }, [fullName]);
-
   return (
     <header className="sticky top-0 z-50 w-full">
-      {/* Liquid Background Layer */}
+      {/* Solid Background Layer */}
       <motion.div 
-        style={{ height: navHeight, backdropFilter: `blur(${navBlur}px)`, boxShadow: navShadow }}
-        className="absolute inset-0 bg-white/70 dark:bg-gray-950/70 border-b border-white/20 dark:border-gray-800/30 transition-colors duration-500"
+        style={{ height: navHeight, boxShadow: navShadow }}
+        className="absolute inset-0 bg-white dark:bg-gray-950 border-b border-white/20 dark:border-gray-800/30 transition-colors duration-500"
       >
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
           <motion.div 
@@ -126,15 +118,6 @@ const TopNavigation = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Personality Greeting */}
-            <div className="hidden lg:flex flex-col items-end mr-4">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">{greeting}</span>
-              <div className="flex items-center gap-1.5">
-                <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[9px] font-bold text-foreground/80 uppercase tracking-tighter">System Stable • Sync Active</span>
-              </div>
-            </div>
-
             {/* Command Hint */}
             <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100/50 dark:bg-gray-800/50 border border-border/50 text-[10px] font-black text-muted-foreground">
               <Command className="h-3 w-3" />
