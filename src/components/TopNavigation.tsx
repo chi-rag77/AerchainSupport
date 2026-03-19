@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Bell, LogOut, Home, Layers, 
-  Settings, Users, CalendarDays, KeyRound, Brain 
+  Settings, Users, KeyRound, Brain 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -49,7 +49,6 @@ const TopNavigation = () => {
   } as UseQueryOptions<number, Error>);
 
   // Hide navigation on login and signup pages
-  // This check must come AFTER all hooks are declared
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
   if (isAuthPage) return null;
 
@@ -62,7 +61,6 @@ const TopNavigation = () => {
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: Users, label: "Customer 360", path: "/customer360" },
     { icon: Brain, label: "Knowledge Hub", path: "/knowledge" },
-    { icon: CalendarDays, label: "Weekly Summary", path: "/weekly-summary" },
   ];
 
   const canViewSettings = orgUser && (orgUser.role === 'admin' || orgUser.role === 'manager');
