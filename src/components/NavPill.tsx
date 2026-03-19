@@ -18,7 +18,16 @@ interface NavPillProps {
 export default function NavPill({ items, activePath }: NavPillProps) {
   return (
     <nav aria-label="Primary" className="p-1">
-      <div className="relative inline-flex items-center rounded-full p-1 bg-gray-50/80 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 shadow-inner">
+      <div className="relative inline-flex items-center rounded-full p-1 bg-gray-50/80 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 shadow-inner overflow-hidden">
+        
+        {/* Global Energy Light (Entire Container) */}
+        <motion.div 
+          initial={{ x: '-100%' }}
+          animate={{ x: '100%' }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent z-0 pointer-events-none"
+        />
+
         {items.map((it) => {
           const isActive = activePath === it.path;
           const IconComponent = it.icon;
@@ -32,21 +41,13 @@ export default function NavPill({ items, activePath }: NavPillProps) {
                 isActive ? "text-white" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               )}
             >
-              {/* Active Pill Background with Energy Light */}
+              {/* Active Pill Background */}
               {isActive && (
                 <motion.div
                   layoutId="nav-active-pill"
-                  className="absolute inset-0 bg-[#5850EC] rounded-full shadow-lg shadow-indigo-500/30 overflow-hidden"
+                  className="absolute inset-0 bg-[#5850EC] rounded-full shadow-lg shadow-indigo-500/30"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                >
-                  {/* Energy Light Streak */}
-                  <motion.div 
-                    initial={{ x: '-100%' }}
-                    animate={{ x: '100%' }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent z-10"
-                  />
-                </motion.div>
+                />
               )}
 
               <span className="relative z-10 flex items-center gap-3">
