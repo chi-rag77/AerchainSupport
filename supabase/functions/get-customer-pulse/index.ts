@@ -1,4 +1,4 @@
-// v1.6 - Lean Agent Performance logic
+// v1.7 - Full Data Aggregation for Timeline and Efficiency
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -37,9 +37,43 @@ serve(async (req) => {
       .gte('created_at', startOfLastWeek.toISOString())
       .lte('created_at', endOfThisWeek.toISOString());
 
-    const thisWeekTickets = (tickets || []).filter(t => new Date(t.created_at) >= startOfThisWeek);
+    const allTickets = tickets || [];
+    const thisWeekTickets = allTickets.filter(t => new Date(t.created_at) >= startOfThisWeek);
     
-    // --- 1. Agent Performance Logic ---
+    // --- 1. Timeline Logic (Daily Activity) ---
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    const timeline = days.map((day, index) => {
+      const targetDate = dateFns.addDays(startOfThisWeek, index);
+      const created = thisWeekTickets.filter(t => dateFns.isSameDay(new Date(t.created_at), targetDate)).length;
+      const resolved = thisWeekTickets.filter(t => {
+        const status = t.status.toLowerCase();
+        return (status === 'resolved' || status === 'closed') && dateFns.isSameDay(new Date(t.updated_at), targetDate);
+      }).length;
+
+      return {
+        day,
+        created,
+        resolved,
+        sla_risk: created > 5 ? 'high' : created > 2 ? 'medium' : 'low',
+        trend: created > resolved ? 'spike' : 'normal'
+      };
+    });
+
+    // --- 2. Efficiency & Bottlenecks ---
+    const moduleCounts: Record<string, number> = {};
+    thisWeekTickets.forEach(t => {
+      if (t.cf_module) moduleCounts[t.cf_module] = (moduleCounts[t.cf_module] || 0) + 1;
+    });
+
+    const bottlenecks = Object.entries(moduleCounts)
+      .map(([type, count]) => ({
+        type,
+        percentage: Math.round((count / (thisWeekTickets.length || 1)) * 100)
+      }))
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 3);
+
+    // --- 3. Agent Performance Logic ---
     const agentMap: Record<string, any> = {};
     thisWeekTickets.forEach(t => {
       const name = t.assignee || 'Unassigned';
@@ -68,30 +102,36 @@ serve(async (req) => {
       percent: Math.round((a.total / (thisWeekTickets.length || 1)) * 100)
     }));
 
-    // Task Mix for Primary Agent
     const taskMix = Object.entries(primaryAgentRaw.types).map(([label, count]: [string, any]) => ({
       label,
       percent: Math.round((count / primaryAgentRaw.total) * 100)
     })).sort((a, b) => b.percent - a.percent);
 
-    // --- 2. AI Intelligence Layer (Concise) ---
-    let agentAI = { strength: "N/A", concern: "N/A", signal: "Strong" };
+    // --- 4. AI Intelligence Layer ---
+    let aiInsights = { keyPoints: ["Stable volume detected."], rootCause: "Standard operations.", recommendations: ["Continue monitoring."] };
 
     if (geminiApiKey && thisWeekTickets.length > 0) {
+      const context = {
+        timeline,
+        bottlenecks,
+        primaryAgent: primaryAgentRaw.name,
+        totalTickets: thisWeekTickets.length
+      };
+
       const prompt = `
-        Analyze agent performance for "${customerName}":
-        Primary Agent: ${JSON.stringify(primaryAgentRaw)}
+        Analyze this week's support pulse for "${customerName}":
+        Data: ${JSON.stringify(context)}
 
         Generate:
-        1. Strength (1 short phrase, max 5 words)
-        2. Concern (1 short phrase, max 5 words)
-        3. Signal (Strong | Attention | Risk)
+        1. 3 key observations (short bullets)
+        2. 1 root cause inference
+        3. 2 strategic recommendations
 
         Return STRICT JSON:
         {
-          "strength": "",
-          "concern": "",
-          "signal": "Strong|Attention|Risk"
+          "keyPoints": [],
+          "rootCause": "",
+          "recommendations": []
         }
       `;
 
@@ -106,7 +146,7 @@ serve(async (req) => {
 
       if (res.ok) {
         const aiData = await res.json();
-        agentAI = JSON.parse(aiData.candidates[0].content.parts[0].text);
+        aiInsights = JSON.parse(aiData.candidates[0].content.parts[0].text);
       }
     }
 
@@ -116,9 +156,9 @@ serve(async (req) => {
       efficiency: primaryAgentRaw.total > 0 ? Math.round((primaryAgentRaw.resolved / primaryAgentRaw.total) * 100) : 0,
       avg_time: primaryAgentRaw.resolved > 0 ? (primaryAgentRaw.totalResHours / primaryAgentRaw.resolved).toFixed(1) + "h" : "0h",
       sla: primaryAgentRaw.slaTotal > 0 ? Math.round((primaryAgentRaw.slaMet / primaryAgentRaw.slaTotal) * 100) : 100,
-      strength: agentAI.strength,
-      concern: agentAI.concern,
-      signal: agentAI.signal,
+      strength: "High volume handling",
+      concern: primaryAgentRaw.slaMet < primaryAgentRaw.slaTotal ? "SLA compliance" : "None",
+      signal: primaryAgentRaw.total > 15 ? 'Attention' : 'Strong',
       workload: primaryAgentRaw.total > 20 ? 'Overloaded' : primaryAgentRaw.total > 10 ? 'High' : 'Balanced',
       taskMix
     };
@@ -134,8 +174,8 @@ serve(async (req) => {
         resolved: thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length,
         rate: Math.round((thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length / (thisWeekTickets.length || 1)) * 100),
         rateTrend: 5,
-        primaryIssue: "General Queries",
-        primaryIssuePercent: 0
+        primaryIssue: bottlenecks[0]?.type || "General Queries",
+        primaryIssuePercent: bottlenecks[0]?.percentage || 0
       },
       agentPerformance: {
         primary: primaryAgent,
@@ -146,11 +186,11 @@ serve(async (req) => {
         sla_compliance: primaryAgent.sla,
         first_response_time: "1.4",
         efficiency_score: primaryAgent.efficiency,
-        bottlenecks: [],
-        insights: { summary: "Activity is normal." }
+        bottlenecks,
+        insights: { summary: aiInsights.rootCause }
       },
-      timeline: [],
-      aiInsights: { keyPoints: [], rootCause: "", recommendations: [] },
+      timeline,
+      aiInsights,
       recurringIssues: []
     }), {
       status: 200,
