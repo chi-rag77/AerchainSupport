@@ -17,7 +17,6 @@ import SmartCustomerSelector from "@/components/customer-pulse/SmartCustomerSele
 import SnapshotStrip from "@/components/customer-pulse/SnapshotStrip";
 import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
 import ResolutionEfficiency from "@/components/customer-pulse/ResolutionEfficiency";
-import AIInsightPanel from "@/components/customer-pulse/AIInsightPanel";
 import AgentPerformancePulse from "@/components/customer-pulse/AgentPerformancePulse";
 
 const CustomerPulse = () => {
@@ -61,18 +60,6 @@ const CustomerPulse = () => {
     
     return `Resolution volume is ${pace} incoming demand. Average resolution time stands at ${data.efficiency.avg_resolution_time}h with ${data.efficiency.sla_compliance}% SLA compliance.`;
   }, [data?.efficiency, data?.timeline]);
-
-  const reportData = useMemo(() => {
-    if (!data) return null;
-    return {
-      keyPoints: [
-        ...(data.aiInsights?.highlights?.map(h => `${h.day}: ${h.reason}`) || []),
-        ...(data.efficiency?.insights?.issues || [])
-      ],
-      rootCause: data.efficiency?.insights?.summary || "Stable operations detected.",
-      recommendations: data.efficiency?.insights?.recommendations || []
-    };
-  }, [data]);
 
   if (isLoading) {
     return (
@@ -146,20 +133,14 @@ const CustomerPulse = () => {
           </div>
 
           {/* ROW 2: Performance & Intelligence */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-8 space-y-12">
-              <AgentPerformancePulse 
-                primary={data.agentPerformance.primary}
-                team={data.agentPerformance.team}
-              />
-              
-              <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                Next: Decision Layer (“What should we do”)
-              </div>
-            </div>
-
-            <div className="lg:col-span-4">
-              {reportData && <AIInsightPanel insights={reportData} />}
+          <div className="space-y-12">
+            <AgentPerformancePulse 
+              primary={data.agentPerformance.primary}
+              team={data.agentPerformance.team}
+            />
+            
+            <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+              Next: Decision Layer (“What should we do”)
             </div>
           </div>
           
