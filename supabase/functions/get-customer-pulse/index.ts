@@ -1,4 +1,4 @@
-// v1.3 - Enhanced with Recurring Issue Detection
+// v1.4 - Fixed Top Delay Drivers logic
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -62,6 +62,8 @@ serve(async (req) => {
 
     // --- 2. Resolution Efficiency Logic ---
     const resolvedThisWeek = thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase()));
+    const unresolvedThisWeek = thisWeekTickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()));
+    
     const totalResHours = resolvedThisWeek.reduce((acc, t) => acc + dateFns.differenceInHours(new Date(t.updated_at), new Date(t.created_at)), 0);
     const avgResTime = resolvedThisWeek.length > 0 ? (totalResHours / resolvedThisWeek.length).toFixed(1) : "0";
     const slaMetCount = resolvedThisWeek.filter(t => !t.due_by || new Date(t.updated_at) <= new Date(t.due_by)).length;
@@ -69,34 +71,43 @@ serve(async (req) => {
 
     const efficiencyScore = Math.round((slaCompliance * 0.6) + (Math.max(0, 100 - (parseFloat(avgResTime) * 2)) * 0.4));
 
-    // --- 3. AI Intelligence Layer (Behavioral + Recurring Issues) ---
+    // Deterministic Bottlenecks (Fallback)
+    const bottleneckMap: Record<string, number> = {};
+    unresolvedThisWeek.forEach(t => {
+      const status = t.status || 'Unknown';
+      bottleneckMap[status] = (bottleneckMap[status] || 0) + 1;
+    });
+
+    const totalUnresolved = unresolvedThisWeek.length;
+    let bottlenecks = Object.entries(bottleneckMap)
+      .map(([type, count]) => ({
+        type: type.replace(/\(.*\)/, '').trim(), // Clean up status names
+        percentage: totalUnresolved > 0 ? Math.round((count / totalUnresolved) * 100) : 0
+      }))
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 3);
+
+    // --- 3. AI Intelligence Layer ---
     let behavioralInsights = { summary: "Activity is normal.", highlights: [] };
     let recurringIssues = [];
 
     if (geminiApiKey && thisWeekTickets.length > 0) {
       const prompt = `
         Analyze this support data for "${customerName}":
-        Tickets: ${JSON.stringify(thisWeekTickets.map(t => ({ subject: t.subject, module: t.cf_module, priority: t.priority })))}
+        Tickets: ${JSON.stringify(thisWeekTickets.map(t => ({ subject: t.subject, module: t.cf_module, priority: t.priority, status: t.status })))}
         Timeline: ${JSON.stringify(timeline)}
 
-        1. Identify recurring issues (group similar subjects).
+        1. Identify recurring issues.
         2. Detect frequency and trends.
-        3. Determine impact level.
+        3. Identify the top 3 "Delay Drivers" (why are tickets not being resolved?).
 
         Return STRICT JSON:
         {
           "behavioral": { "summary": "2 lines", "highlights": [] },
-          "recurring": [
-            {
-              "id": "slug",
-              "title": "Issue Name",
-              "count": number,
-              "trend": "up|repeat|down",
-              "firstSeen": "e.g. 3 weeks ago",
-              "impact": "High|Medium|Low",
-              "frequency": "Daily|Weekly|Intermittent",
-              "insight": "1 line root cause hint"
-            }
+          "recurring": [...],
+          "bottlenecks": [
+            { "type": "Waiting on Customer", "percentage": 45 },
+            { "type": "Technical Review", "percentage": 30 }
           ]
         }
       `;
@@ -115,6 +126,9 @@ serve(async (req) => {
         const parsed = JSON.parse(aiData.candidates[0].content.parts[0].text);
         behavioralInsights = parsed.behavioral;
         recurringIssues = parsed.recurring;
+        if (parsed.bottlenecks && parsed.bottlenecks.length > 0) {
+          bottlenecks = parsed.bottlenecks;
+        }
       }
     }
 
@@ -137,7 +151,7 @@ serve(async (req) => {
         sla_compliance: slaCompliance,
         first_response_time: "1.4",
         efficiency_score: efficiencyScore,
-        bottlenecks: [],
+        bottlenecks: bottlenecks,
         insights: { summary: behavioralInsights.summary }
       },
       timeline,
