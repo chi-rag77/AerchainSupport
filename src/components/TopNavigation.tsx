@@ -41,6 +41,10 @@ const TopNavigation = () => {
   const location = useLocation();
   const [isNotificationsSheetOpen, setIsNotificationsSheetOpen] = useState(false);
 
+  // Hide navigation on login and signup pages
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  if (isAuthPage) return null;
+
   const { data: unreadCount = 0 } = useQuery<number, Error>({
     queryKey: ["unreadNotificationsCount", user?.id],
     queryFn: () => fetchUnreadNotificationsCount(user?.id),
@@ -56,7 +60,7 @@ const TopNavigation = () => {
     { icon: Home, label: "Home", path: "/" },
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: Users, label: "Customer 360", path: "/customer360" },
-    { icon: Brain, label: "Knowledge Hub", path: "/knowledge" }, // Added Knowledge Hub
+    { icon: Brain, label: "Knowledge Hub", path: "/knowledge" },
     { icon: CalendarDays, label: "Weekly Summary", path: "/weekly-summary" },
   ];
 
