@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import SmartCustomerSelector from "@/components/customer-pulse/SmartCustomerSelector";
 import SnapshotStrip from "@/components/customer-pulse/SnapshotStrip";
 import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
+import ResolutionEfficiency from "@/components/customer-pulse/ResolutionEfficiency";
 
 const CustomerPulse = () => {
   const { session } = useSupabase();
@@ -116,10 +117,11 @@ const CustomerPulse = () => {
               {/* LEFT COLUMN (7 cols) */}
               <div className="lg:col-span-7 space-y-8">
                 <BehavioralTimeline data={data.timeline} aiInsights={data.aiInsights} />
+                <ResolutionEfficiency data={data.efficiency} timeline={data.timeline} />
                 
                 {/* Placeholder for next modules */}
                 <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                  Next: Resolution Efficiency & Composition
+                  Next: Recurring Issue Detector
                 </div>
               </div>
 
