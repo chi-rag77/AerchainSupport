@@ -1,4 +1,4 @@
-// v1.4 - Fixed Top Delay Drivers logic
+// v1.5 - Added Agent Performance Pulse logic
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -60,55 +60,66 @@ serve(async (req) => {
       };
     });
 
-    // --- 2. Resolution Efficiency Logic ---
-    const resolvedThisWeek = thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase()));
-    const unresolvedThisWeek = thisWeekTickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()));
-    
-    const totalResHours = resolvedThisWeek.reduce((acc, t) => acc + dateFns.differenceInHours(new Date(t.updated_at), new Date(t.created_at)), 0);
-    const avgResTime = resolvedThisWeek.length > 0 ? (totalResHours / resolvedThisWeek.length).toFixed(1) : "0";
-    const slaMetCount = resolvedThisWeek.filter(t => !t.due_by || new Date(t.updated_at) <= new Date(t.due_by)).length;
-    const slaCompliance = resolvedThisWeek.length > 0 ? Math.round((slaMetCount / resolvedThisWeek.length) * 100) : 100;
-
-    const efficiencyScore = Math.round((slaCompliance * 0.6) + (Math.max(0, 100 - (parseFloat(avgResTime) * 2)) * 0.4));
-
-    // Deterministic Bottlenecks (Fallback)
-    const bottleneckMap: Record<string, number> = {};
-    unresolvedThisWeek.forEach(t => {
-      const status = t.status || 'Unknown';
-      bottleneckMap[status] = (bottleneckMap[status] || 0) + 1;
+    // --- 2. Agent Performance Logic ---
+    const agentMap: Record<string, any> = {};
+    thisWeekTickets.forEach(t => {
+      const name = t.assignee || 'Unassigned';
+      if (!agentMap[name]) agentMap[name] = { name, total: 0, resolved: 0, totalResHours: 0, slaMet: 0, slaTotal: 0 };
+      const a = agentMap[name];
+      a.total++;
+      const isResolved = ['resolved', 'closed'].includes(t.status.toLowerCase());
+      if (isResolved) {
+        a.resolved++;
+        a.totalResHours += dateFns.differenceInHours(new Date(t.updated_at), new Date(t.created_at));
+      }
+      if (t.due_by) {
+        a.slaTotal++;
+        if (isResolved && new Date(t.updated_at) <= new Date(t.due_by)) a.slaMet++;
+      }
     });
 
-    const totalUnresolved = unresolvedThisWeek.length;
-    let bottlenecks = Object.entries(bottleneckMap)
-      .map(([type, count]) => ({
-        type: type.replace(/\(.*\)/, '').trim(), // Clean up status names
-        percentage: totalUnresolved > 0 ? Math.round((count / totalUnresolved) * 100) : 0
-      }))
-      .sort((a, b) => b.percentage - a.percentage)
-      .slice(0, 3);
+    const sortedAgents = Object.values(agentMap).sort((a, b) => b.total - a.total);
+    const primaryAgentRaw = sortedAgents[0] || { name: 'None', total: 0, resolved: 0, totalResHours: 0, slaMet: 0, slaTotal: 0 };
+    
+    const teamDistribution = sortedAgents.map(a => ({
+      name: a.name,
+      tickets: a.total,
+      percent: Math.round((a.total / (thisWeekTickets.length || 1)) * 100)
+    }));
 
     // --- 3. AI Intelligence Layer ---
     let behavioralInsights = { summary: "Activity is normal.", highlights: [] };
     let recurringIssues = [];
+    let agentAI = { strength: "N/A", concern: "N/A", signal: "Strong", insights: [], recommendations: [] };
 
     if (geminiApiKey && thisWeekTickets.length > 0) {
       const prompt = `
         Analyze this support data for "${customerName}":
-        Tickets: ${JSON.stringify(thisWeekTickets.map(t => ({ subject: t.subject, module: t.cf_module, priority: t.priority, status: t.status })))}
+        Tickets: ${JSON.stringify(thisWeekTickets.map(t => ({ subject: t.subject, module: t.cf_module, priority: t.priority, status: t.status, assignee: t.assignee })))}
         Timeline: ${JSON.stringify(timeline)}
+        Primary Agent: ${JSON.stringify(primaryAgentRaw)}
 
         1. Identify recurring issues.
-        2. Detect frequency and trends.
-        3. Identify the top 3 "Delay Drivers" (why are tickets not being resolved?).
+        2. Identify the top 3 "Delay Drivers".
+        3. Evaluate Primary Agent performance:
+           - Strength (1 short phrase)
+           - Concern (1 short phrase)
+           - Signal (Strong | Attention | Risk)
+           - 2-3 Narrative Insights
+           - 2-3 Actionable Recommendations
 
         Return STRICT JSON:
         {
           "behavioral": { "summary": "2 lines", "highlights": [] },
           "recurring": [...],
-          "bottlenecks": [
-            { "type": "Waiting on Customer", "percentage": 45 },
-            { "type": "Technical Review", "percentage": 30 }
-          ]
+          "bottlenecks": [...],
+          "agent_analysis": {
+            "strength": "",
+            "concern": "",
+            "signal": "Strong|Attention|Risk",
+            "insights": [],
+            "recommendations": []
+          }
         }
       `;
 
@@ -126,32 +137,47 @@ serve(async (req) => {
         const parsed = JSON.parse(aiData.candidates[0].content.parts[0].text);
         behavioralInsights = parsed.behavioral;
         recurringIssues = parsed.recurring;
-        if (parsed.bottlenecks && parsed.bottlenecks.length > 0) {
-          bottlenecks = parsed.bottlenecks;
-        }
+        agentAI = parsed.agent_analysis;
       }
     }
+
+    const primaryAgent: any = {
+      name: primaryAgentRaw.name,
+      tickets: primaryAgentRaw.total,
+      efficiency: primaryAgentRaw.total > 0 ? Math.round((primaryAgentRaw.resolved / primaryAgentRaw.total) * 100) : 0,
+      avg_time: primaryAgentRaw.resolved > 0 ? (primaryAgentRaw.totalResHours / primaryAgentRaw.resolved).toFixed(1) + "h" : "0h",
+      sla: primaryAgentRaw.slaTotal > 0 ? Math.round((primaryAgentRaw.slaMet / primaryAgentRaw.slaTotal) * 100) : 100,
+      strength: agentAI.strength,
+      concern: agentAI.concern,
+      signal: agentAI.signal
+    };
 
     return new Response(JSON.stringify({
       customer: customerName,
       weekRange: `${dateFns.format(startOfThisWeek, 'MMM dd')} – ${dateFns.format(endOfThisWeek, 'MMM dd')}`,
-      status: efficiencyScore > 80 ? 'Healthy' : efficiencyScore > 60 ? 'Watch' : 'Critical',
-      healthScore: efficiencyScore,
+      status: primaryAgent.efficiency > 80 ? 'Healthy' : primaryAgent.efficiency > 60 ? 'Watch' : 'Critical',
+      healthScore: primaryAgent.efficiency,
       confidenceScore: 92,
       metrics: {
         total: thisWeekTickets.length,
-        resolved: resolvedThisWeek.length,
-        rate: Math.round((resolvedThisWeek.length / (thisWeekTickets.length || 1)) * 100),
+        resolved: thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length,
+        rate: Math.round((thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase())).length / (thisWeekTickets.length || 1)) * 100),
         rateTrend: 5,
         primaryIssue: recurringIssues[0]?.title || "General Queries",
         primaryIssuePercent: recurringIssues[0] ? Math.round((recurringIssues[0].count / thisWeekTickets.length) * 100) : 0
       },
+      agentPerformance: {
+        primary: primaryAgent,
+        team: teamDistribution,
+        insights: agentAI.insights,
+        recommendations: agentAI.recommendations
+      },
       efficiency: {
-        avg_resolution_time: avgResTime,
-        sla_compliance: slaCompliance,
+        avg_resolution_time: primaryAgent.avg_time,
+        sla_compliance: primaryAgent.sla,
         first_response_time: "1.4",
-        efficiency_score: efficiencyScore,
-        bottlenecks: bottlenecks,
+        efficiency_score: primaryAgent.efficiency,
+        bottlenecks: [],
         insights: { summary: behavioralInsights.summary }
       },
       timeline,

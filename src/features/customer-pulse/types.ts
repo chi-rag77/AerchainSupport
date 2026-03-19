@@ -28,13 +28,21 @@ export interface RecurringPattern {
   insight: string;
 }
 
-export interface AgentPulse {
+export interface AgentPerformance {
   name: string;
-  handled: number;
-  resolved: number;
+  tickets: number;
   efficiency: number;
+  avg_time: string;
+  sla: number;
   strength: string;
   concern: string;
+  signal: 'Strong' | 'Attention' | 'Risk';
+}
+
+export interface TeamMember {
+  name: string;
+  tickets: number;
+  percent: number;
 }
 
 export interface PulseData {
@@ -64,7 +72,12 @@ export interface PulseData {
     recommendations: string[];
   };
   recurringIssues: RecurringPattern[];
-  agents: AgentPulse[];
+  agentPerformance: {
+    primary: AgentPerformance;
+    team: TeamMember[];
+    insights: string[];
+    recommendations: string[];
+  };
   efficiency: {
     avg_resolution_time: string;
     sla_compliance: number;

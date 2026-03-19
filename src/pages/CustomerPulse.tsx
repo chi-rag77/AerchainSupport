@@ -18,6 +18,7 @@ import SnapshotStrip from "@/components/customer-pulse/SnapshotStrip";
 import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
 import ResolutionEfficiency from "@/components/customer-pulse/ResolutionEfficiency";
 import AIInsightPanel from "@/components/customer-pulse/AIInsightPanel";
+import AgentPerformancePulse from "@/components/customer-pulse/AgentPerformancePulse";
 
 const CustomerPulse = () => {
   const { session } = useSupabase();
@@ -172,7 +173,7 @@ const CustomerPulse = () => {
               />
             </div>
 
-            {/* ROW 2: Intelligence Layer / Placeholders */}
+            {/* ROW 2: Intelligence Layer */}
             <AnimatePresence mode="wait">
               {intelligenceMode === 'ai' ? (
                 <motion.div
@@ -189,13 +190,17 @@ const CustomerPulse = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start"
+                  className="space-y-12"
                 >
+                  <AgentPerformancePulse 
+                    primary={data.agentPerformance.primary}
+                    team={data.agentPerformance.team}
+                    insights={data.agentPerformance.insights}
+                    recommendations={data.agentPerformance.recommendations}
+                  />
+                  
                   <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                    Next: Agent Performance Pulse
-                  </div>
-                  <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                    Next: Decision Layer
+                    Next: Decision Layer (“What should we do”)
                   </div>
                 </motion.div>
               )}
