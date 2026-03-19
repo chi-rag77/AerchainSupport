@@ -4,11 +4,11 @@ import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Loader2, Target, RefreshCw, Brain
+  Target, RefreshCw
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PulseData } from "@/features/customer-pulse/types";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import SnapshotStrip from "@/components/customer-pulse/SnapshotStrip";
 import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
 import ResolutionEfficiency from "@/components/customer-pulse/ResolutionEfficiency";
 import AgentPerformancePulse from "@/components/customer-pulse/AgentPerformancePulse";
+import IntelligenceLoader from "@/components/customer-pulse/IntelligenceLoader";
 
 const CustomerPulse = () => {
   const { session } = useSupabase();
@@ -62,17 +63,7 @@ const CustomerPulse = () => {
   }, [data?.efficiency, data?.timeline]);
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
-        <div className="relative">
-          <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-2xl animate-pulse" />
-          <Loader2 className="h-12 w-12 animate-spin text-indigo-600 relative z-10" />
-        </div>
-        <p className="mt-6 font-black text-muted-foreground uppercase tracking-[0.3em] text-[10px] animate-pulse">
-          Synthesizing Intelligence...
-        </p>
-      </div>
-    );
+    return <IntelligenceLoader />;
   }
 
   if (!data) return null;
