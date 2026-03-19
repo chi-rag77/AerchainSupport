@@ -111,23 +111,21 @@ const CustomerPulse = () => {
             {/* 1. Hero Snapshot */}
             <SnapshotStrip data={data} />
 
-            {/* 2. Main Intelligence Grid (7/5 Split) */}
+            {/* 2. Main Intelligence Grid (Side-by-Side) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <BehavioralTimeline data={data.timeline} aiInsights={data.aiInsights} />
+              <ResolutionEfficiency data={data.efficiency} timeline={data.timeline} />
+            </div>
+
+            {/* 3. Secondary Intelligence Row */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              
-              {/* LEFT COLUMN (7 cols) */}
-              <div className="lg:col-span-7 space-y-8">
-                <BehavioralTimeline data={data.timeline} aiInsights={data.aiInsights} />
-                <ResolutionEfficiency data={data.efficiency} timeline={data.timeline} />
-                
-                {/* Placeholder for next modules */}
+              <div className="lg:col-span-7">
                 <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
                   Next: Recurring Issue Detector
                 </div>
               </div>
-
-              {/* RIGHT COLUMN (5 cols) */}
               <div className="lg:col-span-5">
-                <div className="h-full rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
                   Next: AI Intelligence Brief
                 </div>
               </div>
