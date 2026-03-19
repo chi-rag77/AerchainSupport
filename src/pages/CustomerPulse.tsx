@@ -37,6 +37,31 @@ const CustomerPulse = () => {
     staleTime: 15 * 60 * 1000,
   });
 
+  // --- Deterministic Logic Engines ---
+  
+  const behavioralSummary = useMemo(() => {
+    if (!data?.timeline || data.timeline.length === 0) return "";
+    
+    const parts = data.timeline.map((day, i) => {
+      if (i === 0) return `${day.day} started with ${day.created} tickets`;
+      const prev = data.timeline[i - 1];
+      if (day.created > prev.created) return `${day.day.toLowerCase()} peaked`;
+      if (day.created < prev.created) return `${day.day.toLowerCase()} was lower`;
+      return `${day.day.toLowerCase()} remained steady`;
+    });
+
+    return parts.join(", ") + ".";
+  }, [data?.timeline]);
+
+  const efficiencySummary = useMemo(() => {
+    if (!data?.efficiency || !data?.timeline) return "";
+    const totalCreated = data.timeline.reduce((acc, d) => acc + d.created, 0);
+    const totalResolved = data.timeline.reduce((acc, d) => acc + d.resolved, 0);
+    const pace = totalResolved >= totalCreated ? "keeping pace with" : "trailing";
+    
+    return `Resolution volume is ${pace} incoming demand. Average resolution time stands at ${data.efficiency.avg_resolution_time}h with ${data.efficiency.sla_compliance}% SLA compliance.`;
+  }, [data?.efficiency, data?.timeline]);
+
   const reportData = useMemo(() => {
     if (!data) return null;
     return {
@@ -86,7 +111,6 @@ const CustomerPulse = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Intelligence Mode Toggle */}
             <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl border border-white/20">
               <button
                 onClick={() => setIntelligenceMode('summary')}
@@ -131,56 +155,38 @@ const CustomerPulse = () => {
             transition={{ duration: 0.4 }}
             className="space-y-8"
           >
-            {/* 1. Hero Snapshot */}
             <SnapshotStrip data={data} />
 
-            {/* 2. Main Intelligence Grid */}
-            {intelligenceMode === 'summary' ? (
-              <div className="space-y-8">
-                {/* Summary Mode: Side-by-Side Engines */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <BehavioralTimeline 
-                    data={data.timeline} 
-                    aiInsights={data.aiInsights} 
-                    mode="summary"
-                  />
-                  <ResolutionEfficiency 
-                    data={data.efficiency} 
-                    timeline={data.timeline} 
-                    mode="summary"
-                  />
-                </div>
-                
-                {/* Secondary Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                    Next: Recurring Issue Detector
-                  </div>
-                  <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                    Next: Agent Performance Pulse
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className={cn("space-y-8", intelligenceMode === 'summary' ? "lg:col-span-7" : "lg:col-span-8")}>
+                <BehavioralTimeline 
+                  data={data.timeline} 
+                  summary={behavioralSummary}
+                  mode={intelligenceMode}
+                />
+                <ResolutionEfficiency 
+                  data={data.efficiency} 
+                  timeline={data.timeline} 
+                  summary={efficiencySummary}
+                  mode={intelligenceMode}
+                />
               </div>
-            ) : (
-              /* AI Intelligence Mode: Vertical Engines + Report Panel */
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-8 space-y-8">
-                  <BehavioralTimeline 
-                    data={data.timeline} 
-                    aiInsights={data.aiInsights} 
-                    mode="ai"
-                  />
-                  <ResolutionEfficiency 
-                    data={data.efficiency} 
-                    timeline={data.timeline} 
-                    mode="ai"
-                  />
-                </div>
-                <div className="lg:col-span-4">
-                  {reportData && <AIInsightPanel insights={reportData} />}
-                </div>
+
+              <div className={cn(intelligenceMode === 'summary' ? "lg:col-span-5" : "lg:col-span-4")}>
+                {intelligenceMode === 'summary' ? (
+                  <div className="space-y-8">
+                    <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                      Next: Recurring Issue Detector
+                    </div>
+                    <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                      Next: Agent Performance Pulse
+                    </div>
+                  </div>
+                ) : (
+                  reportData && <AIInsightPanel insights={reportData} />
+                )}
               </div>
-            )}
+            </div>
             
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-30">End of Intelligence Brief</p>

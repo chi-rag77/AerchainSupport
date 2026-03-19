@@ -4,13 +4,13 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from '@/lib/utils';
 import { 
-  Zap, TrendingUp, ShieldAlert, Clock, 
-  CheckCircle2, AlertCircle, Sparkles, 
-  ArrowRight, Info, BarChart3
+  Zap, ShieldAlert, Clock, 
+  CheckCircle2, AlertCircle, 
+  BarChart3, ListFilter
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Area, AreaChart 
+  Tooltip, ResponsiveContainer
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -18,17 +18,17 @@ import { Progress } from '@/components/ui/progress';
 interface ResolutionEfficiencyProps {
   data: any;
   timeline: any[];
+  summary: string;
   mode?: 'summary' | 'ai';
 }
 
-const ResolutionEfficiency = ({ data, timeline, mode = 'summary' }: ResolutionEfficiencyProps) => {
+const ResolutionEfficiency = ({ data, timeline, summary, mode = 'summary' }: ResolutionEfficiencyProps) => {
   const { 
     avg_resolution_time = 0, 
     sla_compliance = 0, 
     first_response_time = 0, 
     efficiency_score = 0, 
-    bottlenecks = [], 
-    insights = { summary: "Analyzing performance...", recommendations: [] } 
+    bottlenecks = []
   } = data || {};
 
   const metrics = [
@@ -66,8 +66,6 @@ const ResolutionEfficiency = ({ data, timeline, mode = 'summary' }: ResolutionEf
 
       <CardContent className="p-8 pt-6 space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          
-          {/* Left: Performance Graph (7 cols) */}
           <div className="lg:col-span-7 space-y-4">
             <div className="flex items-center justify-between px-1">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Weekly Performance Trend</h4>
@@ -79,10 +77,6 @@ const ResolutionEfficiency = ({ data, timeline, mode = 'summary' }: ResolutionEf
                 <div className="flex items-center gap-1.5">
                   <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
                   <span className="text-[9px] font-bold text-muted-foreground uppercase">Resolved</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full bg-purple-500" />
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase">SLA %</span>
                 </div>
               </div>
             </div>
@@ -99,15 +93,12 @@ const ResolutionEfficiency = ({ data, timeline, mode = 'summary' }: ResolutionEf
                   />
                   <Line type="monotone" dataKey="created" stroke="#6366F1" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: '#6366F1' }} />
                   <Line type="monotone" dataKey="resolved" stroke="#10B981" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: '#10B981' }} />
-                  <Line type="monotone" dataKey="sla_compliance" stroke="#A855F7" strokeWidth={2} strokeDasharray="5 5" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Right: Metrics & Bottlenecks (5 cols) */}
           <div className="lg:col-span-5 space-y-8">
-            {/* Core Metrics Stack */}
             <div className="grid grid-cols-3 gap-3">
               {metrics.map((m) => (
                 <div key={m.label} className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-border/50 space-y-2">
@@ -120,7 +111,6 @@ const ResolutionEfficiency = ({ data, timeline, mode = 'summary' }: ResolutionEf
               ))}
             </div>
 
-            {/* Bottleneck Breakdown */}
             <div className="space-y-4">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <BarChart3 className="h-3.5 w-3.5" /> Top Delay Drivers
@@ -140,35 +130,18 @@ const ResolutionEfficiency = ({ data, timeline, mode = 'summary' }: ResolutionEf
           </div>
         </div>
 
-        {/* AI Intelligence Layer */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100 dark:border-gray-800">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-indigo-600">
-              <Sparkles className="h-4 w-4" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Performance Insight</span>
-            </div>
-            <p className={cn(
-              "text-xs font-bold leading-relaxed text-muted-foreground",
-              mode === 'summary' && "line-clamp-2"
-            )}>
-              {insights?.summary || "Analyzing performance patterns..."}
-            </p>
+        {/* Deterministic Summary Layer */}
+        <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <ListFilter className="h-4 w-4" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Efficiency Summary</span>
           </div>
-          {mode === 'ai' && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-amber-600">
-                <Zap className="h-4 w-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Actionable Recs</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {insights?.recommendations?.map((rec: string, i: number) => (
-                  <Badge key={i} variant="secondary" className="bg-amber-50 text-amber-700 border-none text-[9px] font-bold py-1 px-2">
-                    {rec}
-                  </Badge>
-                )) || <span className="text-[10px] text-muted-foreground italic">No recommendations yet.</span>}
-              </div>
-            </div>
-          )}
+          <p className={cn(
+            "text-sm font-bold leading-relaxed text-foreground/80",
+            mode === 'summary' && "line-clamp-2"
+          )}>
+            {summary}
+          </p>
         </div>
       </CardContent>
     </Card>

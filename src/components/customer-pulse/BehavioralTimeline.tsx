@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { 
-  Activity, TrendingUp, TrendingDown, AlertCircle, 
-  Sparkles, Info, Circle, Triangle, AlertTriangle 
+  Activity, Circle, Triangle, AlertTriangle, ListFilter
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
@@ -21,14 +20,11 @@ interface DailyData {
 
 interface BehavioralTimelineProps {
   data: DailyData[];
-  aiInsights?: {
-    summary: string;
-    highlights: { day: string; event: string; reason: string }[];
-  };
+  summary: string;
   mode?: 'summary' | 'ai';
 }
 
-const BehavioralTimeline = ({ data, aiInsights, mode = 'summary' }: BehavioralTimelineProps) => {
+const BehavioralTimeline = ({ data, summary, mode = 'summary' }: BehavioralTimelineProps) => {
   const getMarker = (item: DailyData) => {
     if (item.sla_risk === 'high') return <AlertTriangle className="h-5 w-5 text-rose-500 animate-pulse" />;
     if (item.trend === 'spike') return <Triangle className="h-5 w-5 fill-rose-500 text-rose-500" />;
@@ -53,18 +49,14 @@ const BehavioralTimeline = ({ data, aiInsights, mode = 'summary' }: BehavioralTi
             </div>
             <CardTitle className="text-xl font-black tracking-tight">Behavioral Timeline</CardTitle>
           </div>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="bg-indigo-50/50 text-indigo-700 border-none font-bold text-[9px] uppercase tracking-widest">
-              Mon – Fri Activity
-            </Badge>
-          </div>
+          <Badge variant="outline" className="bg-indigo-50/50 text-indigo-700 border-none font-bold text-[9px] uppercase tracking-widest">
+            Mon – Fri Activity
+          </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="p-8 pt-6 space-y-10">
-        {/* Timeline Visualization */}
         <div className="relative">
-          {/* Connecting Line */}
           <div className="absolute top-1/2 left-0 w-full h-px bg-gray-100 dark:bg-gray-800 -translate-y-1/2 z-0" />
           
           <div className="relative z-10 flex justify-between items-center">
@@ -116,34 +108,19 @@ const BehavioralTimeline = ({ data, aiInsights, mode = 'summary' }: BehavioralTi
           </div>
         </div>
 
-        {/* Intelligence Layer */}
-        {aiInsights && (
-          <div className="p-5 rounded-[24px] bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm shrink-0">
-                <Sparkles className="h-4 w-4 text-indigo-600" />
-              </div>
-              <div className="space-y-2">
-                <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Behavioral Insight</h5>
-                <p className={cn(
-                  "text-sm font-bold leading-relaxed text-indigo-900 dark:text-indigo-200",
-                  mode === 'summary' && "line-clamp-2"
-                )}>
-                  {aiInsights.summary}
-                </p>
-                {mode === 'ai' && aiInsights.highlights && aiInsights.highlights.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {aiInsights.highlights.map((h, i) => (
-                      <Badge key={i} variant="outline" className="bg-white/50 dark:bg-gray-800/50 border-indigo-100 text-[9px] font-bold py-0.5 px-2">
-                        {h.day}: {h.reason}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+        {/* Deterministic Summary Layer */}
+        <div className="p-5 rounded-[24px] bg-gray-50 dark:bg-gray-900/50 border border-border space-y-3">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <ListFilter className="h-4 w-4" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Activity Summary</span>
           </div>
-        )}
+          <p className={cn(
+            "text-sm font-bold leading-relaxed text-foreground/80",
+            mode === 'summary' && "line-clamp-2"
+          )}>
+            {summary}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
