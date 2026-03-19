@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Loader2, Target, RefreshCw, LayoutDashboard, Brain
+  Loader2, Target, RefreshCw, Brain
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PulseData } from "@/features/customer-pulse/types";
@@ -26,7 +26,6 @@ const CustomerPulse = () => {
   const queryClient = useQueryClient();
 
   const [selectedCustomer, setSelectedCustomer] = useState<string>("Danone");
-  const [intelligenceMode, setIntelligenceMode] = useState<'summary' | 'ai'>('summary');
 
   const { data, isLoading, isFetching, refetch } = useQuery<PulseData, Error>({
     queryKey: ["customerPulse", selectedCustomer],
@@ -112,29 +111,6 @@ const CustomerPulse = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl border border-white/20">
-              <button
-                onClick={() => setIntelligenceMode('summary')}
-                className={cn(
-                  "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                  intelligenceMode === 'summary' ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-white" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <LayoutDashboard className="h-3 w-3" />
-                Summary
-              </button>
-              <button
-                onClick={() => setIntelligenceMode('ai')}
-                className={cn(
-                  "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                  intelligenceMode === 'ai' ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-white" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Brain className="h-3 w-3" />
-                AI Intelligence
-              </button>
-            </div>
-            
             <Button 
               variant="outline" 
               size="icon" 
@@ -147,68 +123,50 @@ const CustomerPulse = () => {
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${selectedCustomer}-${intelligenceMode}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-12"
-          >
-            <SnapshotStrip data={data} />
+        <motion.div
+          key={selectedCustomer}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="space-y-12"
+        >
+          <SnapshotStrip data={data} />
 
-            {/* ROW 1: Core Engines */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-              <BehavioralTimeline 
-                data={data.timeline} 
-                summary={behavioralSummary}
-                mode={intelligenceMode}
+          {/* ROW 1: Core Engines */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+            <BehavioralTimeline 
+              data={data.timeline} 
+              summary={behavioralSummary}
+            />
+            <ResolutionEfficiency 
+              data={data.efficiency} 
+              timeline={data.timeline} 
+              summary={efficiencySummary}
+            />
+          </div>
+
+          {/* ROW 2: Performance & Intelligence */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-8 space-y-12">
+              <AgentPerformancePulse 
+                primary={data.agentPerformance.primary}
+                team={data.agentPerformance.team}
               />
-              <ResolutionEfficiency 
-                data={data.efficiency} 
-                timeline={data.timeline} 
-                summary={efficiencySummary}
-                mode={intelligenceMode}
-              />
+              
+              <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                Next: Decision Layer (“What should we do”)
+              </div>
             </div>
 
-            {/* ROW 2: Intelligence Layer */}
-            <AnimatePresence mode="wait">
-              {intelligenceMode === 'ai' ? (
-                <motion.div
-                  key="ai-report"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  {reportData && <AIInsightPanel insights={reportData} />}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="summary-cards"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-12"
-                >
-                  <AgentPerformancePulse 
-                    primary={data.agentPerformance.primary}
-                    team={data.agentPerformance.team}
-                  />
-                  
-                  <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                    Next: Decision Layer (“What should we do”)
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-30">End of Intelligence Brief</p>
+            <div className="lg:col-span-4">
+              {reportData && <AIInsightPanel insights={reportData} />}
             </div>
-          </motion.div>
-        </AnimatePresence>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-30">End of Intelligence Brief</p>
+          </div>
+        </motion.div>
 
       </div>
     </TooltipProvider>
