@@ -113,20 +113,21 @@ const CustomerPulse = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
-            className="space-y-6"
+            className="space-y-8"
           >
             {/* 1. Hero Snapshot */}
             <SnapshotStrip data={data} />
 
-            {/* 2. Main Intelligence Grid (7/5 Split) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* 2. Unified Intelligence Grid (12 Columns) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               
-              {/* LEFT COLUMN (7 cols) */}
-              <div className="lg:col-span-7 space-y-6">
+              {/* LEFT COLUMN (7 cols) - Stacks vertically */}
+              <div className="lg:col-span-7 space-y-8">
+                {/* Row 1: Timeline */}
                 <BehavioralTimeline data={data.timeline} />
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Issue Composition */}
+                {/* Row 2: Composition & Efficiency */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-800 p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Issue Composition</h4>
@@ -151,7 +152,6 @@ const CustomerPulse = () => {
                     </div>
                   </Card>
 
-                  {/* Resolution Efficiency */}
                   <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-800 p-6 space-y-4">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Resolution Efficiency</h4>
                     <div className="space-y-6">
@@ -175,28 +175,25 @@ const CustomerPulse = () => {
                     </div>
                   </Card>
                 </div>
-              </div>
 
-              {/* RIGHT COLUMN (5 cols) */}
-              <div className="lg:col-span-5">
-                <AIInsightPanel insights={data.aiInsights} />
-              </div>
-            </div>
-
-            {/* 3. Pattern & Performance Grid (7/5 Split) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-7">
+                {/* Row 3: Recurring Patterns */}
                 <RecurringIssueDetector issues={data.recurringIssues} />
               </div>
-              <div className="lg:col-span-5">
+
+              {/* RIGHT COLUMN (5 cols) - Stacks vertically */}
+              <div className="lg:col-span-5 space-y-8">
+                {/* Row 1: AI Insights (Tall) */}
+                <AIInsightPanel insights={data.aiInsights} />
+
+                {/* Row 2: Agent Performance */}
                 <AgentPerformancePulse agents={data.agents} />
               </div>
             </div>
 
-            {/* 4. Decision Layer */}
+            {/* 3. Decision Layer (Full Width) */}
             <ActionCenter actions={data.actions} />
 
-            {/* 5. Comparison Footer */}
+            {/* 4. Comparison Footer */}
             <div className="p-8 rounded-[32px] bg-white dark:bg-gray-900 shadow-glass border border-white/20 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="flex items-center gap-4">
                 <div className="p-2 bg-indigo-50 rounded-xl">
