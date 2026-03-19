@@ -18,9 +18,10 @@ import { Progress } from '@/components/ui/progress';
 interface ResolutionEfficiencyProps {
   data: any;
   timeline: any[];
+  mode?: 'summary' | 'ai';
 }
 
-const ResolutionEfficiency = ({ data, timeline }: ResolutionEfficiencyProps) => {
+const ResolutionEfficiency = ({ data, timeline, mode = 'summary' }: ResolutionEfficiencyProps) => {
   const { 
     avg_resolution_time = 0, 
     sla_compliance = 0, 
@@ -146,23 +147,28 @@ const ResolutionEfficiency = ({ data, timeline }: ResolutionEfficiencyProps) => 
               <Sparkles className="h-4 w-4" />
               <span className="text-[10px] font-black uppercase tracking-widest">Performance Insight</span>
             </div>
-            <p className="text-xs font-bold leading-relaxed text-muted-foreground">
+            <p className={cn(
+              "text-xs font-bold leading-relaxed text-muted-foreground",
+              mode === 'summary' && "line-clamp-2"
+            )}>
               {insights?.summary || "Analyzing performance patterns..."}
             </p>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-amber-600">
-              <Zap className="h-4 w-4" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Actionable Recs</span>
+          {mode === 'ai' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-amber-600">
+                <Zap className="h-4 w-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Actionable Recs</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {insights?.recommendations?.map((rec: string, i: number) => (
+                  <Badge key={i} variant="secondary" className="bg-amber-50 text-amber-700 border-none text-[9px] font-bold py-1 px-2">
+                    {rec}
+                  </Badge>
+                )) || <span className="text-[10px] text-muted-foreground italic">No recommendations yet.</span>}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {insights?.recommendations?.map((rec: string, i: number) => (
-                <Badge key={i} variant="secondary" className="bg-amber-50 text-amber-700 border-none text-[9px] font-bold py-1 px-2">
-                  {rec}
-                </Badge>
-              )) || <span className="text-[10px] text-muted-foreground italic">No recommendations yet.</span>}
-            </div>
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>

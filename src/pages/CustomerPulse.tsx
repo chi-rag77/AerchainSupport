@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Loader2, Target, RefreshCw
+  Loader2, Target, RefreshCw, LayoutDashboard, Brain
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PulseData } from "@/features/customer-pulse/types";
@@ -17,6 +17,7 @@ import SmartCustomerSelector from "@/components/customer-pulse/SmartCustomerSele
 import SnapshotStrip from "@/components/customer-pulse/SnapshotStrip";
 import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
 import ResolutionEfficiency from "@/components/customer-pulse/ResolutionEfficiency";
+import AIInsightPanel from "@/components/customer-pulse/AIInsightPanel";
 
 const CustomerPulse = () => {
   const { session } = useSupabase();
@@ -24,7 +25,7 @@ const CustomerPulse = () => {
   const queryClient = useQueryClient();
 
   const [selectedCustomer, setSelectedCustomer] = useState<string>("Danone");
-  const [viewMode, setViewMode] = useState<'summary' | 'detailed' | 'trend'>('summary');
+  const [intelligenceMode, setIntelligenceMode] = useState<'summary' | 'ai'>('summary');
 
   const { data, isLoading, isFetching, refetch } = useQuery<PulseData, Error>({
     queryKey: ["customerPulse", selectedCustomer],
@@ -35,6 +36,18 @@ const CustomerPulse = () => {
     enabled: !!selectedCustomer,
     staleTime: 15 * 60 * 1000,
   });
+
+  const reportData = useMemo(() => {
+    if (!data) return null;
+    return {
+      keyPoints: [
+        ...(data.aiInsights?.highlights?.map(h => `${h.day}: ${h.reason}`) || []),
+        ...(data.efficiency?.insights?.issues || [])
+      ],
+      rootCause: data.efficiency?.insights?.summary || "Stable operations detected.",
+      recommendations: data.efficiency?.insights?.recommendations || []
+    };
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -73,20 +86,30 @@ const CustomerPulse = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Intelligence Mode Toggle */}
             <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl border border-white/20">
-              {(['summary', 'detailed', 'trend'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  className={cn(
-                    "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
-                    viewMode === mode ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-white" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {mode}
-                </button>
-              ))}
+              <button
+                onClick={() => setIntelligenceMode('summary')}
+                className={cn(
+                  "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                  intelligenceMode === 'summary' ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-white" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <LayoutDashboard className="h-3 w-3" />
+                Summary
+              </button>
+              <button
+                onClick={() => setIntelligenceMode('ai')}
+                className={cn(
+                  "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                  intelligenceMode === 'ai' ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-white" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Brain className="h-3 w-3" />
+                AI Intelligence
+              </button>
             </div>
+            
             <Button 
               variant="outline" 
               size="icon" 
@@ -101,7 +124,7 @@ const CustomerPulse = () => {
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={selectedCustomer}
+            key={`${selectedCustomer}-${intelligenceMode}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -111,23 +134,37 @@ const CustomerPulse = () => {
             {/* 1. Hero Snapshot */}
             <SnapshotStrip data={data} />
 
-            {/* 2. Main Intelligence Grid (Side-by-Side) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <BehavioralTimeline data={data.timeline} aiInsights={data.aiInsights} />
-              <ResolutionEfficiency data={data.efficiency} timeline={data.timeline} />
-            </div>
-
-            {/* 3. Secondary Intelligence Row */}
+            {/* 2. Main Intelligence Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="lg:col-span-7">
-                <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                  Next: Recurring Issue Detector
-                </div>
+              
+              {/* LEFT COLUMN (7 or 8 cols depending on mode) */}
+              <div className={cn("space-y-8", intelligenceMode === 'summary' ? "lg:col-span-7" : "lg:col-span-8")}>
+                <BehavioralTimeline 
+                  data={data.timeline} 
+                  aiInsights={data.aiInsights} 
+                  mode={intelligenceMode}
+                />
+                <ResolutionEfficiency 
+                  data={data.efficiency} 
+                  timeline={data.timeline} 
+                  mode={intelligenceMode}
+                />
               </div>
-              <div className="lg:col-span-5">
-                <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                  Next: AI Intelligence Brief
-                </div>
+
+              {/* RIGHT COLUMN (5 or 4 cols depending on mode) */}
+              <div className={cn(intelligenceMode === 'summary' ? "lg:col-span-5" : "lg:col-span-4")}>
+                {intelligenceMode === 'summary' ? (
+                  <div className="space-y-8">
+                    <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                      Next: Recurring Issue Detector
+                    </div>
+                    <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                      Next: Agent Performance Pulse
+                    </div>
+                  </div>
+                ) : (
+                  reportData && <AIInsightPanel insights={reportData} />
+                )}
               </div>
             </div>
             

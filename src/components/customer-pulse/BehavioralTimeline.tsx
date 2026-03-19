@@ -25,9 +25,10 @@ interface BehavioralTimelineProps {
     summary: string;
     highlights: { day: string; event: string; reason: string }[];
   };
+  mode?: 'summary' | 'ai';
 }
 
-const BehavioralTimeline = ({ data, aiInsights }: BehavioralTimelineProps) => {
+const BehavioralTimeline = ({ data, aiInsights, mode = 'summary' }: BehavioralTimelineProps) => {
   const getMarker = (item: DailyData) => {
     if (item.sla_risk === 'high') return <AlertTriangle className="h-5 w-5 text-rose-500 animate-pulse" />;
     if (item.trend === 'spike') return <Triangle className="h-5 w-5 fill-rose-500 text-rose-500" />;
@@ -124,10 +125,13 @@ const BehavioralTimeline = ({ data, aiInsights }: BehavioralTimelineProps) => {
               </div>
               <div className="space-y-2">
                 <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Behavioral Insight</h5>
-                <p className="text-sm font-bold leading-relaxed text-indigo-900 dark:text-indigo-200">
+                <p className={cn(
+                  "text-sm font-bold leading-relaxed text-indigo-900 dark:text-indigo-200",
+                  mode === 'summary' && "line-clamp-2"
+                )}>
                   {aiInsights.summary}
                 </p>
-                {aiInsights.highlights && aiInsights.highlights.length > 0 && (
+                {mode === 'ai' && aiInsights.highlights && aiInsights.highlights.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {aiInsights.highlights.map((h, i) => (
                       <Badge key={i} variant="outline" className="bg-white/50 dark:bg-gray-800/50 border-indigo-100 text-[9px] font-bold py-0.5 px-2">
