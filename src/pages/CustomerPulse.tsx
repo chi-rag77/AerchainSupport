@@ -7,7 +7,7 @@ import {
   Loader2, Target, RefreshCw, Brain, Sparkles, 
   LayoutDashboard, BarChart3, Repeat, Zap, ShieldAlert,
   TrendingUp, TrendingDown, Clock, ArrowRight, Info,
-  CheckCircle2
+  CheckCircle2, AlertCircle
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
