@@ -18,6 +18,7 @@ import SnapshotStrip from "@/components/customer-pulse/SnapshotStrip";
 import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
 import ResolutionEfficiency from "@/components/customer-pulse/ResolutionEfficiency";
 import AIInsightPanel from "@/components/customer-pulse/AIInsightPanel";
+import RecurringIssueDetector from "@/components/customer-pulse/RecurringIssueDetector";
 
 const CustomerPulse = () => {
   const { session } = useSupabase();
@@ -92,7 +93,7 @@ const CustomerPulse = () => {
 
   return (
     <TooltipProvider>
-      <div className="flex-1 flex flex-col p-8 space-y-6 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
+      <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
         
         {/* Sticky Header: Context Engine */}
         <div className="sticky top-0 z-30 flex flex-col md:flex-row md:items-center justify-between gap-6 py-3 bg-[#F6F8FB]/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 -mx-8 px-8">
@@ -153,11 +154,11 @@ const CustomerPulse = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
-            className="space-y-8"
+            className="space-y-12"
           >
             <SnapshotStrip data={data} />
 
-            {/* Core Engines: Side-by-Side with items-stretch for equal height */}
+            {/* ROW 1: Core Engines */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
               <BehavioralTimeline 
                 data={data.timeline} 
@@ -172,7 +173,10 @@ const CustomerPulse = () => {
               />
             </div>
 
-            {/* Intelligence Layer: Full Width Report or Secondary Cards */}
+            {/* ROW 2: Recurring Issue Radar (Full Width) */}
+            <RecurringIssueDetector issues={data.recurringIssues} />
+
+            {/* ROW 3: Intelligence Layer / Placeholders */}
             <AnimatePresence mode="wait">
               {intelligenceMode === 'ai' ? (
                 <motion.div
@@ -192,10 +196,10 @@ const CustomerPulse = () => {
                   className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start"
                 >
                   <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                    Next: Recurring Issue Detector
+                    Next: Agent Performance Pulse
                   </div>
                   <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                    Next: Agent Performance Pulse
+                    Next: Decision Layer
                   </div>
                 </motion.div>
               )}

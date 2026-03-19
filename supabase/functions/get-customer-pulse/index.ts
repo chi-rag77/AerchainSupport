@@ -1,4 +1,4 @@
-// v1.2 - Resolution Efficiency & Performance Intelligence
+// v1.3 - Enhanced with Recurring Issue Detection
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -38,8 +38,7 @@ serve(async (req) => {
       .lte('created_at', endOfThisWeek.toISOString());
 
     const thisWeekTickets = (tickets || []).filter(t => new Date(t.created_at) >= startOfThisWeek);
-    const lastWeekTickets = (tickets || []).filter(t => new Date(t.created_at) < startOfThisWeek);
-
+    
     // --- 1. Behavioral Timeline Logic ---
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
     const timeline = days.map((day, i) => {
@@ -65,34 +64,40 @@ serve(async (req) => {
     const resolvedThisWeek = thisWeekTickets.filter(t => ['resolved', 'closed'].includes(t.status.toLowerCase()));
     const totalResHours = resolvedThisWeek.reduce((acc, t) => acc + dateFns.differenceInHours(new Date(t.updated_at), new Date(t.created_at)), 0);
     const avgResTime = resolvedThisWeek.length > 0 ? (totalResHours / resolvedThisWeek.length).toFixed(1) : "0";
-    
     const slaMetCount = resolvedThisWeek.filter(t => !t.due_by || new Date(t.updated_at) <= new Date(t.due_by)).length;
     const slaCompliance = resolvedThisWeek.length > 0 ? Math.round((slaMetCount / resolvedThisWeek.length) * 100) : 100;
 
-    // Bottleneck Detection (Mocked based on status/module for now)
-    const bottlenecks = [
-      { type: "Waiting on Tech", percentage: 38, count: Math.round(thisWeekTickets.length * 0.38) },
-      { type: "Customer Delay", percentage: 27, count: Math.round(thisWeekTickets.length * 0.27) },
-      { type: "Internal Backlog", percentage: 18, count: Math.round(thisWeekTickets.length * 0.18) }
-    ];
-
     const efficiencyScore = Math.round((slaCompliance * 0.6) + (Math.max(0, 100 - (parseFloat(avgResTime) * 2)) * 0.4));
 
-    // --- 3. AI Intelligence Layer ---
-    let performanceInsights = { summary: "Performance is stable.", issues: [], recommendations: [] };
+    // --- 3. AI Intelligence Layer (Behavioral + Recurring Issues) ---
     let behavioralInsights = { summary: "Activity is normal.", highlights: [] };
+    let recurringIssues = [];
 
     if (geminiApiKey && thisWeekTickets.length > 0) {
       const prompt = `
-        Analyze this support performance data for "${customerName}":
+        Analyze this support data for "${customerName}":
+        Tickets: ${JSON.stringify(thisWeekTickets.map(t => ({ subject: t.subject, module: t.cf_module, priority: t.priority })))}
         Timeline: ${JSON.stringify(timeline)}
-        Efficiency: Score ${efficiencyScore}, SLA ${slaCompliance}%, Avg Res ${avgResTime}h
-        Bottlenecks: ${JSON.stringify(bottlenecks)}
 
-        Return STRICT JSON with two objects:
+        1. Identify recurring issues (group similar subjects).
+        2. Detect frequency and trends.
+        3. Determine impact level.
+
+        Return STRICT JSON:
         {
-          "behavioral": { "summary": "2 lines", "highlights": [{ "day": "", "event": "spike|drop|risk", "reason": "" }] },
-          "performance": { "summary": "2 lines", "issues": ["issue 1"], "recommendations": ["rec 1"] }
+          "behavioral": { "summary": "2 lines", "highlights": [] },
+          "recurring": [
+            {
+              "id": "slug",
+              "title": "Issue Name",
+              "count": number,
+              "trend": "up|repeat|down",
+              "firstSeen": "e.g. 3 weeks ago",
+              "impact": "High|Medium|Low",
+              "frequency": "Daily|Weekly|Intermittent",
+              "insight": "1 line root cause hint"
+            }
+          ]
         }
       `;
 
@@ -109,7 +114,7 @@ serve(async (req) => {
         const aiData = await res.json();
         const parsed = JSON.parse(aiData.candidates[0].content.parts[0].text);
         behavioralInsights = parsed.behavioral;
-        performanceInsights = parsed.performance;
+        recurringIssues = parsed.recurring;
       }
     }
 
@@ -123,20 +128,21 @@ serve(async (req) => {
         total: thisWeekTickets.length,
         resolved: resolvedThisWeek.length,
         rate: Math.round((resolvedThisWeek.length / (thisWeekTickets.length || 1)) * 100),
-        rateTrend: 5, // Mocked
-        primaryIssue: "Invoice Queries",
-        primaryIssuePercent: 41
+        rateTrend: 5,
+        primaryIssue: recurringIssues[0]?.title || "General Queries",
+        primaryIssuePercent: recurringIssues[0] ? Math.round((recurringIssues[0].count / thisWeekTickets.length) * 100) : 0
       },
       efficiency: {
         avg_resolution_time: avgResTime,
         sla_compliance: slaCompliance,
-        first_response_time: "1.4", // Mocked
+        first_response_time: "1.4",
         efficiency_score: efficiencyScore,
-        bottlenecks,
-        insights: performanceInsights
+        bottlenecks: [],
+        insights: { summary: behavioralInsights.summary }
       },
       timeline,
-      aiInsights: behavioralInsights
+      aiInsights: behavioralInsights,
+      recurringIssues
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

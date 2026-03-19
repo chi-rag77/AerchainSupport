@@ -21,10 +21,11 @@ export interface RecurringPattern {
   id: string;
   title: string;
   count: number;
-  trend: 'up' | 'repeat';
+  trend: 'up' | 'repeat' | 'down';
   firstSeen: string;
-  impact: string;
-  frequency: string;
+  impact: 'High' | 'Medium' | 'Low';
+  frequency: 'Daily' | 'Weekly' | 'Intermittent';
+  insight: string;
 }
 
 export interface AgentPulse {
@@ -65,20 +66,16 @@ export interface PulseData {
   recurringIssues: RecurringPattern[];
   agents: AgentPulse[];
   efficiency: {
-    avgResolutionTime: string;
-    slaCompliance: number;
-    trendReason: string;
+    avg_resolution_time: string;
+    sla_compliance: number;
+    first_response_time: string;
+    efficiency_score: number;
+    bottlenecks: any[];
+    insights: any;
   };
   actions: {
     id: string;
     title: string;
     type: 'assign' | 'escalate' | 'task';
   }[];
-}
-
-export interface CustomerContextPreview {
-  name: string;
-  tickets: number;
-  resolution: number;
-  status: PulseStatus;
 }
