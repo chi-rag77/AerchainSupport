@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Bell, LogOut, Home, Layers, 
-  Settings, Users, KeyRound, Brain 
+  Settings, Users, KeyRound, Brain, Activity 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -60,6 +60,7 @@ const TopNavigation = () => {
     { icon: Home, label: "Home", path: "/" },
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: Users, label: "Customer 360", path: "/customer360" },
+    { icon: Activity, label: "Pulse", path: "/pulse" },
     { icon: Brain, label: "Knowledge Hub", path: "/knowledge" },
   ];
 

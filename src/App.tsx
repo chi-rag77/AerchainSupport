@@ -12,6 +12,7 @@ import Signup from "./pages/Signup";
 import Customer360 from "./pages/Customer360";
 import SettingsPage from "./pages/SettingsPage";
 import KnowledgeHub from "./pages/KnowledgeHub";
+import CustomerPulse from "./pages/CustomerPulse";
 import { SupabaseProvider } from "./components/SupabaseProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./hooks/use-theme";
@@ -37,6 +38,7 @@ const App = () => (
                   <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
                   <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2 /></ProtectedRoute>} />
                   <Route path="/customer360" element={<ProtectedRoute><Customer360 /></ProtectedRoute>} />
+                  <Route path="/pulse" element={<ProtectedRoute><CustomerPulse /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                   <Route path="/knowledge" element={<ProtectedRoute><KnowledgeHub /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
