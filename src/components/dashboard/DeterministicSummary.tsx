@@ -3,12 +3,11 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/features/tickets/types';
-import { Brain, Sparkles, ListFilter, LayoutGrid, HelpCircle, TrendingUp, Clock } from 'lucide-react';
+import { Brain, Sparkles, ListFilter, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 interface DeterministicSummaryProps {
   tickets: Ticket[];
@@ -36,6 +35,8 @@ const CustomTreemapContent = (props: any) => {
   
   const color = COLOR_MAP[name] || COLOR_MAP[Object.keys(COLOR_MAP)[index % Object.keys(COLOR_MAP).length]] || DEFAULT_COLOR;
 
+  // Padding for text
+  const padding = 8;
   const isLargeEnoughForPercent = height > 60 && width > 80;
   const isLargeEnoughForText = height > 30 && width > 50;
 
@@ -150,11 +151,6 @@ const DeterministicSummary = ({ tickets, dateRange, onTriggerAI, isGeneratingAI,
     ? `${format(dateRange.from, 'MMM dd')} - ${format(dateRange.to, 'MMM dd, yyyy')}`
     : "Selected Period";
 
-  const handleTrigger = (query: string) => {
-    toast.info(`Analyzing: ${query}`);
-    // In production, this would open the AI Assistant with this query
-  };
-
   return (
     <Card className="relative overflow-hidden rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass">
       <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
@@ -180,36 +176,12 @@ const DeterministicSummary = ({ tickets, dateRange, onTriggerAI, isGeneratingAI,
       </CardHeader>
 
       <CardContent className="p-8 pt-0 space-y-8">
-        <div className="p-6 rounded-[20px] bg-gray-50 dark:bg-gray-900/50 border border-border space-y-6">
+        <div className="p-6 rounded-[20px] bg-gray-50 dark:bg-gray-900/50 border border-border">
           <p className="text-lg font-medium leading-relaxed text-foreground">
             During this period, a total of <span className="font-black text-indigo-600">{stats.total} tickets</span> were received. 
             Out of these, <span className="font-black text-green-600">{stats.resolved} tickets</span> have been successfully resolved, 
             while <span className="font-black text-amber-600">{stats.total - stats.resolved}</span> remain in an active or pending state.
           </p>
-
-          <div className="flex flex-wrap gap-2">
-            <Button 
-              variant="ghost" size="sm" 
-              onClick={() => handleTrigger("Why is backlog high?")}
-              className="h-8 rounded-full text-[10px] font-black uppercase tracking-widest bg-white dark:bg-gray-800 border border-border hover:bg-indigo-50 hover:text-indigo-600 gap-2"
-            >
-              <HelpCircle className="h-3 w-3" /> Why backlog high?
-            </Button>
-            <Button 
-              variant="ghost" size="sm" 
-              onClick={() => handleTrigger("What changed vs last week?")}
-              className="h-8 rounded-full text-[10px] font-black uppercase tracking-widest bg-white dark:bg-gray-800 border border-border hover:bg-indigo-50 hover:text-indigo-600 gap-2"
-            >
-              <TrendingUp className="h-3 w-3" /> What changed vs last week?
-            </Button>
-            <Button 
-              variant="ghost" size="sm" 
-              onClick={() => handleTrigger("Where are delays?")}
-              className="h-8 rounded-full text-[10px] font-black uppercase tracking-widest bg-white dark:bg-gray-800 border border-border hover:bg-indigo-50 hover:text-indigo-600 gap-2"
-            >
-              <Clock className="h-3 w-3" /> Where are delays?
-            </Button>
-          </div>
         </div>
 
         <div className="space-y-4">

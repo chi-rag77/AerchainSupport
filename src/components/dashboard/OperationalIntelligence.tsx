@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExecutiveSummary, ForecastData } from '@/features/dashboard/types';
+import { ExecutiveSummary } from '@/features/dashboard/types';
 import { Ticket } from '@/types';
 import VolumeSlaTrendChart from '@/components/VolumeSlaTrendChart';
-import { Brain, Sparkles, TrendingUp, CheckCircle2, AlertTriangle, ArrowRight, Loader2, ShieldAlert } from 'lucide-react';
+import { Brain, Sparkles, TrendingUp, CheckCircle2, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -15,39 +15,19 @@ interface OperationalIntelligenceProps {
   tickets: Ticket[];
   startDate: Date;
   endDate: Date;
-  forecast: ForecastData;
   onViewDetails: () => void;
 }
 
-const OperationalIntelligence = ({ summary, tickets, startDate, endDate, forecast, onViewDetails }: OperationalIntelligenceProps) => {
+const OperationalIntelligence = ({ summary, tickets, startDate, endDate, onViewDetails }: OperationalIntelligenceProps) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left: Chart Section */}
       <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
-        <CardHeader className="p-8 pb-0 flex flex-row items-center justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-blue-500" />
-              Volume & SLA Performance
-            </CardTitle>
-            <p className="text-xs font-medium text-muted-foreground">Historical data with AI predictive overlay</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Projected SLA</p>
-              <p className="text-sm font-black text-indigo-600">{forecast.forecastSLA}%</p>
-            </div>
-            <div className="h-8 w-px bg-border" />
-            <div className="text-right">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Breach Risk</p>
-              <p className={cn(
-                "text-sm font-black",
-                forecast.breachProbability > 0.2 ? "text-rose-600" : "text-green-600"
-              )}>
-                {forecast.breachProbability > 0.2 ? 'Medium' : 'Low'}
-              </p>
-            </div>
-          </div>
+        <CardHeader className="p-8 pb-0">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-blue-500" />
+            Volume & SLA Performance
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-8 h-[400px]">
           {tickets && tickets.length > 0 ? (
@@ -58,14 +38,6 @@ const OperationalIntelligence = ({ summary, tickets, startDate, endDate, forecas
             </div>
           )}
         </CardContent>
-        <div className="px-8 pb-6">
-          <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 flex items-center gap-3">
-            <Sparkles className="h-4 w-4 text-indigo-600 shrink-0" />
-            <p className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
-              {forecast.aiNarrative}
-            </p>
-          </div>
-        </div>
       </Card>
 
       {/* Right: AI Narrative Panel */}

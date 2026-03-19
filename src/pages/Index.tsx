@@ -22,7 +22,7 @@ import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
 import DeterministicSummary from "@/components/dashboard/DeterministicSummary";
 import DashboardAssistant from "@/components/assistant/DashboardAssistant";
 import DetailedReasoningModal from "@/components/dashboard/DetailedReasoningModal";
-import { Loader2, Brain, Sparkles, Users2, BarChart3, Zap, ShieldAlert, TrendingUp } from "lucide-react";
+import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -105,27 +105,6 @@ const DashboardContent = () => {
         onViewInsights={generateAI} 
       />
 
-      {/* AI Action Strip: What should I do next? */}
-      <AnimatePresence>
-        {activeInsight && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, height: 0 }}
-            className="space-y-4"
-          >
-            <div className="flex items-center gap-2 px-2">
-              <Sparkles className="h-4 w-4 text-indigo-600" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Priority Intelligence</span>
-            </div>
-            <AIInsightStrip 
-              insight={activeInsight}
-              onDismiss={() => setShowInsight(false)}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <KPISection metrics={data.kpis} isLoading={isLoading} />
 
       <div className="flex justify-center">
@@ -139,6 +118,13 @@ const DashboardContent = () => {
         isGeneratingAI={isGeneratingAI}
         showAIButton={!hasAI}
       />
+
+      {hasAI && activeInsight && (
+        <AIInsightStrip 
+          insight={activeInsight}
+          onDismiss={() => setShowInsight(false)}
+        />
+      )}
 
       <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
 
@@ -202,7 +188,6 @@ const DashboardContent = () => {
                 tickets={tickets}
                 startDate={dateRange.from!}
                 endDate={dateRange.to!}
-                forecast={data.forecast}
                 onViewDetails={() => setIsReasoningModalOpen(true)}
               />
               {hasAI && <OperationalBottlenecks data={data.bottlenecks} />}

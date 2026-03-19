@@ -4,12 +4,10 @@ import React, { useState } from 'react';
 import { useActiveRisk } from '@/features/active-risk/hooks/useActiveRisk';
 import RiskCard from './RiskCard';
 import RiskDrilldownTable from './RiskDrilldownTable';
-import { Brain, ShieldAlert, Clock, Users, TrendingUp, Loader2, AlertTriangle, Zap, UserPlus, LayoutList } from 'lucide-react';
+import { Brain, ShieldAlert, Clock, Users, TrendingUp, Loader2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 interface ActiveRiskSectionProps {
   onViewTicket: (ticket: any) => void;
@@ -18,10 +16,6 @@ interface ActiveRiskSectionProps {
 const ActiveRiskSection = ({ onViewTicket }: ActiveRiskSectionProps) => {
   const { data, isLoading, error } = useActiveRisk();
   const [selectedCategory, setSelectedCategory] = useState<string | null>('escalationRisk');
-
-  const handleAction = (type: string) => {
-    toast.success(`Initiating: ${type}`);
-  };
 
   if (isLoading) {
     return (
@@ -48,31 +42,13 @@ const ActiveRiskSection = ({ onViewTicket }: ActiveRiskSectionProps) => {
             <p className="text-sm font-medium text-muted-foreground">Operational Command Center • Real-time Monitoring</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" size="sm" 
-              onClick={() => handleAction("Fix SLA Risk")}
-              className="h-9 rounded-full font-bold text-[10px] uppercase tracking-widest border-rose-200 text-rose-600 hover:bg-rose-50"
-            >
-              <Zap className="h-3.5 w-3.5 mr-1.5" /> Fix SLA Risk
-            </Button>
-            <Button 
-              variant="outline" size="sm" 
-              onClick={() => handleAction("Balance Load")}
-              className="h-9 rounded-full font-bold text-[10px] uppercase tracking-widest border-indigo-200 text-indigo-600 hover:bg-indigo-50"
-            >
-              <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Balance Load
-            </Button>
-          </div>
-          <Badge className={cn(
-            "px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-[10px]",
-            data.summary.posture === 'Critical' ? "bg-red-500 text-white" : 
-            data.summary.posture === 'Deteriorating' ? "bg-amber-500 text-white" : "bg-green-500 text-white"
-          )}>
-            Posture: {data.summary.posture}
-          </Badge>
-        </div>
+        <Badge className={cn(
+          "px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-[10px]",
+          data.summary.posture === 'Critical' ? "bg-red-500 text-white" : 
+          data.summary.posture === 'Deteriorating' ? "bg-amber-500 text-white" : "bg-green-500 text-white"
+        )}>
+          Posture: {data.summary.posture}
+        </Badge>
       </div>
 
       {/* AI Risk Narrative Banner */}
@@ -140,16 +116,11 @@ const ActiveRiskSection = ({ onViewTicket }: ActiveRiskSectionProps) => {
             transition={{ duration: 0.3 }}
           >
             <div className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-                    Drilldown: {selectedCategory.replace(/([A-Z])/g, ' $1').trim()}
-                  </h3>
-                  <div className="h-px w-32 bg-gray-100 dark:bg-gray-800" />
-                </div>
-                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest gap-2">
-                  <LayoutList className="h-3.5 w-3.5" /> View Full Queue
-                </Button>
+              <div className="flex items-center gap-2 px-2">
+                <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+                  Drilldown: {selectedCategory.replace(/([A-Z])/g, ' $1').trim()}
+                </h3>
+                <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
               </div>
               <RiskDrilldownTable 
                 tickets={activeTickets} 

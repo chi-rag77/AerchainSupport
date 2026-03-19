@@ -5,8 +5,9 @@ import { DashboardData, KPIMetric, ExecutiveSummary, GeographySummary, Geographi
 import { useDashboard } from '../DashboardContext';
 import { Ticket } from '@/types';
 import { toast } from 'sonner';
-import { isWithinInterval, parseISO, isToday, isYesterday, differenceInHours } from 'date-fns';
+import { isWithinInterval, parseISO, isToday, isYesterday } from 'date-fns';
 
+// Mapping common names to ISO-A3 and Numeric IDs for world-atlas compatibility
 const COUNTRY_REGISTRY: Record<string, { iso: string; id: string }> = {
   'United States': { iso: 'USA', id: '840' },
   'USA': { iso: 'USA', id: '840' },
@@ -30,6 +31,7 @@ export function useExecutiveDashboard() {
   const queryClient = useQueryClient();
   const { dateRange, filters } = useDashboard();
 
+  // 1. Fetch Aggregated Metrics - Cached for 5 mins
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
@@ -40,15 +42,17 @@ export function useExecutiveDashboard() {
     staleTime: 5 * 60 * 1000, 
   });
 
-  const { data: aiRaw, isLoading: isLoadingAI, isPending: isGeneratingAI } = useQuery({
+  // 2. Fetch AI Insights - Manual trigger or long cache
+  const { data: aiRaw, isLoading: isLoadingAI } = useQuery({
     queryKey: ['dashboardInsights'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { method: 'POST' });
       if (error) throw error;
       return data;
     },
-    staleTime: 30 * 60 * 1000,
-    enabled: false,
+    staleTime: 30 * 60 * 1000, // Cache for 30 mins
+    enabled: false, // Don't run automatically on every mount
+    retry: false,
   });
 
   const generateAIMutation = useMutation({
@@ -66,6 +70,7 @@ export function useExecutiveDashboard() {
     }
   });
 
+  // 3. Fetch tickets for calculations - Cached for 2 mins
   const { data: recentTickets = [], isLoading: isLoadingTickets, isFetching } = useQuery<Ticket[]>({
     queryKey: ['recentTicketsForDashboard'],
     queryFn: async () => {
@@ -90,6 +95,7 @@ export function useExecutiveDashboard() {
     staleTime: 10 * 60 * 1000,
   });
 
+  // Calculate Live Ticker Metrics
   const tickerMetrics = useMemo(() => {
     const createdToday = recentTickets.filter(t => isToday(parseISO(t.created_at))).length;
     const createdYesterday = recentTickets.filter(t => isYesterday(parseISO(t.created_at))).length;
@@ -126,16 +132,10 @@ export function useExecutiveDashboard() {
       current = current.filter(t => t.cf_company === filters.company);
     }
 
-    if (filters.isFocusMode) {
-      current = current.filter(t => 
-        t.priority.toLowerCase() === 'urgent' || 
-        t.status.toLowerCase() === 'escalated'
-      );
-    }
-
     return current;
-  }, [recentTickets, dateRange, filters.company, filters.isFocusMode]);
+  }, [recentTickets, dateRange, filters.company]);
 
+  // Calculate Geography Data
   const geographyData = useMemo((): GeographySummary => {
     const countryMap = new Map<string, { total: number; resolved: number; open: number }>();
     
@@ -187,37 +187,33 @@ export function useExecutiveDashboard() {
         title: "Total Tickets", 
         value: metrics?.totalTickets || 0, 
         trend: 12, 
-        microInsight: "unusual spike", 
+        microInsight: "vs last week", 
         archetype: 'volume',
-        sparklineData: generateSparkline(),
-        reasoning: "12% increase primarily driven by Danone invoice queries (+18) and PO sync delays (+12)."
+        sparklineData: generateSparkline()
       },
       { 
         title: "Open Backlog", 
         value: metrics?.openTickets || 0, 
-        trend: 5, 
-        microInsight: "higher than avg", 
+        trend: -5, 
+        microInsight: "vs last week", 
         archetype: 'backlog',
-        sparklineData: generateSparkline(),
-        reasoning: "Backlog rising due to 27 tickets stuck in 'On Tech' status for >48 hours."
+        sparklineData: generateSparkline()
       },
       { 
         title: "Resolved", 
         value: metrics?.resolvedTickets || 0, 
         trend: 15, 
-        microInsight: "healthy", 
+        microInsight: "vs last week", 
         archetype: 'resolved',
-        sparklineData: generateSparkline(),
-        reasoning: "Resolution velocity improved by 15% following the deployment of the new RFQ automation."
+        sparklineData: generateSparkline()
       },
       { 
         title: "Bugs", 
         value: metrics?.bugTickets || 0, 
         trend: 8, 
-        microInsight: "needs attention", 
+        microInsight: "vs last week", 
         archetype: 'attention',
-        sparklineData: generateSparkline(),
-        reasoning: "8% increase in bug reports concentrated in the 'Supplier Portal' module."
+        sparklineData: generateSparkline()
       }
     ];
 
@@ -227,12 +223,7 @@ export function useExecutiveDashboard() {
       geography: geographyData,
       risks: aiRaw?.risks || [],
       bottlenecks: aiRaw?.bottlenecks || [],
-      forecast: aiRaw?.forecast || { 
-        forecastVolume: Math.round((metrics?.totalTickets || 0) * 1.1), 
-        forecastSLA: 82, 
-        breachProbability: 0.15, 
-        aiNarrative: "Projected SLA: 82% by EOD. Risk of breach: Medium." 
-      },
+      forecast: aiRaw?.forecast || { forecastVolume: 0, forecastSLA: 0, breachProbability: 0, aiNarrative: "" },
       customerRisks: [],
       agentCapacity: [],
       clusters: [],
@@ -240,11 +231,7 @@ export function useExecutiveDashboard() {
       actions: aiRaw?.actions || [],
       systemHealth: { aiConfidence: aiRaw?.confidence || 0, dataFreshness: "Live", syncIntegrity: "Healthy" },
       lastSync: aiRaw?.updated_at || new Date().toISOString(),
-      insights: aiRaw?.insights || [
-        { message: "3 tickets need immediate attention", severity: "critical", type: "risk", link: "/tickets?priority=Urgent" },
-        { message: "2 customers waiting >4 hrs", severity: "warning", type: "anomaly", link: "/tickets?status=Open" },
-        { message: "Spike in Queries from Danone", severity: "info", type: "trend", link: "/customer360?customer=Danone" }
-      ],
+      insights: aiRaw?.insights || [],
       slaRiskScore: (metrics?.urgentTickets || 0) > 5 ? 85 : 20,
       tickerMetrics
     };
