@@ -37,6 +37,8 @@ export interface AgentPerformance {
   strength: string;
   concern: string;
   signal: 'Strong' | 'Attention' | 'Risk';
+  workload: 'Balanced' | 'High' | 'Overloaded';
+  taskMix: { label: string; percent: number }[];
 }
 
 export interface TeamMember {
@@ -75,8 +77,6 @@ export interface PulseData {
   agentPerformance: {
     primary: AgentPerformance;
     team: TeamMember[];
-    insights: string[];
-    recommendations: string[];
   };
   efficiency: {
     avg_resolution_time: string;

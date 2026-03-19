@@ -195,8 +195,6 @@ const CustomerPulse = () => {
                   <AgentPerformancePulse 
                     primary={data.agentPerformance.primary}
                     team={data.agentPerformance.team}
-                    insights={data.agentPerformance.insights}
-                    recommendations={data.agentPerformance.recommendations}
                   />
                   
                   <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
