@@ -18,7 +18,6 @@ import SnapshotStrip from "@/components/customer-pulse/SnapshotStrip";
 import BehavioralTimeline from "@/components/customer-pulse/BehavioralTimeline";
 import ResolutionEfficiency from "@/components/customer-pulse/ResolutionEfficiency";
 import AIInsightPanel from "@/components/customer-pulse/AIInsightPanel";
-import RecurringIssueDetector from "@/components/customer-pulse/RecurringIssueDetector";
 
 const CustomerPulse = () => {
   const { session } = useSupabase();
@@ -173,10 +172,7 @@ const CustomerPulse = () => {
               />
             </div>
 
-            {/* ROW 2: Recurring Issue Radar (Full Width) */}
-            <RecurringIssueDetector issues={data.recurringIssues} />
-
-            {/* ROW 3: Intelligence Layer / Placeholders */}
+            {/* ROW 2: Intelligence Layer / Placeholders */}
             <AnimatePresence mode="wait">
               {intelligenceMode === 'ai' ? (
                 <motion.div
