@@ -157,36 +157,49 @@ const CustomerPulse = () => {
           >
             <SnapshotStrip data={data} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className={cn("space-y-8", intelligenceMode === 'summary' ? "lg:col-span-7" : "lg:col-span-8")}>
-                <BehavioralTimeline 
-                  data={data.timeline} 
-                  summary={behavioralSummary}
-                  mode={intelligenceMode}
-                />
-                <ResolutionEfficiency 
-                  data={data.efficiency} 
-                  timeline={data.timeline} 
-                  summary={efficiencySummary}
-                  mode={intelligenceMode}
-                />
-              </div>
-
-              <div className={cn(intelligenceMode === 'summary' ? "lg:col-span-5" : "lg:col-span-4")}>
-                {intelligenceMode === 'summary' ? (
-                  <div className="space-y-8">
-                    <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                      Next: Recurring Issue Detector
-                    </div>
-                    <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                      Next: Agent Performance Pulse
-                    </div>
-                  </div>
-                ) : (
-                  reportData && <AIInsightPanel insights={reportData} />
-                )}
-              </div>
+            {/* Core Engines: Always Side-by-Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <BehavioralTimeline 
+                data={data.timeline} 
+                summary={behavioralSummary}
+                mode={intelligenceMode}
+              />
+              <ResolutionEfficiency 
+                data={data.efficiency} 
+                timeline={data.timeline} 
+                summary={efficiencySummary}
+                mode={intelligenceMode}
+              />
             </div>
+
+            {/* Intelligence Layer: Full Width Report or Secondary Cards */}
+            <AnimatePresence mode="wait">
+              {intelligenceMode === 'ai' ? (
+                <motion.div
+                  key="ai-report"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  {reportData && <AIInsightPanel insights={reportData} />}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="summary-cards"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+                >
+                  <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                    Next: Recurring Issue Detector
+                  </div>
+                  <div className="h-48 rounded-[32px] border border-dashed border-gray-300 flex items-center justify-center text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                    Next: Agent Performance Pulse
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-30">End of Intelligence Brief</p>
