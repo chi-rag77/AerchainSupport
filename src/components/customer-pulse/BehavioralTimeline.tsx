@@ -9,6 +9,7 @@ import {
   Sparkles, Info, Circle, Triangle, AlertTriangle 
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from '@/components/ui/badge';
 
 interface DailyData {
   day: string;
@@ -20,7 +21,7 @@ interface DailyData {
 
 interface BehavioralTimelineProps {
   data: DailyData[];
-  aiInsights: {
+  aiInsights?: {
     summary: string;
     highlights: { day: string; event: string; reason: string }[];
   };
@@ -66,7 +67,7 @@ const BehavioralTimeline = ({ data, aiInsights }: BehavioralTimelineProps) => {
           <div className="absolute top-1/2 left-0 w-full h-px bg-gray-100 dark:bg-gray-800 -translate-y-1/2 z-0" />
           
           <div className="relative z-10 flex justify-between items-center">
-            {data.map((item, i) => (
+            {data?.map((item, i) => (
               <div key={item.day} className="flex flex-col items-center gap-6 flex-1">
                 <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                   {item.day}
@@ -115,30 +116,33 @@ const BehavioralTimeline = ({ data, aiInsights }: BehavioralTimelineProps) => {
         </div>
 
         {/* Intelligence Layer */}
-        <div className="p-5 rounded-[24px] bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50">
-          <div className="flex items-start gap-4">
-            <div className="p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm shrink-0">
-              <Sparkles className="h-4 w-4 text-indigo-600" />
-            </div>
-            <div className="space-y-2">
-              <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Behavioral Insight</h5>
-              <p className="text-sm font-bold leading-relaxed text-indigo-900 dark:text-indigo-200">
-                {aiInsights.summary}
-              </p>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {aiInsights.highlights.map((h, i) => (
-                  <Badge key={i} variant="outline" className="bg-white/50 dark:bg-gray-800/50 border-indigo-100 text-[9px] font-bold py-0.5 px-2">
-                    {h.day}: {h.reason}
-                  </Badge>
-                ))}
+        {aiInsights && (
+          <div className="p-5 rounded-[24px] bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50">
+            <div className="flex items-start gap-4">
+              <div className="p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm shrink-0">
+                <Sparkles className="h-4 w-4 text-indigo-600" />
+              </div>
+              <div className="space-y-2">
+                <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Behavioral Insight</h5>
+                <p className="text-sm font-bold leading-relaxed text-indigo-900 dark:text-indigo-200">
+                  {aiInsights.summary}
+                </p>
+                {aiInsights.highlights && aiInsights.highlights.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {aiInsights.highlights.map((h, i) => (
+                      <Badge key={i} variant="outline" className="bg-white/50 dark:bg-gray-800/50 border-indigo-100 text-[9px] font-bold py-0.5 px-2">
+                        {h.day}: {h.reason}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
 };
 
-import { Badge } from '@/components/ui/badge';
 export default BehavioralTimeline;
