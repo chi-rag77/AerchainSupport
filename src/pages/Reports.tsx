@@ -20,7 +20,9 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import ReportCard from "@/components/reports/ReportCard";
 import CustomBuilder from "@/components/reports/CustomBuilder";
+import ReportViewer from "@/components/reports/ReportViewer";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 
 const CATEGORIES: { id: ReportCategory; icon: any }[] = [
   { id: 'Customer Health', icon: ShieldAlert },
@@ -34,6 +36,7 @@ const Reports = () => {
   const [activeCategory, setActiveCategory] = useState<ReportCategory | 'All'>('All');
   const [searchTerm, setSearchTerm] = useState("");
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
   // Mocking pre-built reports based on PRD
   const reports: Report[] = [
@@ -160,7 +163,7 @@ const Reports = () => {
               <ReportCard 
                 key={report.id} 
                 report={report} 
-                onClick={() => toast.info(`Opening ${report.title}...`)} 
+                onClick={() => setSelectedReport(report)} 
               />
             ))}
           </AnimatePresence>
@@ -213,6 +216,16 @@ const Reports = () => {
             </div>
           </Card>
         </div>
+
+        {/* Report Viewer Overlay */}
+        <AnimatePresence>
+          {selectedReport && (
+            <ReportViewer 
+              report={selectedReport} 
+              onClose={() => setSelectedReport(null)} 
+            />
+          )}
+        </AnimatePresence>
 
       </div>
     </TooltipProvider>
