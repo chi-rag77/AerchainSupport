@@ -47,6 +47,19 @@ export interface TeamMember {
   percent: number;
 }
 
+export interface CustomerDigest {
+  customerName: string;
+  weekLabel: string;
+  aiSummary: string;
+  metrics: {
+    volume: { total: number; wow: number };
+    classification: { bugs: number; queries: number; tasks: number; features: number };
+    status: { closed: number; open: number; backlog: number };
+    sla: { adherence: number };
+    critical: { urgent: number; escalated: number };
+  };
+}
+
 export interface PulseData {
   customer: string;
   weekRange: string;
