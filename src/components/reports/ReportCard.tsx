@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { 
   BarChart3, LineChart, PieChart, Table as TableIcon, 
-  LayoutGrid, Zap, ArrowRight, Clock, Brain 
+  LayoutGrid, Zap, ArrowRight, Clock 
 } from 'lucide-react';
 import { Report } from '@/features/reports/types';
 import { motion } from 'framer-motion';
@@ -16,7 +16,7 @@ interface ReportCardProps {
   onClick: () => void;
 }
 
-const ReportCard = ({ report, onClick }: ReportCardProps) => {
+const ReportCard = React.forwardRef<HTMLDivElement, ReportCardProps>(({ report, onClick }, ref) => {
   const Icon = {
     bar: BarChart3,
     line: LineChart,
@@ -36,6 +36,7 @@ const ReportCard = ({ report, onClick }: ReportCardProps) => {
 
   return (
     <motion.div
+      ref={ref}
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
@@ -74,6 +75,8 @@ const ReportCard = ({ report, onClick }: ReportCardProps) => {
       </Card>
     </motion.div>
   );
-};
+});
+
+ReportCard.displayName = "ReportCard";
 
 export default ReportCard;

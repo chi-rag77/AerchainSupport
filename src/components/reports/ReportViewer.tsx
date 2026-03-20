@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Report } from '@/features/reports/types';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   X, Download, Share2, Sparkles, Brain, 
   ArrowLeft, CalendarDays, Filter, Loader2,
