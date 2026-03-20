@@ -5,7 +5,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Bell, LogOut, Home, Layers, 
   Settings, Users, KeyRound, Brain, Activity,
-  Search, Command, ShieldCheck, Zap, Clock, Target
+  Search, Command, ShieldCheck, Zap, Clock, Target,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -66,6 +67,7 @@ const TopNavigation = () => {
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: Users, label: "Customer 360", path: "/customer360" },
     { icon: Activity, label: "Pulse", path: "/pulse" },
+    { icon: BarChart3, label: "Reports", path: "/reports" },
     { icon: Brain, label: "Knowledge Hub", path: "/knowledge" },
   ];
 
