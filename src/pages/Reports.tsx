@@ -7,7 +7,7 @@ import {
   BarChart3, Loader2, Search, Plus, Filter, 
   LayoutDashboard, ShieldAlert, TrendingUp, 
   Users, Zap, Brain, Sparkles, ChevronRight,
-  CalendarDays, Download, Share2, Star
+  CalendarDays, Download, Share2, Star, Layers
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ import { Report, ReportCategory } from "@/features/reports/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import ReportCard from "@/components/reports/ReportCard";
@@ -28,8 +29,6 @@ const CATEGORIES: { id: ReportCategory; icon: any }[] = [
   { id: 'Implementation', icon: Layers },
   { id: 'Executive', icon: Brain },
 ];
-
-import { Layers } from "lucide-react";
 
 const Reports = () => {
   const [activeCategory, setActiveCategory] = useState<ReportCategory | 'All'>('All');

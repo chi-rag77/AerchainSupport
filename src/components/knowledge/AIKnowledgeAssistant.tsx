@@ -38,7 +38,7 @@ const AIKnowledgeAssistant = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [customerContext, setCustomerContext] = useState<string | null>(null);
   const [awaitingCustomer, setAwaitingCustomer] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch unique customers from both tickets and documents
   const { data: uniqueCustomers = [] } = useQuery<string[]>({
@@ -57,10 +57,12 @@ const AIKnowledgeAssistant = () => {
     }
   });
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    scrollToBottom();
   }, [messages, isLoading]);
 
   const handleSend = async (overrideInput?: string) => {
@@ -156,7 +158,7 @@ const AIKnowledgeAssistant = () => {
       </div>
 
       {/* Chat Area */}
-      <ScrollArea className="flex-1" viewportRef={scrollRef}>
+      <ScrollArea className="flex-1">
         <div className="max-w-3xl mx-auto py-12 px-6 space-y-10">
           {messages.map((m) => (
             <motion.div
@@ -250,6 +252,7 @@ const AIKnowledgeAssistant = () => {
               </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
