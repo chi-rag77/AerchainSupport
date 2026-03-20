@@ -36,7 +36,6 @@ interface WeeklyDigestSectionProps {
 }
 
 const WeeklyDigestSection = ({ customerName }: WeeklyDigestSectionProps) => {
-  const [viewMode, setViewMode] = useState<'detailed' | 'executive'>('detailed');
   const [isEditing, setIsEditing] = useState(false);
   const [editedSummary, setEditedSummary] = useState("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -79,8 +78,6 @@ const WeeklyDigestSection = ({ customerName }: WeeklyDigestSectionProps) => {
   if (!digest) return null;
 
   const metrics = digest.metrics;
-  const isExec = viewMode === 'executive';
-
   const sparklineData = Array.from({ length: 10 }, () => ({ value: Math.floor(Math.random() * 50) + 10 }));
 
   return (
@@ -106,30 +103,6 @@ const WeeklyDigestSection = ({ customerName }: WeeklyDigestSectionProps) => {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* View Mode Toggle */}
-          <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-full border border-white/20">
-            <button
-              onClick={() => setViewMode('detailed')}
-              className={cn(
-                "relative flex items-center gap-2 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
-                !isExec ? "text-white" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {!isExec && <motion.div layoutId="digest-view" className="absolute inset-0 bg-indigo-600 rounded-full shadow-md" />}
-              <span className="relative z-10">Detailed</span>
-            </button>
-            <button
-              onClick={() => setViewMode('executive')}
-              className={cn(
-                "relative flex items-center gap-2 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
-                isExec ? "text-white" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {isExec && <motion.div layoutId="digest-view" className="absolute inset-0 bg-indigo-600 rounded-full shadow-md" />}
-              <span className="relative z-10">Executive</span>
-            </button>
-          </div>
-
           <Button 
             onClick={() => setIsPreviewOpen(true)}
             className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase tracking-widest h-12 px-8 gap-3 shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95"
