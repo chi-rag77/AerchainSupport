@@ -8,57 +8,52 @@ import { Label } from "@/components/ui/label";
 import { useOrgData } from '@/hooks/use-org-user';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Save, AlertCircle, CheckCircle } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
+import { Loader2, Save, AlertCircle, CheckCircle, KeyRound, RefreshCw, Settings2, ShieldCheck } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SyncCommandCenter from './SyncCommandCenter';
 
 const FreshdeskSettings = () => {
   const { orgSettings, orgId, isOrgLoading } = useOrgData();
-  const queryClient = useQueryClient(); // Initialize query client
+  const queryClient = useQueryClient();
   const [domain, setDomain] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [webhookSecret, setWebhookSecret] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (orgSettings) {
       setDomain(orgSettings.freshdesk_domain || '');
-      // Note: We don't load the API key back into state for security, 
-      // but we allow the user to overwrite it.
+      setWebhookSecret(orgSettings.webhook_secret || '');
       setApiKey(''); 
     }
   }, [orgSettings]);
 
   const saveFreshdeskSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!orgId) {
-      toast.error("Authentication error: Organization ID missing.");
-      return;
-    }
-    if (!domain || !apiKey) {
-      toast.error("Both Freshdesk Domain and API Key are required.");
-      return;
-    }
+    if (!orgId) return;
 
     setIsSaving(true);
     try {
+      const payload: any = {
+        org_id: orgId,
+        freshdesk_domain: domain,
+        webhook_secret: webhookSecret,
+      };
+      
+      if (apiKey) payload.freshdesk_api_key = apiKey;
+
       const { error } = await supabase
         .from("org_settings")
-        .upsert({
-          org_id: orgId,
-          freshdesk_domain: domain,
-          freshdesk_api_key: apiKey,
-        }, { onConflict: 'org_id' }); // Conflict on org_id ensures one row per org
+        .upsert(payload, { onConflict: 'org_id' });
 
-      if (error) {
-        toast.error(`Failed to save settings: ${error.message}`);
-      } else {
-        toast.success("Freshdesk settings updated successfully!");
-        // Invalidate the orgData query to force a refetch and update the UI immediately
-        queryClient.invalidateQueries({ queryKey: ["orgData", orgId] });
-        // Optionally clear API key input after successful save
-        setApiKey(''); 
-      }
+      if (error) throw error;
+      
+      toast.success("Settings updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["orgData", orgId] });
+      setApiKey(''); 
     } catch (err: any) {
-      toast.error(`An unexpected error occurred: ${err.message}`);
+      toast.error(`Failed to save: ${err.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -68,67 +63,88 @@ const FreshdeskSettings = () => {
     return <Card><CardContent className="p-6 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading...</CardContent></Card>;
   }
 
-  const isConfigured = !!orgSettings;
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Freshdesk API Configuration</CardTitle>
-        <CardDescription>
-          Enter your Freshdesk domain and API key to enable ticket synchronization.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={saveFreshdeskSettings} className="space-y-6">
-          {isConfigured ? (
-            <div className="flex items-center p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md text-sm text-green-800 dark:text-green-200">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Freshdesk is currently configured. Enter new credentials to update.
-            </div>
-          ) : (
-            <div className="flex items-center p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md text-sm text-red-800 dark:text-red-200">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Freshdesk is NOT configured. Please enter credentials to enable data sync.
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="domain">Freshdesk Domain (e.g., mycompany)</Label>
-            <Input
-              id="domain"
-              type="text"
-              placeholder="mycompany"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              required
-            />
-            <p className="text-xs text-muted-foreground">Your full Freshdesk URL is https://<span className="font-semibold">{domain || 'mycompany'}</span>.freshdesk.com</p>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="apiKey">Freshdesk API Key</Label>
-            <Input
-              id="apiKey"
-              type="password"
-              placeholder={isConfigured ? "••••••••••••••••••••••••••••••••" : "Enter your API Key"}
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              required
-            />
-            <p className="text-xs text-muted-foreground">The API key is stored securely and used by our backend functions.</p>
-          </div>
-          
-          <Button type="submit" disabled={isSaving || !domain || !apiKey}>
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Save Settings
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="space-y-8">
+      <Tabs defaultValue="sync" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md mb-8">
+          <TabsTrigger value="sync" className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" /> Sync Center
+          </TabsTrigger>
+          <TabsTrigger value="config" className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4" /> API Config
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="sync">
+          <SyncCommandCenter />
+        </TabsContent>
+
+        <TabsContent value="config">
+          <Card className="border-none shadow-glass rounded-[28px] overflow-hidden">
+            <CardHeader className="p-8 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <KeyRound className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-black tracking-tight">API Configuration</CardTitle>
+                  <CardDescription className="font-medium">Securely connect your Freshdesk instance.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 pt-0">
+              <form onSubmit={saveFreshdeskSettings} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="domain" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Freshdesk Domain</Label>
+                    <Input
+                      id="domain"
+                      placeholder="mycompany"
+                      value={domain}
+                      onChange={(e) => setDomain(e.target.value)}
+                      className="h-11 rounded-xl bg-gray-50 dark:bg-gray-900 border-none"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="apiKey" className="text-xs font-black uppercase tracking-widest text-muted-foreground">API Key</Label>
+                    <Input
+                      id="apiKey"
+                      type="password"
+                      placeholder={orgSettings?.freshdesk_api_key ? "••••••••••••••••" : "Enter API Key"}
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="h-11 rounded-xl bg-gray-50 dark:bg-gray-900 border-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="webhookSecret" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Webhook HMAC Secret</Label>
+                    <Input
+                      id="webhookSecret"
+                      type="password"
+                      placeholder="Enter secret for signature validation"
+                      value={webhookSecret}
+                      onChange={(e) => setWebhookSecret(e.target.value)}
+                      className="h-11 rounded-xl bg-gray-50 dark:bg-gray-900 border-none"
+                    />
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter flex items-center gap-1.5 mt-1">
+                      <ShieldCheck className="h-3 w-3 text-green-500" /> Used to verify real-time updates from Freshdesk
+                    </p>
+                  </div>
+                </div>
+                
+                <Button type="submit" disabled={isSaving} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest text-[10px] h-11 px-8 shadow-lg shadow-indigo-500/20">
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                  Save Configuration
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
