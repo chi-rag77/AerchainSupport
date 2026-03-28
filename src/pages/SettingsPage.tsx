@@ -1,144 +1,106 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Settings, Loader2, AlertCircle, Users, KeyRound, Zap, Slack } from "lucide-react";
-import HandWaveIcon from "@/components/HandWaveIcon";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Settings, Loader2, AlertCircle, Brain, 
+  ShieldCheck, Zap, Activity, LayoutGrid,
+  History, Users, MessageSquare, Sparkles
+} from "lucide-react";
 import { useOrgData } from '@/hooks/use-org-user';
-import FreshdeskSettings from '@/components/settings/FreshdeskSettings';
+import ControlHubHeader from '@/components/settings/ControlHubHeader';
+import SystemHealthDashboard from '@/components/settings/SystemHealthDashboard';
+import IntegrationModules from '@/components/settings/IntegrationModules';
+import SyncControlCenter from '@/components/settings/SyncControlCenter';
+import ActivityTimeline from '@/components/settings/ActivityTimeline';
+import AIOpsAssistant from '@/components/settings/AIOpsAssistant';
 import UserManagement from '@/components/settings/UserManagement';
-import AutomationRuleBuilder from '@/components/settings/AutomationRuleBuilder';
-import SlackIntegration from '@/components/settings/SlackIntegration'; // New import
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 const SettingsPage = () => {
   const { session } = useSupabase();
-  const user = session?.user;
-  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const { orgUser, isOrgLoading, orgError, orgId } = useOrgData();
-
-  useEffect(() => {
-    if (!isOrgLoading && orgId && user?.email && (!orgUser || orgUser.role === 'viewer')) {
-      const setupInitialAdmin = async () => {
-        try {
-          const { count, error } = await supabase
-            .from('org_users')
-            .select('id', { count: 'exact', head: true });
-
-          if (error && error.code !== 'PGRST116') throw error;
-
-          if (count === 0) {
-            const { error: insertError } = await supabase
-              .from('org_users')
-              .insert({
-                org_id: orgId,
-                email: user.email,
-                role: 'admin',
-                is_active: true,
-              });
-
-            if (insertError) {
-              toast.error(`Failed to initialize admin user: ${insertError.message}`);
-            } else {
-              toast.success("Welcome! You have been set as the organization administrator.");
-            }
-          }
-        } catch (err: any) {
-          console.error("Initial admin setup failed:", err);
-        }
-      };
-      setupInitialAdmin();
-    }
-  }, [isOrgLoading, orgId, orgUser, user?.email]);
-
+  const [isUserPanelOpen, setIsUserPanelOpen] = useState(false);
 
   if (isOrgLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-lg font-medium">Loading organization data...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-gray-950">
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
+        <p className="text-lg font-black uppercase tracking-widest text-muted-foreground">Initializing Control Hub...</p>
       </div>
     );
   }
 
   if (orgError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <p className="text-red-500">Error loading settings: {orgError.message}</p>
-      </div>
-    );
-  }
-
-  const canViewSettings = orgUser && (orgUser.role === 'admin' || orgUser.role === 'manager');
-
-  if (!canViewSettings) {
-    return (
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-        <Card className="p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold">Access Denied</h2>
-          <p className="text-muted-foreground mt-2">You do not have the required permissions ({orgUser?.role}) to view this page. Only Admins and Managers can access Organization Settings.</p>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-gray-950">
+        <div className="p-8 bg-white dark:bg-gray-900 rounded-[32px] shadow-xl border border-rose-100 text-center space-y-4">
+          <AlertCircle className="h-12 w-12 text-rose-500 mx-auto" />
+          <p className="text-rose-600 font-bold">Error loading Control Hub: {orgError.message}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <TooltipProvider>
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-background">
-        <Card className="flex flex-col h-full p-0 overflow-hidden border-none shadow-xl">
-          <div className="p-8 pb-6 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-b border-border shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex flex-col items-start">
-                <p className="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center mb-2">
-                  Hi {fullName} <HandWaveIcon className="ml-2 h-6 w-6 text-yellow-500" />
-                </p>
-                <div className="flex items-center space-x-4">
-                  <Settings className="h-8 w-8 text-primary" />
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Organization Settings</h1>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  Manage integrations, users, and organization preferences.
-                </p>
-              </div>
+      <div className="flex-1 flex flex-col bg-[#F8FAFC] dark:bg-gray-950 min-h-screen overflow-y-auto pb-20">
+        
+        {/* 1. Smart Header */}
+        <ControlHubHeader 
+          orgName="Aerchain Enterprise" 
+          onOpenUsers={() => setIsUserPanelOpen(true)}
+        />
+
+        <div className="container mx-auto px-8 space-y-10 mt-8">
+          
+          {/* 2. System Health Dashboard (Hero) */}
+          <SystemHealthDashboard />
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            
+            {/* Left Column: Integrations & Controls (8 cols) */}
+            <div className="lg:col-span-8 space-y-10">
+              <IntegrationModules />
+              <SyncControlCenter />
+            </div>
+
+            {/* Right Column: Activity & Audit (4 cols) */}
+            <div className="lg:col-span-4 space-y-10">
+              <ActivityTimeline />
             </div>
           </div>
+        </div>
 
-          <div className="p-8">
-            <Tabs defaultValue="freshdesk" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 max-w-3xl">
-                <TabsTrigger value="freshdesk" className="flex items-center gap-2">
-                  <KeyRound className="h-4 w-4" /> Freshdesk
-                </TabsTrigger>
-                <TabsTrigger value="slack" className="flex items-center gap-2">
-                  <Slack className="h-4 w-4" /> Slack
-                </TabsTrigger>
-                <TabsTrigger value="users" className="flex items-center gap-2" disabled={!orgUser || orgUser.role !== 'admin'}>
-                  <Users className="h-4 w-4" /> Users
-                </TabsTrigger>
-                <TabsTrigger value="automation" className="flex items-center gap-2" disabled={!orgUser || orgUser.role !== 'admin'}>
-                  <Zap className="h-4 w-4" /> Automation
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="freshdesk" className="mt-6">
-                <FreshdeskSettings />
-              </TabsContent>
-              <TabsContent value="slack" className="mt-6">
-                <SlackIntegration />
-              </TabsContent>
-              <TabsContent value="users" className="mt-6">
+        {/* 3. AI Ops Assistant (Floating) */}
+        <AIOpsAssistant />
+
+        {/* 4. Users & Access (Slide-over) */}
+        <Sheet open={isUserPanelOpen} onOpenChange={setIsUserPanelOpen}>
+          <SheetContent side="right" className="sm:max-w-xl p-0 border-none shadow-2xl">
+            <div className="h-full flex flex-col bg-white dark:bg-gray-950">
+              <div className="p-8 bg-indigo-600 text-white">
+                <SheetHeader>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-md">
+                      <Users className="h-6 w-6 text-white" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-100">Access Control</span>
+                  </div>
+                  <SheetTitle className="text-3xl font-black tracking-tight text-white">User Management</SheetTitle>
+                  <SheetDescription className="text-indigo-100 font-medium">
+                    Manage active users, roles, and API usage permissions.
+                  </SheetDescription>
+                </SheetHeader>
+              </div>
+              <div className="flex-1 overflow-y-auto p-8">
                 <UserManagement />
-              </TabsContent>
-              <TabsContent value="automation" className="mt-6">
-                <AutomationRuleBuilder />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </Card>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
       </div>
     </TooltipProvider>
   );
