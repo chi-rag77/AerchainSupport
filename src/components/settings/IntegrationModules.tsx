@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Settings2, History, Pause, Play, 
+  Settings2, History as HistoryIcon, Pause, Play, 
   CheckCircle2, AlertCircle, RefreshCw,
-  ExternalLink, ShieldCheck, Zap, Slack, KeyRound
+  ExternalLink, ShieldCheck, Zap, Slack, KeyRound,
+  LayoutGrid
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -62,7 +63,7 @@ const IntegrationModules = () => {
                 <Settings2 className="h-4 w-4" /> Configure
               </Button>
               <Button variant="outline" className="flex-1 rounded-xl font-bold text-[10px] uppercase tracking-widest h-11 gap-2">
-                <History className="h-4 w-4" /> View Logs
+                <HistoryIcon className="h-4 w-4" /> View Logs
               </Button>
               <Button variant="ghost" size="icon" className="rounded-xl h-11 w-11 text-rose-600 hover:bg-rose-50">
                 <Pause className="h-4 w-4" />
@@ -119,5 +120,4 @@ const IntegrationModules = () => {
   );
 };
 
-import { LayoutGrid } from 'lucide-react';
 export default IntegrationModules;

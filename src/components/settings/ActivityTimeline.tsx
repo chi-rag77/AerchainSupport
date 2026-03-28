@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Clock, CheckCircle2, AlertCircle, RefreshCw, 
-  Zap, Brain, User, Filter, ArrowRight
+  Zap, Brain, User, Filter, ArrowRight,
+  History as HistoryIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -25,7 +26,7 @@ const ActivityTimeline = () => {
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-            <History className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <HistoryIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
           </div>
           <h3 className="text-xl font-black tracking-tight">Activity Timeline</h3>
         </div>

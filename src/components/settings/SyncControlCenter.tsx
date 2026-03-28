@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  RefreshCw, History, Zap, ShieldCheck, 
+  RefreshCw, History as HistoryIcon, Zap, ShieldCheck, 
   Brain, Sparkles, ArrowRight, Settings2,
   Database, Clock, Play
 } from 'lucide-react';
@@ -90,7 +90,7 @@ const SyncControlCenter = () => {
               <Database className="h-4 w-4" /> Backfill Data
             </Button>
             <Button variant="outline" className="h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] gap-3 border-border hover:bg-gray-50">
-              <History className="h-4 w-4" /> Retry Failed Jobs
+              <HistoryIcon className="h-4 w-4" /> Retry Failed Jobs
             </Button>
           </div>
         </CardContent>
