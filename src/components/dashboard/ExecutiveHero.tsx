@@ -1,75 +1,35 @@
 "use client";
 
-import React, { useMemo } from 'react';
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React from 'react';
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Brain, CalendarDays, Clock } from 'lucide-react';
+import { Clock, Activity } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useDashboard } from '@/features/dashboard/DashboardContext';
 import LiveActivityTicker from './LiveActivityTicker';
 import { motion } from 'framer-motion';
 
 interface ExecutiveHeroProps {
-  userName: string;
   tickerMetrics: {
     created: { value: number; delta: number };
     resolved: { value: number; delta: number };
   };
   lastSync: string;
-  isSyncing: boolean;
-  onSync: () => void;
-  onViewInsights: () => void;
 }
 
-const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsights }: ExecutiveHeroProps) => {
-  const { dateRange, setDateRange, datePreset, setDatePreset } = useDashboard();
-
-  const timeContext = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) {
-      return {
-        greeting: "☀️ Good Morning",
-        tagline: "Let's start the day with a clear view of today's support operations."
-      };
-    } else if (hour >= 12 && hour < 18) {
-      return {
-        greeting: "🌤️ Good Afternoon",
-        tagline: "Take a moment to review the latest ticket activity\nand team performance."
-      };
-    } else {
-      return {
-        greeting: "🌙 Good Evening",
-        tagline: "Here's a quick summary of today's support activity."
-      };
-    }
-  }, []);
-
+const ExecutiveHero = ({ tickerMetrics, lastSync }: ExecutiveHeroProps) => {
   return (
-    <div className="relative w-full p-8 rounded-[24px] bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 shadow-glass overflow-hidden">
+    <div className="relative w-full p-6 rounded-[24px] bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 shadow-glass overflow-hidden">
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
-      <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
-
+      
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-        <div className="space-y-4">
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="space-y-1"
-          >
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-              {timeContext.greeting}
-            </h1>
-            <p className="text-base text-muted-foreground font-normal whitespace-pre-line">
-              {timeContext.tagline}
-            </p>
-          </motion.div>
+        <div className="flex items-center gap-6">
+          {/* Live Activity Ticker */}
+          <div className="min-w-[320px]">
+            <LiveActivityTicker metrics={tickerMetrics} />
+          </div>
           
+          <Separator orientation="vertical" className="h-10 hidden lg:block" />
+
           <div className="flex flex-wrap gap-3">
             <Badge variant="outline" className="bg-green-50/50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200/50 py-1 px-3 gap-1.5">
               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
@@ -81,70 +41,10 @@ const ExecutiveHero = ({ tickerMetrics, lastSync, isSyncing, onSync, onViewInsig
             </Badge>
           </div>
         </div>
-
-        {/* Live Activity Ticker */}
-        <div className="flex-1 max-w-md">
-          <LiveActivityTicker metrics={tickerMetrics} />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-white/80 dark:bg-gray-900/80 p-1 rounded-full border border-border shadow-sm">
-            <Select value={datePreset} onValueChange={setDatePreset}>
-              <SelectTrigger className="w-[140px] border-none bg-transparent focus:ring-0 h-9 rounded-full text-xs font-bold uppercase tracking-wider">
-                <CalendarDays className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                <SelectValue placeholder="Date Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="last7days">Last 7 Days</SelectItem>
-                <SelectItem value="last30days">Last 30 Days</SelectItem>
-                <SelectItem value="thismonth">This Month</SelectItem>
-                <SelectItem value="lastmonth">Last Month</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {datePreset === 'custom' && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 rounded-full text-[10px] font-black px-3">
-                    {dateRange.from ? format(dateRange.from, 'MMM dd') : ''} - {dateRange.to ? format(dateRange.to, 'MMM dd, yyyy') : ''}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={(range) => range && setDateRange(range)}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button 
-              onClick={onSync} 
-              disabled={isSyncing}
-              className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-11 px-6 font-bold gap-2"
-            >
-              <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-              Sync
-            </Button>
-          </div>
-          
-          <Button 
-            onClick={onViewInsights}
-            className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 h-11 px-6 font-bold"
-          >
-            <Brain className="mr-2 h-4 w-4" />
-            AI Insights
-          </Button>
-        </div>
       </div>
     </div>
   );
 };
 
+import { Separator } from '@/components/ui/separator';
 export default ExecutiveHero;

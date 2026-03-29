@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DashboardProvider, useDashboard } from "@/features/dashboard/DashboardContext";
 import { useExecutiveDashboard } from "@/features/dashboard/hooks/useExecutiveDashboard";
 import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
+import DashboardSubbar from "@/components/dashboard/DashboardSubbar";
 import KPISection from "@/components/dashboard/KPISection";
 import AIInsightStrip from "@/components/dashboard/AIInsightStrip";
 import OperationalIntelligence from "@/components/dashboard/OperationalIntelligence";
@@ -28,7 +29,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const DashboardContent = () => {
   const { session } = useSupabase();
@@ -42,7 +42,6 @@ const DashboardContent = () => {
   const [isReasoningModalOpen, setIsReasoningModalOpen] = useState(false);
 
   const user = session?.user;
-  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const selectedCustomer = filters.company || 'All';
 
   const handleSync = useCallback(async () => {
@@ -93,128 +92,118 @@ const DashboardContent = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen">
-      <ExecutiveHero 
-        userName={fullName}
-        tickerMetrics={data.tickerMetrics}
-        lastSync={data.lastSync}
+    <div className="flex flex-col min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
+      <DashboardSubbar 
         isSyncing={isFetching}
         onSync={handleSync}
-        onViewInsights={generateAI} 
+        onViewInsights={generateAI}
+        uniqueCompanies={uniqueCompanies}
+        selectedCustomer={selectedCustomer}
+        onCustomerChange={handleCustomerFilterChange}
       />
 
-      <KPISection metrics={data.kpis} isLoading={isLoading} />
-
-      <div className="flex justify-center">
-        <ViewModeSelector />
-      </div>
-
-      <DeterministicSummary 
-        tickets={tickets}
-        dateRange={dateRange}
-        onTriggerAI={generateAI}
-        isGeneratingAI={isGeneratingAI}
-        showAIButton={!hasAI}
-      />
-
-      {hasAI && activeInsight && (
-        <AIInsightStrip 
-          insight={activeInsight}
-          onDismiss={() => setShowInsight(false)}
+      <div className="flex-1 flex flex-col p-8 space-y-10 overflow-y-auto">
+        <ExecutiveHero 
+          tickerMetrics={data.tickerMetrics}
+          lastSync={data.lastSync}
         />
-      )}
 
-      <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
+        <KPISection metrics={data.kpis} isLoading={isLoading} />
 
-      <Separator className="bg-gray-200 dark:bg-gray-800" />
+        <div className="flex justify-center">
+          <ViewModeSelector />
+        </div>
 
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
+        <DeterministicSummary 
+          tickets={tickets}
+          dateRange={dateRange}
+          onTriggerAI={generateAI}
+          isGeneratingAI={isGeneratingAI}
+          showAIButton={!hasAI}
+        />
+
+        {hasAI && activeInsight && (
+          <AIInsightStrip 
+            insight={activeInsight}
+            onDismiss={() => setShowInsight(false)}
+          />
+        )}
+
+        <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
+
+        <Separator className="bg-gray-200 dark:bg-gray-800" />
+
+        <section className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
               <Users2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             <h2 className="text-2xl font-black tracking-tight text-foreground">Customer Intelligence</h2>
           </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
+              <CardHeader className="p-8 pb-0">
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-blue-500" />
+                  Ticket Type Distribution by Customer
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 h-[400px]">
+                <TicketTypeByCustomerChart 
+                  tickets={tickets} 
+                  selectedCustomer={selectedCustomer}
+                  topNCustomers={10}
+                />
+              </CardContent>
+            </Card>
 
-          <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-full border border-border shadow-sm">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-3">Filter Account:</span>
-            <Select value={selectedCustomer} onValueChange={handleCustomerFilterChange}>
-              <SelectTrigger className="w-[200px] border-none bg-transparent focus:ring-0 h-8 font-bold text-indigo-600">
-                <SelectValue placeholder="All Accounts" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-none shadow-2xl">
-                <SelectItem value="All">All Accounts</SelectItem>
-                {uniqueCompanies.map(c => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CustomerTypeSummary 
+              customerName={selectedCustomer} 
+              tickets={filteredTicketsForSummary} 
+            />
           </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
-            <CardHeader className="p-8 pb-0">
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-blue-500" />
-                Ticket Type Distribution by Customer
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 h-[400px]">
-              <TicketTypeByCustomerChart 
-                tickets={tickets} 
-                selectedCustomer={selectedCustomer}
-                topNCustomers={10}
-              />
-            </CardContent>
-          </Card>
+        </section>
 
-          <CustomerTypeSummary 
-            customerName={selectedCustomer} 
-            tickets={filteredTicketsForSummary} 
-          />
-        </div>
-      </section>
+        <AnimatePresence mode="wait">
+          <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
+            {(viewMode === 'overview' || viewMode === 'performance') && (
+              <>
+                <OperationalIntelligence 
+                  summary={data.executiveSummary}
+                  tickets={tickets}
+                  startDate={dateRange.from!}
+                  endDate={dateRange.to!}
+                  onViewDetails={() => setIsReasoningModalOpen(true)}
+                />
+                {hasAI && <PredictiveForecast data={data.forecast} />}
+              </>
+            )}
 
-      <AnimatePresence mode="wait">
-        <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
-          {(viewMode === 'overview' || viewMode === 'performance') && (
-            <>
-              <OperationalIntelligence 
-                summary={data.executiveSummary}
-                tickets={tickets}
-                startDate={dateRange.from!}
-                endDate={dateRange.to!}
-                onViewDetails={() => setIsReasoningModalOpen(true)}
-              />
-              {hasAI && <PredictiveForecast data={data.forecast} />}
-            </>
-          )}
+            {viewMode === 'overview' && hasAI && (
+              <>
+                <Separator className="bg-gray-200 dark:bg-gray-800" />
+                <ExecutiveActionCenter actions={data.actions} />
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-          {viewMode === 'overview' && hasAI && (
-            <>
-              <Separator className="bg-gray-200 dark:bg-gray-800" />
-              <ExecutiveActionCenter actions={data.actions} />
-            </>
-          )}
-        </motion.div>
-      </AnimatePresence>
+        <SystemHealthPanel data={data.systemHealth} />
 
-      <SystemHealthPanel data={data.systemHealth} />
+        {selectedTicket && (
+          <TicketDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ticket={selectedTicket} />
+        )}
 
-      {selectedTicket && (
-        <TicketDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ticket={selectedTicket} />
-      )}
+        <DetailedReasoningModal 
+          isOpen={isReasoningModalOpen}
+          onClose={() => setIsReasoningModalOpen(false)}
+          summary={data.executiveSummary}
+        />
 
-      <DetailedReasoningModal 
-        isOpen={isReasoningModalOpen}
-        onClose={() => setIsReasoningModalOpen(false)}
-        summary={data.executiveSummary}
-      />
-
-      {/* AI Assistant */}
-      <DashboardAssistant />
+        {/* AI Assistant */}
+        <DashboardAssistant />
+      </div>
     </div>
   );
 };
