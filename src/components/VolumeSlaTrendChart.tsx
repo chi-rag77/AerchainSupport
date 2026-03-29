@@ -1,9 +1,15 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Dot } from 'recharts';
-import { format, parseISO, startOfDay, eachDayOfInterval, isWithinInterval, differenceInDays } from 'date-fns';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Legend, Defs, LinearGradient, Stop 
+} from 'recharts';
+import { format, parseISO, startOfDay, eachDayOfInterval, isWithinInterval } from 'date-fns';
 import { Ticket } from '@/types';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 interface VolumeSlaTrendChartProps {
   tickets: Ticket[];
@@ -13,31 +19,68 @@ interface VolumeSlaTrendChartProps {
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    const ticketsCreated = payload.find((p: any) => p.dataKey === 'created')?.value || 0;
+    const slaCompliance = payload.find((p: any) => p.dataKey === 'slaCompliance')?.value || 0;
+
     return (
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-sm">
-        <p className="text-muted-foreground mb-1">{format(parseISO(label), 'MMM dd, yyyy')}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} style={{ color: entry.color }} className="flex items-center">
-            <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }}></span>
-            {entry.name === 'created' ? 'Tickets Created' : 'SLA Compliance'}: {entry.name === 'slaCompliance' ? `${entry.value.toFixed(1)}%` : entry.value}
-          </p>
-        ))}
+      <div className="bg-white/90 dark:bg-gray-950/90 p-4 rounded-[20px] shadow-2xl border border-border/50 backdrop-blur-md min-w-[220px] animate-in fade-in zoom-in-95 duration-200">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-3">
+          {format(parseISO(label), 'MMM dd, yyyy')}
+        </p>
+        
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-8">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#F59E0B] shadow-sm" />
+              <span className="text-xs font-bold text-foreground/80">Tickets Created</span>
+            </div>
+            <span className="text-sm font-black text-foreground">{ticketsCreated}</span>
+          </div>
+
+          <div className="flex items-center justify-between gap-8">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#6366F1] shadow-sm" />
+              <span className="text-xs font-bold text-foreground/80">SLA Compliance</span>
+            </div>
+            <Badge 
+              variant="secondary" 
+              className={cn(
+                "font-black text-[10px] border-none",
+                slaCompliance >= 90 ? "bg-emerald-50 text-emerald-700" : 
+                slaCompliance >= 75 ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"
+              )}
+            >
+              {slaCompliance.toFixed(1)}%
+            </Badge>
+          </div>
+        </div>
+        
+        <Separator className="my-3 opacity-50" />
+        
+        <p className="text-[9px] font-medium text-muted-foreground italic">
+          {slaCompliance < 80 ? "⚠️ Performance below target threshold" : "✅ Operations within healthy range"}
+        </p>
       </div>
     );
   }
   return null;
 };
 
-const CustomLineChartLegend = ({ payload }: any) => {
+const CustomLegend = ({ payload }: any) => {
   return (
-    <ul className="flex justify-end space-x-6 text-sm absolute top-0 right-0 p-2">
+    <div className="flex justify-center gap-8 mt-6">
       {payload.map((entry: any, index: number) => (
-        <li key={`item-${index}`} className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-          <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
-          <span>{entry.value === 'created' ? 'Tickets Created' : 'SLA Compliance'}</span>
-        </li>
+        <div key={`item-${index}`} className="flex items-center gap-2 group cursor-default">
+          <div 
+            className="w-2.5 h-2.5 rounded-full shadow-sm transition-transform group-hover:scale-125" 
+            style={{ backgroundColor: entry.color }} 
+          />
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
+            {entry.value === 'created' ? 'Tickets Created' : 'SLA Compliance %'}
+          </span>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 };
 
@@ -61,9 +104,8 @@ const VolumeSlaTrendChart = ({ tickets, startDate, endDate }: VolumeSlaTrendChar
         const entry = dataMap.get(formattedCreatedAt)!;
         entry.created++;
 
-        // For SLA compliance, we consider tickets resolved/closed within their due_by
         if (ticket.due_by && (ticket.status.toLowerCase() === 'resolved' || ticket.status.toLowerCase() === 'closed')) {
-          const resolvedAt = parseISO(ticket.updated_at); // Using updated_at as proxy for resolved_at
+          const resolvedAt = parseISO(ticket.updated_at);
           const dueBy = parseISO(ticket.due_by);
           
           entry.slaTotalCount++;
@@ -74,80 +116,105 @@ const VolumeSlaTrendChart = ({ tickets, startDate, endDate }: VolumeSlaTrendChar
       }
     });
 
-    // Calculate SLA compliance percentage for each day
     Array.from(dataMap.values()).forEach(entry => {
       if (entry.slaTotalCount > 0) {
         entry.slaCompliance = (entry.slaMetCount / entry.slaTotalCount) * 100;
       } else {
-        entry.slaCompliance = 100; // If no SLA applicable tickets, assume 100% compliance
+        entry.slaCompliance = 100; 
       }
     });
 
     return Array.from(dataMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [tickets, startDate, endDate]);
 
-  const legendPayload = [
-    { value: 'created', color: 'hsl(28 100% 70%)' },
-    { value: 'slaCompliance', color: 'hsl(240 60% 70%)' }
-  ];
-
   return (
-    <div className="relative w-full h-full">
+    <div className="w-full h-full flex flex-col">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={processedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" />
+        <AreaChart data={processedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.2}/>
+              <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
+            </linearGradient>
+            <linearGradient id="colorSla" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#6366F1" stopOpacity={0.2}/>
+              <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            vertical={false} 
+            stroke="currentColor" 
+            className="text-gray-100 dark:text-gray-800" 
+          />
+          
           <XAxis
             dataKey="date"
             tickFormatter={(tick) => format(parseISO(tick), 'MMM dd')}
             axisLine={false}
             tickLine={false}
-            fontSize={12}
-            tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
-            interval="preserveStartEnd"
+            fontSize={10}
+            fontWeight="bold"
+            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            dy={10}
           />
+          
           <YAxis
             yAxisId="left"
             axisLine={false}
             tickLine={false}
-            fontSize={12}
-            tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
+            fontSize={10}
+            fontWeight="bold"
+            tick={{ fill: 'hsl(var(--muted-foreground))' }}
             domain={[0, 'auto']}
-            label={{ value: 'Tickets', angle: -90, position: 'insideLeft', fill: 'hsl(215.4 16.3% 46.9%)', fontSize: 12 }}
           />
+          
           <YAxis
             yAxisId="right"
             orientation="right"
             axisLine={false}
             tickLine={false}
-            fontSize={12}
-            tickFormatter={(tick) => `${tick}%`}
-            tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
+            fontSize={10}
+            fontWeight="bold"
+            tick={{ fill: 'hsl(var(--muted-foreground))' }}
             domain={[0, 100]}
-            label={{ value: 'SLA %', angle: 90, position: 'insideRight', fill: 'hsl(215.4 16.3% 46.9%)', fontSize: 12 }}
+            tickFormatter={(val) => `${val}%`}
           />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend content={<CustomLineChartLegend payload={legendPayload} />} />
-          <Line
+          
+          <Tooltip 
+            content={<CustomTooltip />} 
+            cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1, strokeDasharray: '4 4' }}
+          />
+          
+          <Legend content={<CustomLegend />} />
+          
+          <Area
             yAxisId="left"
             type="monotone"
             dataKey="created"
-            stroke="hsl(28 100% 70%)"
-            strokeWidth={2}
-            dot={{ fill: 'hsl(28 100% 70%)', strokeWidth: 2, r: 4 }}
             name="created"
-            activeDot={{ r: 6, strokeWidth: 2, fill: 'hsl(28 100% 70%)' }}
+            stroke="#F59E0B"
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#colorCreated)"
+            dot={{ r: 4, fill: '#F59E0B', strokeWidth: 0 }}
+            activeDot={{ r: 6, strokeWidth: 0, fill: '#F59E0B' }}
           />
-          <Line
+          
+          <Area
             yAxisId="right"
             type="monotone"
             dataKey="slaCompliance"
-            stroke="hsl(240 60% 70%)"
-            strokeWidth={2}
-            dot={{ fill: 'hsl(240 60% 70%)', strokeWidth: 2, r: 4 }}
-            name="slaCompliance"
-            activeDot={{ r: 6, strokeWidth: 2, fill: 'hsl(240 60% 70%)' }}
+            name="sla"
+            stroke="#6366F1"
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#colorSla)"
+            dot={{ r: 4, fill: '#6366F1', strokeWidth: 0 }}
+            activeDot={{ r: 6, strokeWidth: 0, fill: '#6366F1' }}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
