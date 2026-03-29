@@ -4,21 +4,23 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ticket } from '@/types';
 import { 
-  Activity, Ticket as TicketIcon, CheckCircle2, 
-  Hourglass, Building2, ArrowRight, Sparkles,
-  TrendingUp, Users
+  Activity, Users, ArrowRight, Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { isToday, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import VolumeSlaTrendChart from '../VolumeSlaTrendChart';
 
 interface LiveActivityCenterProps {
   tickets: Ticket[];
+  startDate: Date;
+  endDate: Date;
 }
 
-const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
+const LiveActivityCenter = ({ tickets, startDate, endDate }: LiveActivityCenterProps) => {
   const todayStats = useMemo(() => {
     const todayTickets = tickets.filter(t => isToday(parseISO(t.created_at)));
     const resolvedToday = tickets.filter(t => {
@@ -40,21 +42,12 @@ const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
       customerActivity[co].resolved++;
     });
 
-    const openTickets = tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase())).length;
-
     return {
-      createdCount: todayTickets.length,
-      resolvedCount: resolvedToday.length,
-      openCount: openTickets,
       customerFeed: Object.entries(customerActivity)
         .map(([name, stats]) => ({ name, ...stats }))
         .sort((a, b) => b.created - a.created)
     };
   }, [tickets]);
-
-  const resolutionRate = todayStats.createdCount > 0 
-    ? Math.round((todayStats.resolvedCount / todayStats.createdCount) * 100) 
-    : 0;
 
   return (
     <div className="space-y-6">
@@ -64,8 +57,8 @@ const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
             <Activity className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="text-2xl font-black tracking-tight">Live Activity Center</h3>
-            <p className="text-sm font-medium text-muted-foreground">Real-time operational pulse for today</p>
+            <h3 className="text-2xl font-black tracking-tight text-foreground">Operational Pulse</h3>
+            <p className="text-sm font-medium text-muted-foreground">Volume trends and real-time customer activity</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -75,57 +68,32 @@ const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 1. Today's Velocity Card */}
-        <Card className="border-none shadow-glass rounded-[28px] bg-white dark:bg-gray-900 overflow-hidden flex flex-col">
-          <CardHeader className="p-8 pb-4">
+        {/* 1. Volume & SLA Trend Chart (2/3 width) */}
+        <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden flex flex-col">
+          <CardHeader className="p-8 pb-0">
             <CardTitle className="text-lg font-bold flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-indigo-500" />
-              Today's Velocity
+              Volume & SLA Compliance Trend
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8 pt-0 space-y-8 flex-1 flex flex-col justify-center">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Created Today</p>
-                <p className="text-4xl font-black tracking-tighter text-indigo-600">{todayStats.createdCount}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Resolved Today</p>
-                <p className="text-4xl font-black tracking-tighter text-green-600">{todayStats.resolvedCount}</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Resolution Pace</span>
-                <span className="text-sm font-bold text-indigo-600">{resolutionRate}% of inflow</span>
-              </div>
-              <Progress value={resolutionRate} className="h-2" indicatorClassName="bg-indigo-600" />
-            </div>
-
-            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-border/50">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white dark:bg-gray-700 shadow-sm">
-                  <Hourglass className="h-4 w-4 text-amber-500" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Current Backlog</p>
-                  <p className="text-lg font-black">{todayStats.openCount} Active Tickets</p>
-                </div>
-              </div>
-            </div>
+          <CardContent className="p-8 h-[350px]">
+            <VolumeSlaTrendChart 
+              tickets={tickets} 
+              startDate={startDate} 
+              endDate={endDate} 
+            />
           </CardContent>
         </Card>
 
-        {/* 2. Customer Activity Feed */}
-        <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden flex flex-col">
+        {/* 2. Customer Activity Feed (1/3 width) */}
+        <Card className="rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden flex flex-col">
           <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-bold flex items-center gap-2">
               <Users className="h-5 w-5 text-indigo-500" />
-              Customer Activity Feed
+              Today's Activity
             </CardTitle>
             <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-none font-bold text-[10px]">
-              {todayStats.customerFeed.length} Active Accounts
+              {todayStats.customerFeed.length} Active
             </Badge>
           </CardHeader>
           <CardContent className="p-8 pt-0 overflow-y-auto max-h-[320px]">
@@ -140,7 +108,7 @@ const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
                     className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-border/50 group hover:border-indigo-200 transition-all"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-sm font-black text-indigo-600 shadow-sm border border-border/50">
+                      <div className="h-10 w-10 rounded-full bg-white dark:bg-gray-900 flex items-center justify-center text-sm font-black text-indigo-600 shadow-sm border border-border/50">
                         {item.name[0]}
                       </div>
                       <div className="space-y-0.5">
@@ -157,7 +125,7 @@ const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
                           "text-xs font-black uppercase tracking-tighter",
                           item.resolved >= item.created ? "text-green-600" : "text-amber-600"
                         )}>
-                          {item.resolved >= item.created ? "Stable" : "In Progress"}
+                          {item.resolved >= item.created ? "Stable" : "Active"}
                         </p>
                       </div>
                       <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -176,7 +144,7 @@ const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
           </CardContent>
           <div className="p-6 bg-gray-50/50 dark:bg-gray-900/50 border-t border-border mt-auto">
             <p className="text-[10px] font-bold text-muted-foreground text-center uppercase tracking-[0.2em]">
-              Showing real-time data from Freshdesk API
+              Real-time Freshdesk Feed
             </p>
           </div>
         </Card>

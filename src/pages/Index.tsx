@@ -167,7 +167,11 @@ const DashboardContent = () => {
           <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
             {(viewMode === 'overview' || viewMode === 'performance') && (
               <>
-                <LiveActivityCenter tickets={tickets} />
+                <LiveActivityCenter 
+                  tickets={tickets} 
+                  startDate={dateRange.from!} 
+                  endDate={dateRange.to!} 
+                />
                 {hasAI && <PredictiveForecast data={data.forecast} />}
               </>
             )}
