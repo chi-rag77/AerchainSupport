@@ -95,7 +95,7 @@ const Customer360 = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8FAFC] dark:bg-gray-950">
         <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
         <p className="text-lg font-medium text-muted-foreground">Initializing Customer Intelligence...</p>
       </div>
@@ -104,17 +104,18 @@ const Customer360 = () => {
 
   return (
     <TooltipProvider>
-      <div className="flex-1 flex flex-col bg-white dark:bg-gray-950 min-h-screen relative">
+      <div className="flex-1 flex flex-col bg-[#F8FAFC] dark:bg-gray-950 min-h-screen relative">
         
-        {/* 1. Topbar (48px) */}
-        <header className="h-12 border-b border-border bg-white dark:bg-gray-900 flex items-center justify-between px-6 shrink-0 sticky top-0 z-50">
+        {/* 1. Topbar (48px) - Clean & Functional */}
+        <header className="h-12 border-b border-border bg-white dark:bg-gray-900 flex items-center justify-between px-6 shrink-0 sticky top-0 z-50 shadow-sm">
           <div className="flex items-center gap-4">
             <h1 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Users className="h-4 w-4 text-indigo-600" />
               Customer 360
             </h1>
             <div className="h-4 w-px bg-border" />
             <Select value={selectedCustomer || ""} onValueChange={setSelectedCustomer}>
-              <SelectTrigger className="h-8 w-fit min-w-[160px] border-none bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 rounded-lg text-xs font-bold text-indigo-600 gap-2">
+              <SelectTrigger className="h-8 w-fit min-w-[180px] border-none bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 rounded-lg text-xs font-bold text-indigo-600 gap-2 transition-colors">
                 <SelectValue placeholder="Select Account" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -127,29 +128,29 @@ const Customer360 = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleSync} className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest gap-2">
+            <Button variant="ghost" size="sm" onClick={handleSync} className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest gap-2 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
               <RefreshCw className="h-3.5 w-3.5" /> Sync
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="sm" className="h-8 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase tracking-widest gap-2">
+                <Button size="sm" className="h-8 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase tracking-widest gap-2 shadow-sm transition-all active:scale-95">
                   <Download className="h-3.5 w-3.5" /> Export
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="rounded-xl w-48">
-                <DropdownMenuItem onClick={handleExportPdf} className="cursor-pointer gap-2">
-                  <FileText className="h-4 w-4 text-red-500" /> Export PDF
+              <DropdownMenuContent align="end" className="rounded-xl w-48 border-border/50 shadow-2xl">
+                <DropdownMenuItem onClick={handleExportPdf} className="cursor-pointer gap-2 py-2.5">
+                  <FileText className="h-4 w-4 text-rose-500" /> Export PDF
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {}} className="cursor-pointer gap-2">
-                  <FileSpreadsheet className="h-4 w-4 text-green-600" /> Export Excel
+                <DropdownMenuItem onClick={() => {}} className="cursor-pointer gap-2 py-2.5">
+                  <FileSpreadsheet className="h-4 w-4 text-emerald-600" /> Export Excel
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </header>
 
-        {/* 2. Subbar (36px) */}
-        <div className="h-9 border-b border-border bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between px-6 shrink-0 sticky top-12 z-40">
+        {/* 2. Subbar (36px) - Contextual Metadata & Tabs */}
+        <div className="h-9 border-b border-border bg-white dark:bg-gray-900/50 flex items-center justify-between px-6 shrink-0 sticky top-12 z-40 backdrop-blur-md">
           <div className="flex-1 overflow-hidden">
             {intelligenceData?.metadata && (
               <CustomerMetadata metadata={intelligenceData.metadata} />
@@ -178,17 +179,17 @@ const Customer360 = () => {
           </div>
         </div>
 
-        {/* 3. Main Content */}
-        <main className="flex-1 p-8 bg-[#F9FAFB] dark:bg-gray-950 overflow-y-auto pb-24">
+        {/* 3. Main Content - High Density Workspace */}
+        <main className="flex-1 p-8 overflow-y-auto pb-32">
           <div className="max-w-7xl mx-auto" id="customer-360-content">
             <AnimatePresence mode="wait">
               {activeTab === 'intelligence' && selectedCustomer !== 'All' ? (
                 <motion.div 
                   key="intelligence"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="space-y-12"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-10"
                 >
                   <CustomerIntelligenceHeader customerName={selectedCustomer!} />
                   <JourneyImpactTimeline customerName={selectedCustomer!} />
@@ -196,9 +197,9 @@ const Customer360 = () => {
               ) : (
                 <motion.div 
                   key="radar"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
                 >
                   <RecurringIssueRadar customerName={selectedCustomer!} />
                 </motion.div>
@@ -207,26 +208,26 @@ const Customer360 = () => {
           </div>
         </main>
 
-        {/* 4. Sticky Decision Bar */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-          <div className="flex items-center gap-4 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl shadow-2xl border border-white/10 dark:border-gray-200 backdrop-blur-md">
-            <div className="flex items-center gap-3 pr-6 border-r border-white/20 dark:border-gray-200">
-              <div className="p-1.5 rounded-lg bg-indigo-600 text-white">
+        {/* 4. Sticky Decision Bar - Tactile & Contextual */}
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex items-center gap-4 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 dark:border-slate-200 backdrop-blur-xl">
+            <div className="flex items-center gap-3 pr-6 border-r border-white/20 dark:border-slate-200">
+              <div className="p-1.5 rounded-lg bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
                 <Zap className="h-4 w-4" />
               </div>
-              <span className="text-xs font-black uppercase tracking-widest">Decision Bar</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Decision Bar</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-gray-100">
+              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-slate-100 transition-all">
                 <Ticket className="h-4 w-4" /> Fix SLA
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-gray-100">
+              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-slate-100 transition-all">
                 <User className="h-4 w-4" /> Assign Owner
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-gray-100">
+              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-slate-100 transition-all">
                 <FileText className="h-4 w-4" /> View Tickets
               </Button>
-              <Button size="sm" className="h-9 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black uppercase tracking-widest text-[10px] gap-2 px-6 ml-2">
+              <Button size="sm" className="h-9 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black uppercase tracking-widest text-[10px] gap-2 px-6 ml-2 shadow-lg shadow-rose-500/20 transition-all active:scale-95">
                 <Bell className="h-4 w-4" /> Escalate Account
               </Button>
             </div>
