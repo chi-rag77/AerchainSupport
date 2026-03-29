@@ -9,7 +9,7 @@ import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
 import DashboardSubbar from "@/components/dashboard/DashboardSubbar";
 import KPISection from "@/components/dashboard/KPISection";
 import AIInsightStrip from "@/components/dashboard/AIInsightStrip";
-import OperationalIntelligence from "@/components/dashboard/OperationalIntelligence";
+import LiveActivityCenter from "@/components/dashboard/LiveActivityCenter";
 import ViewModeSelector from "@/components/dashboard/ViewModeSelector";
 import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
 import PredictiveForecast from "@/components/dashboard/PredictiveForecast";
@@ -20,7 +20,6 @@ import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
 import DeterministicSummary from "@/components/dashboard/DeterministicSummary";
 import DashboardAssistant from "@/components/assistant/DashboardAssistant";
-import DetailedReasoningModal from "@/components/dashboard/DetailedReasoningModal";
 import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -39,7 +38,6 @@ const DashboardContent = () => {
   const [showInsight, setShowInsight] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isReasoningModalOpen, setIsReasoningModalOpen] = useState(false);
 
   const user = session?.user;
   const selectedCustomer = filters.company || 'All';
@@ -169,13 +167,7 @@ const DashboardContent = () => {
           <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
             {(viewMode === 'overview' || viewMode === 'performance') && (
               <>
-                <OperationalIntelligence 
-                  summary={data.executiveSummary}
-                  tickets={tickets}
-                  startDate={dateRange.from!}
-                  endDate={dateRange.to!}
-                  onViewDetails={() => setIsReasoningModalOpen(true)}
-                />
+                <LiveActivityCenter tickets={tickets} />
                 {hasAI && <PredictiveForecast data={data.forecast} />}
               </>
             )}
@@ -194,12 +186,6 @@ const DashboardContent = () => {
         {selectedTicket && (
           <TicketDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ticket={selectedTicket} />
         )}
-
-        <DetailedReasoningModal 
-          isOpen={isReasoningModalOpen}
-          onClose={() => setIsReasoningModalOpen(false)}
-          summary={data.executiveSummary}
-        />
 
         {/* AI Assistant */}
         <DashboardAssistant />
