@@ -28,6 +28,7 @@ import CustomerIntelligenceHeader from "@/components/customer360/intelligence-he
 import JourneyImpactTimeline from "@/components/customer360/journey-timeline/JourneyImpactTimeline";
 import RecurringIssueRadar from "@/components/product-intelligence/RecurringIssueRadar";
 import CustomerMetadata from "@/components/customer360/intelligence-header/CustomerMetadata";
+import CustomerReportTemplate from "@/components/customer360/export/CustomerReportTemplate";
 import { exportToPdf, exportToExcel } from "@/utils/customer360Export";
 
 const Customer360 = () => {
@@ -57,6 +58,15 @@ const Customer360 = () => {
     enabled: !!selectedCustomer && selectedCustomer !== 'All',
   });
 
+  const { data: journeyData } = useQuery({
+    queryKey: ['customerJourneyImpact', selectedCustomer],
+    queryFn: () => invokeEdgeFunction<any>('get-customer-journey-impact', {
+      method: 'POST',
+      body: { customerName: selectedCustomer },
+    }),
+    enabled: !!selectedCustomer && selectedCustomer !== 'All',
+  });
+
   const uniqueCustomers = useMemo(() => {
     const customers = new Set<string>();
     (allTickets || []).forEach(ticket => {
@@ -80,16 +90,33 @@ const Customer360 = () => {
   };
 
   const handleExportPdf = async () => {
-    if (!selectedCustomer) return;
+    if (!selectedCustomer || !intelligenceData) return;
     setIsExporting(true);
-    const toastId = toast.loading("Generating PDF...");
+    const toastId = toast.loading("Generating Executive PDF Report...");
     try {
-      await exportToPdf('customer-360-content', `Customer360_${selectedCustomer}`);
-      toast.success("PDF exported!");
+      await exportToPdf('customer-report-template', `Executive_Report_${selectedCustomer}`);
+      toast.success("PDF Report exported!", { id: toastId });
     } catch (err) {
-      toast.error("Export failed.");
+      toast.error("Export failed.", { id: toastId });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!selectedCustomer || !intelligenceData) return;
+    const toastId = toast.loading("Generating Structured Excel Workbook...");
+    try {
+      const exportData = {
+        customerName: selectedCustomer,
+        intelligence: intelligenceData,
+        journey: journeyData,
+        tickets: allTickets?.filter(t => t.cf_company === selectedCustomer) || []
+      };
+      exportToExcel(exportData, `Customer_Data_${selectedCustomer}`);
+      toast.success("Excel Workbook exported!", { id: toastId });
+    } catch (err) {
+      toast.error("Export failed.", { id: toastId });
     }
   };
 
@@ -139,10 +166,10 @@ const Customer360 = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="rounded-xl w-48 border-border/50 shadow-2xl">
                 <DropdownMenuItem onClick={handleExportPdf} className="cursor-pointer gap-2 py-2.5">
-                  <FileText className="h-4 w-4 text-rose-500" /> Export PDF
+                  <FileText className="h-4 w-4 text-rose-500" /> Export PDF Report
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {}} className="cursor-pointer gap-2 py-2.5">
-                  <FileSpreadsheet className="h-4 w-4 text-emerald-600" /> Export Excel
+                <DropdownMenuItem onClick={handleExportExcel} className="cursor-pointer gap-2 py-2.5">
+                  <FileSpreadsheet className="h-4 w-4 text-emerald-600" /> Export Excel Data
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -207,6 +234,16 @@ const Customer360 = () => {
             </AnimatePresence>
           </div>
         </main>
+
+        {/* Hidden Report Template for PDF Generation */}
+        <CustomerReportTemplate 
+          data={{
+            customerName: selectedCustomer,
+            intelligence: intelligenceData,
+            journey: journeyData,
+            tickets: allTickets?.filter(t => t.cf_company === selectedCustomer) || []
+          }} 
+        />
       </div>
     </TooltipProvider>
   );
