@@ -20,7 +20,8 @@ import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
 import DeterministicSummary from "@/components/dashboard/DeterministicSummary";
 import DashboardAssistant from "@/components/assistant/DashboardAssistant";
 import DetailedReasoningModal from "@/components/dashboard/DetailedReasoningModal";
-import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
+import ActionCenterPanel from "@/components/actions/ActionCenterPanel";
+import { Loader2, Brain, Sparkles, Users2, BarChart3, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +41,7 @@ const DashboardContent = () => {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReasoningModalOpen, setIsReasoningModalOpen] = useState(false);
+  const [isActionCenterOpen, setIsActionCenterOpen] = useState(true);
 
   const user = session?.user;
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -93,128 +95,156 @@ const DashboardContent = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
-      <ExecutiveHero 
-        userName={fullName}
-        tickerMetrics={data.tickerMetrics}
-        lastSync={data.lastSync}
-        isSyncing={isFetching}
-        onSync={handleSync}
-        onViewInsights={generateAI} 
-      />
+    <div className="flex h-screen overflow-hidden bg-[#F6F8FB] dark:bg-gray-950">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-y-auto p-8 space-y-10">
+        <div className="flex items-center justify-between">
+          <ExecutiveHero 
+            userName={fullName}
+            tickerMetrics={data.tickerMetrics}
+            lastSync={data.lastSync}
+            isSyncing={isFetching}
+            onSync={handleSync}
+            onViewInsights={generateAI} 
+          />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsActionCenterOpen(!isActionCenterOpen)}
+            className="ml-4 rounded-xl h-12 w-12 bg-white dark:bg-gray-900 shadow-sm shrink-0"
+          >
+            {isActionCenterOpen ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
+          </Button>
+        </div>
 
-      <KPISection metrics={data.kpis} isLoading={isLoading} />
+        <KPISection metrics={data.kpis} isLoading={isLoading} />
 
-      <div className="flex justify-center">
-        <ViewModeSelector />
+        <div className="flex justify-center">
+          <ViewModeSelector />
+        </div>
+
+        <DeterministicSummary 
+          tickets={tickets}
+          dateRange={dateRange}
+          onTriggerAI={generateAI}
+          isGeneratingAI={isGeneratingAI}
+          showAIButton={!hasAI}
+        />
+
+        {hasAI && activeInsight && (
+          <AIInsightStrip 
+            insight={activeInsight}
+            onDismiss={() => setShowInsight(false)}
+          />
+        )}
+
+        <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
+
+        <Separator className="bg-gray-200 dark:bg-gray-800" />
+
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                <Users2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h2 className="text-2xl font-black tracking-tight text-foreground">Customer Intelligence</h2>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-full border border-border shadow-sm">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-3">Filter Account:</span>
+              <Select value={selectedCustomer} onValueChange={handleCustomerFilterChange}>
+                <SelectTrigger className="w-[200px] border-none bg-transparent focus:ring-0 h-8 font-bold text-indigo-600">
+                  <SelectValue placeholder="All Accounts" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-2xl">
+                  <SelectItem value="All">All Accounts</SelectItem>
+                  {uniqueCompanies.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
+              <CardHeader className="p-8 pb-0">
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-blue-500" />
+                  Ticket Type Distribution by Customer
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 h-[400px]">
+                <TicketTypeByCustomerChart 
+                  tickets={tickets} 
+                  selectedCustomer={selectedCustomer}
+                  topNCustomers={10}
+                />
+              </CardContent>
+            </Card>
+
+            <CustomerTypeSummary 
+              customerName={selectedCustomer} 
+              tickets={filteredTicketsForSummary} 
+            />
+          </div>
+        </section>
+
+        <AnimatePresence mode="wait">
+          <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
+            {(viewMode === 'overview' || viewMode === 'performance') && (
+              <>
+                <OperationalIntelligence 
+                  summary={data.executiveSummary}
+                  tickets={tickets}
+                  startDate={dateRange.from!}
+                  endDate={dateRange.to!}
+                  onViewDetails={() => setIsReasoningModalOpen(true)}
+                />
+                {hasAI && <PredictiveForecast data={data.forecast} />}
+              </>
+            )}
+
+            {viewMode === 'overview' && hasAI && (
+              <>
+                <Separator className="bg-gray-200 dark:bg-gray-800" />
+                <ExecutiveActionCenter actions={data.actions} />
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        <SystemHealthPanel data={data.systemHealth} />
+
+        {selectedTicket && (
+          <TicketDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ticket={selectedTicket} />
+        )}
+
+        <DetailedReasoningModal 
+          isOpen={isReasoningModalOpen}
+          onClose={() => setIsReasoningModalOpen(false)}
+          summary={data.executiveSummary}
+        />
+
+        {/* AI Assistant */}
+        <DashboardAssistant />
       </div>
 
-      <DeterministicSummary 
-        tickets={tickets}
-        dateRange={dateRange}
-        onTriggerAI={generateAI}
-        isGeneratingAI={isGeneratingAI}
-        showAIButton={!hasAI}
-      />
-
-      {hasAI && activeInsight && (
-        <AIInsightStrip 
-          insight={activeInsight}
-          onDismiss={() => setShowInsight(false)}
-        />
-      )}
-
-      <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
-
-      <Separator className="bg-gray-200 dark:bg-gray-800" />
-
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-              <Users2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <h2 className="text-2xl font-black tracking-tight text-foreground">Customer Intelligence</h2>
-          </div>
-
-          <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-1.5 rounded-full border border-border shadow-sm">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-3">Filter Account:</span>
-            <Select value={selectedCustomer} onValueChange={handleCustomerFilterChange}>
-              <SelectTrigger className="w-[200px] border-none bg-transparent focus:ring-0 h-8 font-bold text-indigo-600">
-                <SelectValue placeholder="All Accounts" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-none shadow-2xl">
-                <SelectItem value="All">All Accounts</SelectItem>
-                {uniqueCompanies.map(c => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
-            <CardHeader className="p-8 pb-0">
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-blue-500" />
-                Ticket Type Distribution by Customer
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 h-[400px]">
-              <TicketTypeByCustomerChart 
-                tickets={tickets} 
-                selectedCustomer={selectedCustomer}
-                topNCustomers={10}
-              />
-            </CardContent>
-          </Card>
-
-          <CustomerTypeSummary 
-            customerName={selectedCustomer} 
-            tickets={filteredTicketsForSummary} 
-          />
-        </div>
-      </section>
-
-      <AnimatePresence mode="wait">
-        <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
-          {(viewMode === 'overview' || viewMode === 'performance') && (
-            <>
-              <OperationalIntelligence 
-                summary={data.executiveSummary}
-                tickets={tickets}
-                startDate={dateRange.from!}
-                endDate={dateRange.to!}
-                onViewDetails={() => setIsReasoningModalOpen(true)}
-              />
-              {hasAI && <PredictiveForecast data={data.forecast} />}
-            </>
-          )}
-
-          {viewMode === 'overview' && hasAI && (
-            <>
-              <Separator className="bg-gray-200 dark:bg-gray-800" />
-              <ExecutiveActionCenter actions={data.actions} />
-            </>
-          )}
-        </motion.div>
+      {/* Action Center Sidebar */}
+      <AnimatePresence>
+        {isActionCenterOpen && (
+          <motion.aside 
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 420, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="shrink-0 h-full"
+          >
+            <ActionCenterPanel />
+          </motion.aside>
+        )}
       </AnimatePresence>
-
-      <SystemHealthPanel data={data.systemHealth} />
-
-      {selectedTicket && (
-        <TicketDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ticket={selectedTicket} />
-      )}
-
-      <DetailedReasoningModal 
-        isOpen={isReasoningModalOpen}
-        onClose={() => setIsReasoningModalOpen(false)}
-        summary={data.executiveSummary}
-      />
-
-      {/* AI Assistant */}
-      <DashboardAssistant />
     </div>
   );
 };
