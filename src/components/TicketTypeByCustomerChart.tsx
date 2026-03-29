@@ -78,6 +78,24 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+const CustomLegend = ({ payload }: any) => {
+  return (
+    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-6">
+      {payload.map((entry: any, index: number) => (
+        <div key={`item-${index}`} className="flex items-center gap-2 group cursor-default">
+          <div 
+            className="w-2.5 h-2.5 rounded-full shadow-sm transition-transform group-hover:scale-125" 
+            style={{ backgroundColor: entry.color }} 
+          />
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
+            {TYPE_LABELS[entry.value] || entry.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 'all' }: TicketTypeByCustomerChartProps) => {
   const processedData = useMemo(() => {
     if (!tickets || tickets.length === 0) return [];
@@ -143,57 +161,60 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
   }, [processedData]);
 
   return (
-    <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={processedData}
-          layout="vertical"
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          barGap={8}
-        >
-          <CartesianGrid 
-            strokeDasharray="3 3" 
-            horizontal={false} 
-            stroke="currentColor" 
-            className="text-gray-100 dark:text-gray-800" 
-          />
-          <XAxis
-            type="number"
-            axisLine={false}
-            tickLine={false}
-            fontSize={10}
-            fontWeight="bold"
-            tick={{ fill: 'hsl(var(--muted-foreground))' }}
-          />
-          <YAxis
-            dataKey="customer"
-            type="category"
-            axisLine={false}
-            tickLine={false}
-            fontSize={10}
-            fontWeight="black"
-            width={100}
-            tick={{ fill: 'hsl(var(--foreground))' }}
-            interval={0}
-            tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
-          />
-          <Tooltip 
-            content={<CustomTooltip />} 
-            cursor={{ fill: 'rgba(99, 102, 241, 0.04)', radius: 12 }}
-          />
-          {uniqueTypes.map((type, index) => (
-            <Bar
-              key={type}
-              dataKey={type}
-              stackId="a"
-              fill={TYPE_COLORS[type] || TYPE_COLORS['Unknown Type']}
-              name={type}
-              radius={index === uniqueTypes.length - 1 ? [0, 6, 6, 0] : [0, 0, 0, 0]}
-              barSize={24}
+    <div className="w-full h-full flex flex-col">
+      <div className="flex-1 min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={processedData}
+            layout="vertical"
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            barGap={8}
+          >
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              horizontal={false} 
+              stroke="currentColor" 
+              className="text-gray-100 dark:text-gray-800" 
             />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
+            <XAxis
+              type="number"
+              axisLine={false}
+              tickLine={false}
+              fontSize={10}
+              fontWeight="bold"
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            />
+            <YAxis
+              dataKey="customer"
+              type="category"
+              axisLine={false}
+              tickLine={false}
+              fontSize={10}
+              fontWeight="black"
+              width={100}
+              tick={{ fill: 'hsl(var(--foreground))' }}
+              interval={0}
+              tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
+            />
+            <Tooltip 
+              content={<CustomTooltip />} 
+              cursor={{ fill: 'rgba(99, 102, 241, 0.04)', radius: 12 }}
+            />
+            <Legend content={<CustomLegend />} />
+            {uniqueTypes.map((type, index) => (
+              <Bar
+                key={type}
+                dataKey={type}
+                stackId="a"
+                fill={TYPE_COLORS[type] || TYPE_COLORS['Unknown Type']}
+                name={type}
+                radius={index === uniqueTypes.length - 1 ? [0, 6, 6, 0] : [0, 0, 0, 0]}
+                barSize={24}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
