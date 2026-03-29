@@ -3,6 +3,8 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Ticket } from '@/types';
+import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 interface TicketTypeByCustomerChartProps {
   tickets: Ticket[];
@@ -10,53 +12,75 @@ interface TicketTypeByCustomerChartProps {
   topNCustomers?: number | 'all';
 }
 
-// Custom Tooltip component
+// Specific colors for each ticket type
+const TYPE_COLORS: { [key: string]: string } = {
+  bug: "hsl(10 80% 60%)", // Red
+  csTask: "hsl(240 60% 60%)", // Purple
+  duplicate: "hsl(180 60% 50%)", // Cyan
+  notRelevant: "hsl(210 10% 60%)", // Gray
+  query: "hsl(48 100% 50%)", // Yellow
+  techTask: "hsl(28 100% 60%)", // Orange
+  'Unknown Type': "hsl(210 10% 70%)", // Default for unknown
+};
+
+const TYPE_LABELS: { [key: string]: string } = {
+  bug: "Bug",
+  csTask: "CS Task",
+  duplicate: "Duplicate",
+  notRelevant: "Not Relevant",
+  query: "Query",
+  techTask: "Tech Task",
+  'Unknown Type': "Unknown",
+};
+
+// Custom Tooltip component with enterprise-grade styling
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const totalForCustomer = payload.reduce((sum: number, entry: any) => sum + (entry.value || 0), 0);
+    
+    // Sort payload by value descending for the tooltip
+    const sortedPayload = [...payload].sort((a, b) => b.value - a.value);
+
     return (
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-sm">
-        <p className="font-medium text-foreground mb-1">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} style={{ color: entry.color }} className="flex items-center">
-            <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }}></span>
-            {entry.name}: {entry.value} ({((entry.value / totalForCustomer) * 100).toFixed(1)}%)
-          </p>
-        ))}
-        <p className="font-semibold text-foreground mt-1">Total: {totalForCustomer}</p>
+      <div className="bg-white dark:bg-gray-950 p-4 rounded-[20px] shadow-2xl border border-border/50 backdrop-blur-md min-w-[220px] animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-black tracking-tight text-foreground uppercase">{label}</p>
+          <Badge variant="outline" className="bg-gray-50 dark:bg-gray-900 border-none font-bold text-[10px]">
+            {totalForCustomer} Total
+          </Badge>
+        </div>
+        
+        <Separator className="mb-3 opacity-50" />
+        
+        <div className="space-y-2.5">
+          {sortedPayload.map((entry: any, index: number) => {
+            const percentage = ((entry.value / totalForCustomer) * 100).toFixed(1);
+            return (
+              <div key={index} className="flex items-center justify-between gap-8 group">
+                <div className="flex items-center gap-2.5">
+                  <div 
+                    className="w-2 h-2 rounded-full shrink-0 shadow-sm" 
+                    style={{ backgroundColor: entry.color }} 
+                  />
+                  <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors">
+                    {TYPE_LABELS[entry.name] || entry.name}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-black text-foreground">{entry.value}</span>
+                  <span className="text-[10px] font-bold text-muted-foreground/60">{percentage}%</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }
   return null;
 };
 
-// Custom Legend component
-const CustomBarChartLegend = ({ payload }: any) => {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 mt-4 text-xs text-gray-600 dark:text-gray-400">
-      {payload.map((entry: any, index: number) => (
-        <div key={index} className="flex items-center space-x-1">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
-          <span>{entry.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// Specific colors for each ticket type
-const TYPE_COLORS: { [key: string]: string } = {
-  bug: "hsl(28 100% 70%)", // Orange
-  csTask: "hsl(240 60% 70%)", // Purple
-  duplicate: "hsl(180 60% 70%)", // Cyan
-  notRelevant: "hsl(10 80% 70%)", // Red
-  query: "hsl(48 100% 70%)", // Yellow
-  techTask: "hsl(210 10% 70%)", // Gray
-  'Unknown Type': "hsl(210 10% 70%)", // Default for unknown
-};
+import { Badge } from '@/components/ui/badge';
 
 const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 'all' }: TicketTypeByCustomerChartProps) => {
   const processedData = useMemo(() => {
@@ -122,11 +146,6 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
     return orderedTypes.filter(type => typesSet.has(type));
   }, [processedData]);
 
-  const legendPayload = uniqueTypes.map(type => ({
-    value: type,
-    color: TYPE_COLORS[type] || TYPE_COLORS['Unknown Type'],
-  }));
-
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
@@ -139,27 +158,31 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
           bottom: 5,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-gray-200 dark:stroke-gray-700" />
+        <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-gray-200 dark:stroke-gray-800" />
         <XAxis
           type="number"
           axisLine={false}
           tickLine={false}
-          fontSize={12}
-          tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
+          fontSize={10}
+          fontWeight="bold"
+          tick={{ fill: 'hsl(var(--muted-foreground))' }}
         />
         <YAxis
           dataKey="customer"
           type="category"
           axisLine={false}
           tickLine={false}
-          fontSize={11}
-          width={120}
-          tick={{ fill: 'hsl(215.4 16.3% 46.9%)' }}
+          fontSize={10}
+          fontWeight="black"
+          width={100}
+          tick={{ fill: 'hsl(var(--foreground))' }}
           interval={0}
-          tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 12)}...` : value}
+          tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
         />
-        <Tooltip content={<CustomTooltip />} />
-        <Legend content={<CustomBarChartLegend payload={legendPayload} />} />
+        <Tooltip 
+          content={<CustomTooltip />} 
+          cursor={{ fill: 'rgba(0,0,0,0.03)' }}
+        />
         {uniqueTypes.map((type) => (
           <Bar
             key={type}
@@ -167,7 +190,8 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
             stackId="a"
             fill={TYPE_COLORS[type] || TYPE_COLORS['Unknown Type']}
             name={type}
-            radius={[0, 4, 4, 0]}
+            radius={[0, 0, 0, 0]}
+            barSize={32}
           />
         ))}
       </BarChart>
