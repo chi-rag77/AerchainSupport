@@ -207,32 +207,6 @@ const Customer360 = () => {
             </AnimatePresence>
           </div>
         </main>
-
-        {/* 4. Sticky Decision Bar - Tactile & Contextual */}
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-          <div className="flex items-center gap-4 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 dark:border-slate-200 backdrop-blur-xl">
-            <div className="flex items-center gap-3 pr-6 border-r border-white/20 dark:border-slate-200">
-              <div className="p-1.5 rounded-lg bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
-                <Zap className="h-4 w-4" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Decision Bar</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-slate-100 transition-all">
-                <Ticket className="h-4 w-4" /> Fix SLA
-              </Button>
-              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-slate-100 transition-all">
-                <User className="h-4 w-4" /> Assign Owner
-              </Button>
-              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-slate-100 transition-all">
-                <FileText className="h-4 w-4" /> View Tickets
-              </Button>
-              <Button size="sm" className="h-9 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black uppercase tracking-widest text-[10px] gap-2 px-6 ml-2 shadow-lg shadow-rose-500/20 transition-all active:scale-95">
-                <Bell className="h-4 w-4" /> Escalate Account
-              </Button>
-            </div>
-          </div>
-        </div>
       </div>
     </TooltipProvider>
   );
