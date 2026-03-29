@@ -9,10 +9,8 @@ import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
 import KPISection from "@/components/dashboard/KPISection";
 import AIInsightStrip from "@/components/dashboard/AIInsightStrip";
 import OperationalIntelligence from "@/components/dashboard/OperationalIntelligence";
-import ActiveRiskSection from "@/components/dashboard/ActiveRiskSection";
 import ViewModeSelector from "@/components/dashboard/ViewModeSelector";
 import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
-import OperationalBottlenecks from "@/components/dashboard/OperationalBottlenecks";
 import PredictiveForecast from "@/components/dashboard/PredictiveForecast";
 import ExecutiveActionCenter from "@/components/dashboard/ExecutiveActionCenter";
 import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
@@ -190,13 +188,8 @@ const DashboardContent = () => {
                 endDate={dateRange.to!}
                 onViewDetails={() => setIsReasoningModalOpen(true)}
               />
-              {hasAI && <OperationalBottlenecks data={data.bottlenecks} />}
               {hasAI && <PredictiveForecast data={data.forecast} />}
             </>
-          )}
-
-          {(viewMode === 'overview' || viewMode === 'risk') && (
-            <ActiveRiskSection onViewTicket={(t) => { setSelectedTicket(t); setIsModalOpen(true); }} />
           )}
 
           {viewMode === 'overview' && hasAI && (
