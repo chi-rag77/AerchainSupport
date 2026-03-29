@@ -12,16 +12,13 @@ import AIInsightStrip from "@/components/dashboard/AIInsightStrip";
 import LiveActivityCenter from "@/components/dashboard/LiveActivityCenter";
 import ViewModeSelector from "@/components/dashboard/ViewModeSelector";
 import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
-import PredictiveForecast from "@/components/dashboard/PredictiveForecast";
-import ExecutiveActionCenter from "@/components/dashboard/ExecutiveActionCenter";
 import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
 import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
 import DeterministicSummary from "@/components/dashboard/DeterministicSummary";
 import DashboardAssistant from "@/components/assistant/DashboardAssistant";
-import { Loader2, Brain, Sparkles, Users2, BarChart3 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2, Users2, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -166,21 +163,11 @@ const DashboardContent = () => {
         <AnimatePresence mode="wait">
           <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
             {(viewMode === 'overview' || viewMode === 'performance') && (
-              <>
-                <LiveActivityCenter 
-                  tickets={tickets} 
-                  startDate={dateRange.from!} 
-                  endDate={dateRange.to!} 
-                />
-                {hasAI && <PredictiveForecast data={data.forecast} />}
-              </>
-            )}
-
-            {viewMode === 'overview' && hasAI && (
-              <>
-                <Separator className="bg-gray-200 dark:bg-gray-800" />
-                <ExecutiveActionCenter actions={data.actions} />
-              </>
+              <LiveActivityCenter 
+                tickets={tickets} 
+                startDate={dateRange.from!} 
+                endDate={dateRange.to!} 
+              />
             )}
           </motion.div>
         </AnimatePresence>
