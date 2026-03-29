@@ -22,7 +22,7 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
           icon: Ticket,
           color: "text-blue-600",
           bg: "bg-blue-50 dark:bg-blue-900/20",
-          chartColor: "#3b82f6",
+          chartColor: "#2563eb", // Brighter Blue
           trendBg: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
         };
       case 'backlog':
@@ -30,7 +30,7 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
           icon: Clock,
           color: "text-orange-600",
           bg: "bg-orange-50 dark:bg-orange-900/20",
-          chartColor: "#f97316",
+          chartColor: "#f97316", // Bright Orange
           trendBg: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
         };
       case 'resolved':
@@ -38,7 +38,7 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
           icon: CheckCircle2,
           color: "text-green-600",
           bg: "bg-green-50 dark:bg-green-900/20",
-          chartColor: "#10b981",
+          chartColor: "#10b981", // Bright Green
           trendBg: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
         };
       case 'attention':
@@ -46,7 +46,7 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
           icon: Bug,
           color: "text-red-600",
           bg: "bg-red-50 dark:bg-red-900/20",
-          chartColor: "#ef4444",
+          chartColor: "#ef4444", // Bright Red
           trendBg: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
         };
     }
@@ -59,7 +59,6 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
         const Icon = config.icon;
         const isPositiveTrend = metric.trend > 0;
         
-        // Determine if the trend is "good" or "bad" based on the metric type
         const isTrendGood = (metric.archetype === 'backlog' || metric.archetype === 'attention') 
           ? !isPositiveTrend 
           : isPositiveTrend;
@@ -78,7 +77,6 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
             <Card className="group relative overflow-hidden rounded-[28px] border border-border bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all duration-300">
               <CardContent className="p-0">
                 <div className="p-6 pb-2 space-y-4">
-                  {/* Header: Icon & Trend Badge */}
                   <div className="flex justify-between items-start">
                     <div className={cn("p-2 rounded-xl", config.bg, config.color)}>
                       <Icon className="h-5 w-5" />
@@ -92,7 +90,6 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
                     </div>
                   </div>
 
-                  {/* Metric Content */}
                   <div className="space-y-1">
                     <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60">
                       {metric.title}
@@ -110,13 +107,12 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
                   </div>
                 </div>
 
-                {/* Bottom Sparkline */}
-                <div className="h-14 w-full mt-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                <div className="h-16 w-full mt-2 opacity-80 group-hover:opacity-100 transition-opacity">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={metric.sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={config.chartColor} stopOpacity={0.2} />
+                          <stop offset="0%" stopColor={config.chartColor} stopOpacity={0.4} />
                           <stop offset="100%" stopColor={config.chartColor} stopOpacity={0} />
                         </linearGradient>
                       </defs>
@@ -124,7 +120,7 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
                         type="monotone"
                         dataKey="value"
                         stroke={config.chartColor}
-                        strokeWidth={2.5}
+                        strokeWidth={3}
                         fill={`url(#gradient-${index})`}
                         isAnimationActive={true}
                       />
