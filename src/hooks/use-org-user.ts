@@ -20,7 +20,7 @@ export function useOrgData() {
         return { user: null, settings: null };
       }
 
-      // 1. Fetch current user's role
+      // 1. Fetch current user's role and profile
       const { data: userData, error: userError } = await supabase
         .from('org_users')
         .select('*')
@@ -29,15 +29,34 @@ export function useOrgData() {
 
       let userRole: OrgUser | null = null;
       if (userError && userError.code === 'PGRST116') {
-        // User not found in org_users, assume viewer role for now, but prompt admin creation
-        userRole = {
-          id: userId,
-          org_id: userId,
-          email: userEmail,
-          role: 'viewer', // Default to viewer if not explicitly set
-          is_active: true,
-          created_at: new Date().toISOString(),
-        } as OrgUser;
+        // First user logic: if no users exist, make this user an admin
+        const { count } = await supabase.from('org_users').select('*', { count: 'exact', head: true });
+        
+        if (count === 0) {
+          const { data: newUser } = await supabase
+            .from('org_users')
+            .insert({
+              id: userId,
+              org_id: userId,
+              email: userEmail,
+              role: 'admin',
+              is_active: true,
+              display_name: session?.user?.user_metadata?.full_name || userEmail.split('@')[0]
+            })
+            .select()
+            .single();
+          userRole = newUser as OrgUser;
+        } else {
+          // Default to viewer for unapproved signups
+          userRole = {
+            id: userId,
+            org_id: userId,
+            email: userEmail,
+            role: 'viewer',
+            is_active: true,
+            created_at: new Date().toISOString(),
+          } as OrgUser;
+        }
       } else if (userError) {
         throw userError;
       } else {
@@ -48,7 +67,7 @@ export function useOrgData() {
       const { data: settingsData, error: settingsError } = await supabase
         .from('org_settings')
         .select('*')
-        .eq('org_id', userId) // Use auth.uid() as org_id
+        .eq('org_id', userRole?.org_id)
         .single();
 
       if (settingsError && settingsError.code !== 'PGRST116') {
@@ -61,7 +80,7 @@ export function useOrgData() {
       };
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   } as UseQueryOptions<OrgData, Error>);
 
   return {
@@ -70,6 +89,6 @@ export function useOrgData() {
     isOrgLoading: isLoading,
     orgError: error,
     isAdmin: data?.user?.role === 'admin',
-    orgId: userId, // Use userId as orgId
+    orgId: data?.user?.org_id,
   };
 }

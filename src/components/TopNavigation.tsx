@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Bell, LogOut, Home, Layers, 
-  Settings, Users, KeyRound, Brain, Activity,
-  Search, Command, ShieldCheck, Zap, Clock, Target,
-  BarChart3
+  Settings, Users, Brain, Activity,
+  Zap, Command, ShieldCheck, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,13 +15,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from './ThemeToggle';
 import Logo from './Logo';
 import { cn } from '@/lib/utils';
-import { Badge } from './ui/badge';
 import NavPill from './NavPill';
 import NotificationsSheet from './NotificationsSheet';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { useOrgData } from '@/hooks/use-org-user';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 const fetchUnreadNotificationsCount = async (userId: string | undefined): Promise<number> => {
   if (!userId) return 0;
@@ -39,8 +38,9 @@ const fetchUnreadNotificationsCount = async (userId: string | undefined): Promis
 const TopNavigation = () => {
   const { session } = useSupabase();
   const { orgUser } = useOrgData();
+  const { isAdmin, canViewAuditLog } = usePermissions();
   const user = session?.user;
-  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const fullName = orgUser?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const location = useLocation();
   const [isNotificationsSheetOpen, setIsNotificationsSheetOpen] = useState(false);
 
@@ -55,7 +55,7 @@ const TopNavigation = () => {
     refetchInterval: 30000,
   } as UseQueryOptions<number, Error>);
 
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/accept-invite';
   if (isAuthPage) return null;
 
   const handleLogout = async () => {
@@ -71,66 +71,50 @@ const TopNavigation = () => {
     { icon: Brain, label: "Knowledge Hub", path: "/knowledge" },
   ];
 
-  const canViewSettings = orgUser && (orgUser.role === 'admin' || orgUser.role === 'manager');
-
   return (
     <header className="sticky top-0 z-50 w-full">
-      {/* Solid Background Layer */}
       <motion.div 
         style={{ height: navHeight, boxShadow: navShadow }}
         className="absolute inset-0 bg-white dark:bg-gray-950 border-b border-white/20 dark:border-gray-800/30 transition-colors duration-500"
       >
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
           <motion.div 
-            animate={{ 
-              x: [0, 100, 0],
-              y: [0, 50, 0],
-              scale: [1, 1.2, 1]
-            }}
+            animate={{ x: [0, 100, 0], y: [0, 50, 0], scale: [1, 1.2, 1] }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-200/40 dark:bg-indigo-900/20 rounded-full blur-[100px]" 
-          />
-          <motion.div 
-            animate={{ 
-              x: [0, -100, 0],
-              y: [0, -50, 0],
-              scale: [1, 1.3, 1]
-            }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-200/40 dark:bg-purple-900/20 rounded-full blur-[100px]" 
           />
         </div>
       </motion.div>
 
       <div className="container mx-auto relative z-10">
-        {/* Main Nav Row */}
         <div className="flex h-16 items-center justify-between px-4">
-          {/* Left: Logo */}
           <div className="flex-1 flex justify-start">
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Logo className="h-6 w-auto text-primary fill-current relative z-10 transition-transform group-hover:scale-110" />
-              </div>
+              <Logo className="h-6 w-auto text-primary fill-current relative z-10 transition-transform group-hover:scale-110" />
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground hidden sm:block">Aerchain</span>
             </Link>
           </div>
 
-          {/* Center: Navigation */}
           <div className="hidden md:block flex-shrink-0">
             <NavPill items={navItems} activePath={location.pathname} />
           </div>
 
-          {/* Right: Actions */}
           <div className="flex-1 flex items-center justify-end gap-3">
-            {/* Command Hint */}
-            <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100/50 dark:bg-gray-800/50 border border-border/50 text-[10px] font-black text-muted-foreground">
-              <Command className="h-3 w-3" />
-              <span>K</span>
-            </div>
-
             <div className="flex items-center gap-1">
-              {canViewSettings && (
+              {isAdmin && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" asChild>
+                      <Link to="/team">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Team Management</TooltipContent>
+                </Tooltip>
+              )}
+
+              {isAdmin && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" asChild>
@@ -139,7 +123,7 @@ const TopNavigation = () => {
                       </Link>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Settings</TooltipContent>
+                  <TooltipContent>Workspace Settings</TooltipContent>
                 </Tooltip>
               )}
 
@@ -166,9 +150,9 @@ const TopNavigation = () => {
                     className="relative h-9 w-9 rounded-full overflow-hidden border-2 border-transparent hover:border-indigo-500 transition-all ml-2"
                   >
                     <Avatar className="h-full w-full">
-                      <AvatarImage src={user?.user_metadata?.avatar_url} alt={fullName} />
+                      <AvatarImage src={orgUser?.avatar_url || user?.user_metadata?.avatar_url} alt={fullName} />
                       <AvatarFallback className="bg-indigo-600 text-white font-black text-xs">
-                        {fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                        {fullName.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </motion.button>
@@ -177,18 +161,18 @@ const TopNavigation = () => {
                   <DropdownMenuLabel className="p-4">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-black leading-none">{fullName}</p>
-                      <p className="text-xs font-medium text-muted-foreground">
-                        {user?.email}
-                      </p>
+                      <p className="text-xs font-medium text-muted-foreground">{user?.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800" />
-                  <DropdownMenuItem asChild className="rounded-xl cursor-pointer p-3">
-                    <Link to="/settings" className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"><Settings className="h-4 w-4" /></div>
-                      <span className="font-bold text-sm">Workspace Settings</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild className="rounded-xl cursor-pointer p-3">
+                      <Link to="/team" className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"><Users className="h-4 w-4" /></div>
+                        <span className="font-bold text-sm">Team Management</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem className="rounded-xl p-3">
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-3">

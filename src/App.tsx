@@ -11,6 +11,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Customer360 from "./pages/Customer360";
 import SettingsPage from "./pages/SettingsPage";
+import TeamPage from "./pages/TeamPage";
+import AcceptInvite from "./pages/AcceptInvite";
 import KnowledgeHub from "./pages/KnowledgeHub";
 import CustomerPulse from "./pages/CustomerPulse";
 import Reports from "./pages/Reports";
@@ -35,12 +37,14 @@ const App = () => (
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
+                  <Route path="/accept-invite" element={<AcceptInvite />} />
                   <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
                   <Route path="/dashboard-v2" element={<ProtectedRoute><DashboardV2 /></ProtectedRoute>} />
                   <Route path="/customer360" element={<ProtectedRoute><Customer360 /></ProtectedRoute>} />
                   <Route path="/pulse" element={<ProtectedRoute><CustomerPulse /></ProtectedRoute>} />
                   <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                  <Route path="/team" element={<ProtectedRoute><TeamPage /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                   <Route path="/knowledge" element={<ProtectedRoute><KnowledgeHub /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
