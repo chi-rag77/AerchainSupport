@@ -22,28 +22,32 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
           icon: Ticket,
           color: "text-blue-600",
           bg: "bg-blue-50 dark:bg-blue-900/20",
-          chartColor: "#3b82f6"
+          chartColor: "#3b82f6",
+          trendBg: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
         };
       case 'backlog':
         return {
           icon: Clock,
           color: "text-orange-600",
           bg: "bg-orange-50 dark:bg-orange-900/20",
-          chartColor: "#f97316"
+          chartColor: "#f97316",
+          trendBg: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
         };
       case 'resolved':
         return {
           icon: CheckCircle2,
           color: "text-green-600",
           bg: "bg-green-50 dark:bg-green-900/20",
-          chartColor: "#10b981"
+          chartColor: "#10b981",
+          trendBg: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
         };
       case 'attention':
         return {
           icon: Bug,
           color: "text-red-600",
           bg: "bg-red-50 dark:bg-red-900/20",
-          chartColor: "#ef4444"
+          chartColor: "#ef4444",
+          trendBg: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
         };
     }
   };
@@ -54,10 +58,15 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
         const config = getArchetypeConfig(metric.archetype);
         const Icon = config.icon;
         const isPositiveTrend = metric.trend > 0;
-        // For backlog and bugs, positive trend is actually "bad" (red), for others it's "good" (green)
+        
+        // Determine if the trend is "good" or "bad" based on the metric type
         const isTrendGood = (metric.archetype === 'backlog' || metric.archetype === 'attention') 
           ? !isPositiveTrend 
           : isPositiveTrend;
+
+        const trendColorClass = isTrendGood 
+          ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400" 
+          : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400";
 
         return (
           <motion.div
@@ -66,48 +75,48 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className="group relative overflow-hidden rounded-[24px] border border-border bg-white dark:bg-gray-900 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-              <CardContent className="p-6 space-y-4">
-                {/* Header: Icon & Trend */}
-                <div className="flex justify-between items-start">
-                  <div className={cn("p-2.5 rounded-xl", config.bg, config.color)}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className={cn(
-                    "flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tight",
-                    isTrendGood 
-                      ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400" 
-                      : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                  )}>
-                    {isPositiveTrend ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                    {Math.abs(metric.trend)}%
-                  </div>
-                </div>
-
-                {/* Main Metric */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/70">
-                    {metric.title}
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <div className="text-4xl font-black tracking-tighter text-foreground">
-                      {typeof metric.value === 'number' ? (
-                        <CountUp end={metric.value} duration={2} separator="," />
-                      ) : metric.value}
+            <Card className="group relative overflow-hidden rounded-[28px] border border-border bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all duration-300">
+              <CardContent className="p-0">
+                <div className="p-6 pb-2 space-y-4">
+                  {/* Header: Icon & Trend Badge */}
+                  <div className="flex justify-between items-start">
+                    <div className={cn("p-2 rounded-xl", config.bg, config.color)}>
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <span className="text-[10px] font-bold text-muted-foreground lowercase">
-                      {metric.microInsight}
+                    <div className={cn(
+                      "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter",
+                      trendColorClass
+                    )}>
+                      {isPositiveTrend ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                      {Math.abs(metric.trend)}%
+                    </div>
+                  </div>
+
+                  {/* Metric Content */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60">
+                      {metric.title}
                     </span>
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-3xl font-black tracking-tighter text-foreground">
+                        {typeof metric.value === 'number' ? (
+                          <CountUp end={metric.value} duration={2} separator="," />
+                        ) : metric.value}
+                      </div>
+                      <span className="text-[10px] font-bold text-muted-foreground/60">
+                        {metric.microInsight}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Sparkline Chart */}
-                <div className="h-12 w-full -mx-6 -mb-6 mt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                {/* Bottom Sparkline */}
+                <div className="h-14 w-full mt-2 opacity-60 group-hover:opacity-100 transition-opacity">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={metric.sparklineData}>
+                    <AreaChart data={metric.sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={config.chartColor} stopOpacity={0.4} />
+                          <stop offset="0%" stopColor={config.chartColor} stopOpacity={0.2} />
                           <stop offset="100%" stopColor={config.chartColor} stopOpacity={0} />
                         </linearGradient>
                       </defs>
@@ -115,7 +124,7 @@ const KPISection = ({ metrics, isLoading }: KPISectionProps) => {
                         type="monotone"
                         dataKey="value"
                         stroke={config.chartColor}
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         fill={`url(#gradient-${index})`}
                         isAnimationActive={true}
                       />
