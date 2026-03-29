@@ -1,12 +1,26 @@
 import { Ticket, Insight } from "@/types";
 
+export interface KPIInsight {
+  insight: string;
+  impact?: { name: string; risk: 'high' | 'medium' | 'low' }[];
+  prediction?: string;
+  confidence: number;
+  breakdown?: Record<string, number>;
+  actions: { label: string; type: 'primary' | 'secondary'; action_id: string }[];
+  target?: number; // For performance cards
+  current_progress?: number; // For progress bars
+}
+
 export interface KPIMetric {
+  id: string;
   title: string;
   value: number | string;
   trend: number;
   microInsight: string;
   archetype: 'volume' | 'backlog' | 'resolved' | 'attention';
   sparklineData: { value: number }[];
+  status_label?: string;
+  insights?: KPIInsight;
 }
 
 export interface GeographicData {
