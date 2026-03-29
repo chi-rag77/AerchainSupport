@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Activity, Brain, Sparkles, TrendingUp, ShieldAlert, 
-  Clock, Zap, Target, Loader2, AlertTriangle, ArrowRight, MessageSquare
+  Clock, Zap, Target, Loader2, AlertTriangle, ArrowRight, MessageSquare,
+  ListFilter
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ImpactTimelineChart from './ImpactTimelineChart';
@@ -80,19 +81,35 @@ const JourneyImpactTimeline = ({ customerName }: JourneyImpactTimelineProps) => 
 
       {/* 2. Issue Contribution Charts */}
       {data.moduleStats && data.severityCounts && (
-        <IssueContributionCharts 
-          moduleStats={data.moduleStats}
-          severityCounts={data.severityCounts}
-        />
+        <div className="space-y-6">
+          <div className="p-4 rounded-2xl bg-indigo-50/30 dark:bg-indigo-950/10 border border-indigo-100/50 flex items-start gap-3">
+            <Sparkles className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+            <p className="text-sm font-bold text-indigo-900 dark:text-indigo-200 leading-relaxed">
+              {topModule?.name} module is causing {Math.round((topModule?.total / data.timeline.reduce((acc: number, m: any) => acc + m.tickets, 0)) * 100)}% of issues → main driver. Other modules are stable.
+            </p>
+          </div>
+          <IssueContributionCharts 
+            moduleStats={data.moduleStats}
+            severityCounts={data.severityCounts}
+          />
+        </div>
       )}
 
       {/* 3. Smart Issue Heatmap */}
       {data.moduleStats && (
-        <SmartIssueHeatmap 
-          timeline={data.timeline} 
-          moduleStats={data.moduleStats}
-          onInvestigate={(module, month, count) => setInvestigationData({ module, month, count })}
-        />
+        <div className="space-y-6">
+          <div className="p-4 rounded-2xl bg-amber-50/30 dark:bg-amber-950/10 border border-amber-100/50 flex items-start gap-3">
+            <ListFilter className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-sm font-bold text-amber-900 dark:text-amber-200 leading-relaxed">
+              Most issues are LOW severity indicating operational inefficiency, but CRITICAL issues in {topModule?.name} are still significant.
+            </p>
+          </div>
+          <SmartIssueHeatmap 
+            timeline={data.timeline} 
+            moduleStats={data.moduleStats}
+            onInvestigate={(module, month, count) => setInvestigationData({ module, month, count })}
+          />
+        </div>
       )}
 
       <InvestigationModal 

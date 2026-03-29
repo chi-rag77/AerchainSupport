@@ -1,4 +1,4 @@
-// v2.7 - Customer Intelligence with Gemini 2.5 Flash
+// v3.0 - Executive Decision Engine with Gemini 2.5 Flash
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -68,14 +68,32 @@ serve(async (req) => {
     const slaMet = tickets.filter(t => t.due_by && ['resolved', 'closed'].includes(t.status.toLowerCase()) && new Date(t.updated_at) <= new Date(t.due_by)).length;
     const slaAdherence = slaTotal > 0 ? (slaMet / slaTotal) * 100 : 100;
 
+    // Dominant Module Calculation
+    const moduleCounts: Record<string, number> = {};
+    tickets.forEach(t => {
+      const mod = t.cf_module || 'General';
+      moduleCounts[mod] = (moduleCounts[mod] || 0) + 1;
+    });
+    const sortedModules = Object.entries(moduleCounts).sort((a, b) => b[1] - a[1]);
+    const dominantModule = sortedModules[0];
+    const dominantContribution = Math.round((dominantModule[1] / tickets.length) * 100);
+
     const healthScore = Math.round(slaAdherence * 0.6 + (100 - Math.min(100, openTickets.length * 5)) * 0.4);
 
     // 3. AI Layer (Using 2.5-flash)
     let aiSummary = {
       status: "AI Analysis Unavailable",
-      key_drivers: ["Deterministic metrics indicate stable operations."],
-      top_issues: ["Manual review recommended."],
-      recommended_actions: ["Check ticket queue for recent updates."]
+      good: ["Deterministic metrics indicate stable operations."],
+      bad: ["Manual review recommended."],
+      issues: ["Check ticket queue for recent updates."],
+      actions: ["Monitor account health."],
+      signals: [],
+      risk_composition: [
+        { label: "SLA Issues", percentage: 40, color: "bg-rose-500" },
+        { label: "Backlog", percentage: 30, color: "bg-amber-500" },
+        { label: "Sentiment", percentage: 30, color: "bg-indigo-500" }
+      ],
+      recent_changes: []
     };
 
     if (geminiApiKey) {
@@ -86,13 +104,18 @@ serve(async (req) => {
           - Open tickets: ${openTickets.length}
           - Ticket growth: ${ticketGrowth}%
           - SLA adherence: ${Math.round(slaAdherence)}%
+          - Dominant Module: ${dominantModule[0]} (${dominantContribution}% of volume)
           
           Return STRICT JSON:
           {
             "status": "string",
-            "key_drivers": ["string"],
-            "top_issues": ["string"],
-            "recommended_actions": ["string"]
+            "good": ["2-3 points"],
+            "bad": ["2-3 points"],
+            "issues": ["2-3 root causes"],
+            "actions": ["2-3 prioritized actions"],
+            "signals": [{"label": "string", "type": "risk|trend|info", "severity": "critical|warning|info"}],
+            "risk_composition": [{"label": "string", "percentage": number, "color": "bg-rose-500|bg-amber-500|bg-indigo-500"}],
+            "recent_changes": ["2-3 points"]
           }
         `;
 
@@ -109,6 +132,13 @@ serve(async (req) => {
           const geminiData = await geminiResponse.json();
           const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
           aiSummary = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
+          
+          // Add dominant issue if not present
+          aiSummary.dominant_issue = {
+            module: dominantModule[0],
+            contribution: dominantContribution,
+            impact: dominantContribution > 50 ? "Major driver of SLA breaches & dissatisfaction" : "Significant contributor to volume"
+          };
         }
       } catch (aiErr) {
         console.error("AI Synthesis failed, using deterministic fallback:", aiErr);

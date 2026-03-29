@@ -3,11 +3,32 @@ export interface HealthScoreComponent {
   weight: number;
 }
 
+export interface AISignal {
+  label: string;
+  type: 'risk' | 'trend' | 'info';
+  severity: 'critical' | 'warning' | 'info';
+}
+
+export interface RiskComposition {
+  label: string;
+  percentage: number;
+  color: string;
+}
+
 export interface AISummary {
   status: string;
-  key_drivers: string[];
-  top_issues: string[];
-  recommended_actions: string[];
+  good: string[];
+  bad: string[];
+  issues: string[];
+  actions: string[];
+  dominant_issue?: {
+    module: string;
+    contribution: number;
+    impact: string;
+  };
+  signals: AISignal[];
+  risk_composition: RiskComposition[];
+  recent_changes: string[];
 }
 
 export interface CustomerIntelligenceData {

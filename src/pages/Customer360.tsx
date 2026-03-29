@@ -4,11 +4,12 @@ import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Users, Loader2, RefreshCw, Target, Globe, Download, FileText, FileSpreadsheet, ChevronDown
+  Users, Loader2, RefreshCw, Target, Globe, Download, FileText, 
+  FileSpreadsheet, ChevronDown, Zap, ShieldAlert, Ticket, User, Bell
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Ticket } from "@/types";
+import { Ticket as TicketType } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,12 +39,12 @@ const Customer360 = () => {
   const [activeTab, setActiveTab] = useState<'intelligence' | 'radar'>('intelligence');
   const [isExporting, setIsExporting] = useState(false);
 
-  const { data: allTickets, isLoading } = useQuery<Ticket[], Error>({
+  const { data: allTickets, isLoading } = useQuery<TicketType[], Error>({
     queryKey: ["allFreshdeskTicketsFor360"],
     queryFn: async () => {
       const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('created_at', { ascending: false }).limit(10000);
       if (error) throw error;
-      return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
+      return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as TicketType[];
     }
   });
 
@@ -103,7 +104,7 @@ const Customer360 = () => {
 
   return (
     <TooltipProvider>
-      <div className="flex-1 flex flex-col bg-white dark:bg-gray-950 min-h-screen">
+      <div className="flex-1 flex flex-col bg-white dark:bg-gray-950 min-h-screen relative">
         
         {/* 1. Topbar (48px) */}
         <header className="h-12 border-b border-border bg-white dark:bg-gray-900 flex items-center justify-between px-6 shrink-0 sticky top-0 z-50">
@@ -178,7 +179,7 @@ const Customer360 = () => {
         </div>
 
         {/* 3. Main Content */}
-        <main className="flex-1 p-8 bg-[#F9FAFB] dark:bg-gray-950 overflow-y-auto">
+        <main className="flex-1 p-8 bg-[#F9FAFB] dark:bg-gray-950 overflow-y-auto pb-24">
           <div className="max-w-7xl mx-auto" id="customer-360-content">
             <AnimatePresence mode="wait">
               {activeTab === 'intelligence' && selectedCustomer !== 'All' ? (
@@ -205,6 +206,32 @@ const Customer360 = () => {
             </AnimatePresence>
           </div>
         </main>
+
+        {/* 4. Sticky Decision Bar */}
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex items-center gap-4 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl shadow-2xl border border-white/10 dark:border-gray-200 backdrop-blur-md">
+            <div className="flex items-center gap-3 pr-6 border-r border-white/20 dark:border-gray-200">
+              <div className="p-1.5 rounded-lg bg-indigo-600 text-white">
+                <Zap className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-widest">Decision Bar</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-gray-100">
+                <Ticket className="h-4 w-4" /> Fix SLA
+              </Button>
+              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-gray-100">
+                <User className="h-4 w-4" /> Assign Owner
+              </Button>
+              <Button variant="ghost" size="sm" className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-white/10 dark:hover:bg-gray-100">
+                <FileText className="h-4 w-4" /> View Tickets
+              </Button>
+              <Button size="sm" className="h-9 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black uppercase tracking-widest text-[10px] gap-2 px-6 ml-2">
+                <Bell className="h-4 w-4" /> Escalate Account
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </TooltipProvider>
   );
