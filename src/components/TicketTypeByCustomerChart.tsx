@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { Ticket } from '@/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 interface TicketTypeByCustomerChartProps {
   tickets: Ticket[];
@@ -12,15 +13,15 @@ interface TicketTypeByCustomerChartProps {
   topNCustomers?: number | 'all';
 }
 
-// Specific colors for each ticket type
+// Modern, aesthetic color palette
 const TYPE_COLORS: { [key: string]: string } = {
-  bug: "hsl(10 80% 60%)", // Red
-  csTask: "hsl(240 60% 60%)", // Purple
-  duplicate: "hsl(180 60% 50%)", // Cyan
-  notRelevant: "hsl(210 10% 60%)", // Gray
-  query: "hsl(48 100% 50%)", // Yellow
-  techTask: "hsl(28 100% 60%)", // Orange
-  'Unknown Type': "hsl(210 10% 70%)", // Default for unknown
+  bug: "#F43F5E",         // Rose 500
+  csTask: "#3B82F6",      // Blue 500
+  duplicate: "#10B981",   // Emerald 500
+  notRelevant: "#94A3B8", // Slate 400
+  query: "#F59E0B",       // Amber 500
+  techTask: "#8B5CF6",    // Violet 500
+  'Unknown Type': "#E2E8F0", // Slate 200
 };
 
 const TYPE_LABELS: { [key: string]: string } = {
@@ -30,22 +31,19 @@ const TYPE_LABELS: { [key: string]: string } = {
   notRelevant: "Not Relevant",
   query: "Query",
   techTask: "Tech Task",
-  'Unknown Type': "Unknown",
+  'Unknown Type': "Other",
 };
 
-// Custom Tooltip component with enterprise-grade styling
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const totalForCustomer = payload.reduce((sum: number, entry: any) => sum + (entry.value || 0), 0);
-    
-    // Sort payload by value descending for the tooltip
     const sortedPayload = [...payload].sort((a, b) => b.value - a.value);
 
     return (
-      <div className="bg-white dark:bg-gray-950 p-4 rounded-[20px] shadow-2xl border border-border/50 backdrop-blur-md min-w-[220px] animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white/90 dark:bg-gray-950/90 p-4 rounded-[20px] shadow-2xl border border-border/50 backdrop-blur-md min-w-[240px] animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-black tracking-tight text-foreground uppercase">{label}</p>
-          <Badge variant="outline" className="bg-gray-50 dark:bg-gray-900 border-none font-bold text-[10px]">
+          <Badge variant="secondary" className="bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-none font-bold text-[10px]">
             {totalForCustomer} Total
           </Badge>
         </div>
@@ -79,8 +77,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   }
   return null;
 };
-
-import { Badge } from '@/components/ui/badge';
 
 const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 'all' }: TicketTypeByCustomerChartProps) => {
   const processedData = useMemo(() => {
@@ -147,55 +143,58 @@ const TicketTypeByCustomerChart = ({ tickets, selectedCustomer, topNCustomers = 
   }, [processedData]);
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        data={processedData}
-        layout="vertical"
-        margin={{
-          top: 5,
-          right: 30,
-          left: 20,
-          bottom: 5,
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-gray-200 dark:stroke-gray-800" />
-        <XAxis
-          type="number"
-          axisLine={false}
-          tickLine={false}
-          fontSize={10}
-          fontWeight="bold"
-          tick={{ fill: 'hsl(var(--muted-foreground))' }}
-        />
-        <YAxis
-          dataKey="customer"
-          type="category"
-          axisLine={false}
-          tickLine={false}
-          fontSize={10}
-          fontWeight="black"
-          width={100}
-          tick={{ fill: 'hsl(var(--foreground))' }}
-          interval={0}
-          tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
-        />
-        <Tooltip 
-          content={<CustomTooltip />} 
-          cursor={{ fill: 'rgba(0,0,0,0.03)' }}
-        />
-        {uniqueTypes.map((type) => (
-          <Bar
-            key={type}
-            dataKey={type}
-            stackId="a"
-            fill={TYPE_COLORS[type] || TYPE_COLORS['Unknown Type']}
-            name={type}
-            radius={[0, 0, 0, 0]}
-            barSize={32}
+    <div className="w-full h-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={processedData}
+          layout="vertical"
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          barGap={8}
+        >
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            horizontal={false} 
+            stroke="currentColor" 
+            className="text-gray-100 dark:text-gray-800" 
           />
-        ))}
-      </BarChart>
-    </ResponsiveContainer>
+          <XAxis
+            type="number"
+            axisLine={false}
+            tickLine={false}
+            fontSize={10}
+            fontWeight="bold"
+            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+          />
+          <YAxis
+            dataKey="customer"
+            type="category"
+            axisLine={false}
+            tickLine={false}
+            fontSize={10}
+            fontWeight="black"
+            width={100}
+            tick={{ fill: 'hsl(var(--foreground))' }}
+            interval={0}
+            tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
+          />
+          <Tooltip 
+            content={<CustomTooltip />} 
+            cursor={{ fill: 'rgba(99, 102, 241, 0.04)', radius: 12 }}
+          />
+          {uniqueTypes.map((type, index) => (
+            <Bar
+              key={type}
+              dataKey={type}
+              stackId="a"
+              fill={TYPE_COLORS[type] || TYPE_COLORS['Unknown Type']}
+              name={type}
+              radius={index === uniqueTypes.length - 1 ? [0, 6, 6, 0] : [0, 0, 0, 0]}
+              barSize={24}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 };
 
