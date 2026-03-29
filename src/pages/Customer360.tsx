@@ -4,8 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { 
-  Users, Loader2, Handshake, RefreshCw, Target, ChevronUp, ChevronDown,
-  LayoutDashboard, BarChart3, Repeat, Globe, Download, FileText, FileSpreadsheet
+  Users, Loader2, RefreshCw, Target, Globe, Download, FileText, FileSpreadsheet, ChevronDown
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,8 +15,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { invokeEdgeFunction } from "@/lib/apiClient";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +26,7 @@ import {
 import CustomerIntelligenceHeader from "@/components/customer360/intelligence-header/CustomerIntelligenceHeader";
 import JourneyImpactTimeline from "@/components/customer360/journey-timeline/JourneyImpactTimeline";
 import RecurringIssueRadar from "@/components/product-intelligence/RecurringIssueRadar";
+import CustomerMetadata from "@/components/customer360/intelligence-header/CustomerMetadata";
 import { exportToPdf, exportToExcel } from "@/utils/customer360Export";
 
 const Customer360 = () => {
@@ -36,18 +34,26 @@ const Customer360 = () => {
   const user = session?.user;
   const queryClient = useQueryClient();
 
-  const [selectedCustomer, setSelectedCustomer] = useState<string | null>("All");
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<'intelligence' | 'radar'>('radar');
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>("Danone");
+  const [activeTab, setActiveTab] = useState<'intelligence' | 'radar'>('intelligence');
   const [isExporting, setIsExporting] = useState(false);
 
-  const { data: allTickets, isLoading, isFetching } = useQuery<Ticket[], Error>({
+  const { data: allTickets, isLoading } = useQuery<Ticket[], Error>({
     queryKey: ["allFreshdeskTicketsFor360"],
     queryFn: async () => {
       const { data, error } = await supabase.from('freshdesk_tickets').select('*').order('created_at', { ascending: false }).limit(10000);
       if (error) throw error;
       return data.map(ticket => ({ ...ticket, id: ticket.freshdesk_id })) as Ticket[];
     }
+  });
+
+  const { data: intelligenceData } = useQuery({
+    queryKey: ['customerIntelligence', selectedCustomer],
+    queryFn: () => invokeEdgeFunction<any>('get-customer-intelligence', {
+      method: 'POST',
+      body: { customerName: selectedCustomer },
+    }),
+    enabled: !!selectedCustomer && selectedCustomer !== 'All',
   });
 
   const uniqueCustomers = useMemo(() => {
@@ -75,95 +81,16 @@ const Customer360 = () => {
   const handleExportPdf = async () => {
     if (!selectedCustomer) return;
     setIsExporting(true);
-    const toastId = toast.loading("Generating high-fidelity PDF...");
+    const toastId = toast.loading("Generating PDF...");
     try {
       await exportToPdf('customer-360-content', `Customer360_${selectedCustomer}`);
-      toast.success("PDF exported successfully!", { id: toastId });
+      toast.success("PDF exported!");
     } catch (err) {
-      toast.error("Failed to generate PDF.", { id: toastId });
+      toast.error("Export failed.");
     } finally {
       setIsExporting(false);
     }
   };
-
-  const handleExportExcel = async () => {
-    if (!selectedCustomer) return;
-    setIsExporting(true);
-    const toastId = toast.loading("Preparing Excel report...");
-    
-    try {
-      // OPTIMIZATION: Try to get data from cache first to avoid network calls
-      const cachedIntel = queryClient.getQueryData(['customerIntelligence', selectedCustomer]);
-      const cachedJourney = queryClient.getQueryData(['customerJourneyImpact', selectedCustomer]);
-      const cachedRadar = queryClient.getQueryData(['recurringIssueRadar', selectedCustomer]);
-
-      // Only fetch what's missing
-      const [intel, journey, radar] = await Promise.all([
-        cachedIntel || (selectedCustomer !== 'All' ? queryClient.fetchQuery({
-          queryKey: ['customerIntelligence', selectedCustomer],
-          queryFn: () => invokeEdgeFunction('get-customer-intelligence', { method: 'POST', body: { customerName: selectedCustomer } })
-        }) : Promise.resolve(null)),
-        cachedJourney || (selectedCustomer !== 'All' ? queryClient.fetchQuery({
-          queryKey: ['customerJourneyImpact', selectedCustomer],
-          queryFn: () => invokeEdgeFunction('get-customer-journey-impact', { method: 'POST', body: { customerName: selectedCustomer } })
-        }) : Promise.resolve(null)),
-        cachedRadar || queryClient.fetchQuery({
-          queryKey: ['recurringIssueRadar', selectedCustomer],
-          queryFn: () => invokeEdgeFunction('get-recurring-issue-radar', { method: 'POST', body: { customerName: selectedCustomer } })
-        })
-      ]);
-
-      exportToExcel({ intelligence: intel, journey, radar }, `Customer360_${selectedCustomer}`);
-      toast.success("Excel report exported!", { id: toastId });
-    } catch (err) {
-      toast.error("Failed to generate Excel report.", { id: toastId });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleCustomerSelect = (val: string) => {
-    setSelectedCustomer(val);
-    setIsCollapsed(true);
-  };
-
-  const ActionButtons = () => (
-    <div className="flex items-center gap-2">
-      <Button 
-        onClick={handleSync} 
-        disabled={isFetching}
-        variant="outline"
-        className="rounded-full bg-white dark:bg-gray-900 text-foreground border border-border hover:bg-gray-50 shadow-sm h-10 px-4 font-bold text-xs"
-      >
-        <RefreshCw className={cn("mr-2 h-3.5 w-3.5", isFetching && "animate-spin")} />
-        Sync
-      </Button>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            disabled={isExporting || !selectedCustomer}
-            className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 h-10 px-4 font-bold text-xs gap-2"
-          >
-            {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-            Export
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="rounded-xl w-48">
-          <DropdownMenuLabel>Export Options</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleExportPdf} className="cursor-pointer gap-2">
-            <FileText className="h-4 w-4 text-red-500" />
-            Export as PDF
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleExportExcel} className="cursor-pointer gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-green-600" />
-            Export as Excel
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
 
   if (isLoading) {
     return (
@@ -176,188 +103,108 @@ const Customer360 = () => {
 
   return (
     <TooltipProvider>
-      <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
+      <div className="flex-1 flex flex-col bg-white dark:bg-gray-950 min-h-screen">
         
-        {/* Collapsible Header Panel */}
-        <motion.div 
-          initial={false}
-          animate={{ 
-            height: isCollapsed ? 64 : 'auto',
-            paddingTop: isCollapsed ? 12 : 32,
-            paddingBottom: isCollapsed ? 12 : 32
-          }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
-          className={cn(
-            "relative w-full px-8 rounded-[24px] shadow-glass overflow-hidden border border-white/20 dark:border-gray-700/30 backdrop-blur-xl",
-            "bg-gradient-to-br from-[#F8FAFF] to-[#F1F5FF] dark:from-gray-800/40 dark:to-gray-900/40"
-          )}
-        >
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-50/10 rounded-full blur-3xl" />
-          
-          <div className="relative z-10 flex items-center justify-between gap-8 h-full">
+        {/* 1. Topbar (48px) */}
+        <header className="h-12 border-b border-border bg-white dark:bg-gray-900 flex items-center justify-between px-6 shrink-0 sticky top-0 z-50">
+          <div className="flex items-center gap-4">
+            <h1 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-2">
+              Customer 360
+            </h1>
+            <div className="h-4 w-px bg-border" />
+            <Select value={selectedCustomer || ""} onValueChange={setSelectedCustomer}>
+              <SelectTrigger className="h-8 w-fit min-w-[160px] border-none bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 rounded-lg text-xs font-bold text-indigo-600 gap-2">
+                <SelectValue placeholder="Select Account" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-none shadow-2xl">
+                <SelectItem value="All" className="font-bold text-indigo-600">Global View</SelectItem>
+                {uniqueCustomers.map(customer => (
+                  <SelectItem key={customer} value={customer} className="font-medium">{customer}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleSync} className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest gap-2">
+              <RefreshCw className="h-3.5 w-3.5" /> Sync
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="h-8 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase tracking-widest gap-2">
+                  <Download className="h-3.5 w-3.5" /> Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="rounded-xl w-48">
+                <DropdownMenuItem onClick={handleExportPdf} className="cursor-pointer gap-2">
+                  <FileText className="h-4 w-4 text-red-500" /> Export PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {}} className="cursor-pointer gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-green-600" /> Export Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        {/* 2. Subbar (36px) */}
+        <div className="h-9 border-b border-border bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between px-6 shrink-0 sticky top-12 z-40">
+          <div className="flex-1 overflow-hidden">
+            {intelligenceData?.metadata && (
+              <CustomerMetadata metadata={intelligenceData.metadata} />
+            )}
+          </div>
+
+          <div className="flex items-center h-full">
+            <button
+              onClick={() => setActiveTab('intelligence')}
+              className={cn(
+                "h-full px-6 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2",
+                activeTab === 'intelligence' ? "border-indigo-600 text-indigo-600" : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Intelligence
+            </button>
+            <button
+              onClick={() => setActiveTab('radar')}
+              className={cn(
+                "h-full px-6 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2",
+                activeTab === 'radar' ? "border-indigo-600 text-indigo-600" : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Issue Radar
+            </button>
+          </div>
+        </div>
+
+        {/* 3. Main Content */}
+        <main className="flex-1 p-8 bg-[#F9FAFB] dark:bg-gray-950 overflow-y-auto">
+          <div className="max-w-7xl mx-auto" id="customer-360-content">
             <AnimatePresence mode="wait">
-              {isCollapsed ? (
+              {activeTab === 'intelligence' && selectedCustomer !== 'All' ? (
                 <motion.div 
-                  key="collapsed"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex items-center justify-between w-full"
+                  key="intelligence"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-12"
                 >
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white">
-                      Customer 360
-                    </h1>
-                    <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
-                    <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-                      {selectedCustomer === 'All' ? <Globe className="h-4 w-4" /> : null}
-                      {selectedCustomer === 'All' ? "Global Product View" : selectedCustomer}
-                    </span>
-                  </div>
-                  <ActionButtons />
+                  <CustomerIntelligenceHeader customerName={selectedCustomer!} />
+                  <JourneyImpactTimeline customerName={selectedCustomer!} />
                 </motion.div>
               ) : (
                 <motion.div 
-                  key="expanded"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 w-full"
+                  key="radar"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                 >
-                  <div className="space-y-4">
-                    <div>
-                      <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
-                        Customer 360 <Target className="h-8 w-8 text-indigo-600" />
-                      </h1>
-                      <p className="text-lg text-muted-foreground font-medium">A unified view of customer health and support activity.</p>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-3">
-                      <Badge variant="secondary" className="bg-white/50 dark:bg-gray-700/50 py-1 px-3 gap-1.5">
-                        <Users className="h-3.5 w-3.5" />
-                        {uniqueCustomers.length} Managed Accounts
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-3 bg-white/80 dark:bg-gray-900/80 p-2 rounded-2xl border border-border shadow-sm">
-                      <span className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-2">Select Account:</span>
-                      <Select value={selectedCustomer || ""} onValueChange={handleCustomerSelect}>
-                        <SelectTrigger className="w-[280px] border-none bg-transparent focus:ring-0 h-10 font-bold text-indigo-600">
-                          <SelectValue placeholder="Choose a customer..." />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-none shadow-2xl">
-                          <SelectItem value="All" className="font-bold text-indigo-600">Global View (All Accounts)</SelectItem>
-                          {uniqueCustomers.map(customer => (
-                            <SelectItem key={customer} value={customer} className="font-medium">{customer}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <ActionButtons />
-                  </div>
+                  <RecurringIssueRadar customerName={selectedCustomer!} />
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {selectedCustomer && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="rounded-full h-10 w-10 bg-white/50 dark:bg-gray-800/50 hover:bg-[#EEF2FF] dark:hover:bg-indigo-900/30 hover:scale-105 transition-all shrink-0 shadow-sm"
-              >
-                {isCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-              </Button>
-            )}
           </div>
-        </motion.div>
-
-        <AnimatePresence mode="wait">
-          {!selectedCustomer ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-32 text-muted-foreground">
-              <Handshake className="h-20 w-20 mb-6 opacity-20" />
-              <p className="text-xl font-bold">Select a customer account to begin analysis</p>
-            </motion.div>
-          ) : (
-            <motion.div 
-              key={selectedCustomer} 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              className="space-y-20"
-              id="customer-360-content"
-            >
-              
-              {/* Tab Switcher */}
-              <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-full w-fit border border-white/20 no-print">
-                <button
-                  onClick={() => setActiveTab('intelligence')}
-                  disabled={selectedCustomer === 'All'}
-                  className={cn(
-                    "relative flex items-center gap-2 px-8 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all duration-300",
-                    activeTab === 'intelligence' ? "text-white" : "text-muted-foreground hover:text-foreground",
-                    selectedCustomer === 'All' && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  {activeTab === 'intelligence' && (
-                    <motion.div layoutId="active-360-tab" className="absolute inset-0 bg-indigo-600 rounded-full shadow-lg" />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Intelligence
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('radar')}
-                  className={cn(
-                    "relative flex items-center gap-2 px-8 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all duration-300",
-                    activeTab === 'radar' ? "text-white" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {activeTab === 'radar' && (
-                    <motion.div layoutId="active-360-tab" className="absolute inset-0 bg-indigo-600 rounded-full shadow-lg" />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Repeat className="h-4 w-4" />
-                    Issue Radar
-                  </span>
-                </button>
-              </div>
-
-              <AnimatePresence mode="wait">
-                {activeTab === 'intelligence' && selectedCustomer !== 'All' ? (
-                  <motion.div 
-                    key="intelligence"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-20"
-                  >
-                    <CustomerIntelligenceHeader customerName={selectedCustomer} />
-                    <JourneyImpactTimeline customerName={selectedCustomer} />
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    key="radar"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                  >
-                    <RecurringIssueRadar customerName={selectedCustomer} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              
-              <Separator className="opacity-50" />
-              
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <p className="text-xs font-black uppercase tracking-[0.3em] opacity-30">End of Intelligence Brief</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
+        </main>
       </div>
     </TooltipProvider>
   );

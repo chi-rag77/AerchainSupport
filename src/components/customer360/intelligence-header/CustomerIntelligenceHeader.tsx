@@ -5,10 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { invokeEdgeFunction } from '@/lib/apiClient';
 import { CustomerIntelligenceData } from '@/features/customer360/types';
 import { Loader2, AlertTriangle, Info, RefreshCw } from 'lucide-react';
-import CustomerMetadata from './CustomerMetadata';
 import MetricWidget from './MetricWidget';
 import AISummary from './AISummary';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -83,20 +81,7 @@ const CustomerIntelligenceHeader = ({ customerName }: CustomerIntelligenceHeader
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-start">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">{data.customer}</h2>
-          <CustomerMetadata metadata={data.metadata} />
-        </div>
-        <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isFetching} className="text-muted-foreground">
-          <RefreshCw className={cn("h-4 w-4 mr-2", isFetching && "animate-spin")} />
-          Sync
-        </Button>
-      </div>
-      
-      <Separator />
-
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <MetricWidget type="health" data={data} />
         <MetricWidget type="activity" data={data} />
