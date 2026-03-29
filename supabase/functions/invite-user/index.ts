@@ -19,17 +19,34 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader! } }
     })
 
-    const { data: { user: actor } } = await userSupabase.auth.getUser()
-    if (!actor) throw new Error("Unauthorized")
+    const { data: { user: actor }, error: authError } = await userSupabase.auth.getUser()
+    if (authError || !actor) throw new Error("Unauthorized")
+
+    console.log(`[invite-user] Request from user: ${actor.id} (${actor.email})`);
 
     // 1. Verify Admin
-    const { data: actorOrg } = await supabase
+    const { data: actorOrg, error: orgError } = await supabase
       .from('org_users')
       .select('role, org_id')
       .eq('id', actor.id)
-      .single()
+      .maybeSingle()
 
-    if (actorOrg?.role !== 'admin') throw new Error("Forbidden: Admin access required")
+    if (orgError) {
+      console.error(`[invite-user] DB Error checking role:`, orgError);
+      throw new Error("Internal server error checking permissions");
+    }
+
+    console.log(`[invite-user] Actor role found: ${actorOrg?.role || 'NONE'}`);
+
+    if (actorOrg?.role !== 'admin') {
+      return new Response(JSON.stringify({ 
+        error: "Forbidden: Admin access required",
+        details: `Your current role is ${actorOrg?.role || 'not found'}.`
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     const { email, role } = await req.json()
 
@@ -68,8 +85,7 @@ serve(async (req) => {
       new_value: { role }
     })
 
-    // 5. Send Email (Simulated for now)
-    console.log(`[invite-user] Invitation link: ${Deno.env.get('APP_URL')}/accept-invite?token=${invite.token}`)
+    console.log(`[invite-user] Invitation created for ${email}`);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -77,6 +93,7 @@ serve(async (req) => {
     })
 
   } catch (error: any) {
+    console.error(`[invite-user] Fatal Error:`, error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
