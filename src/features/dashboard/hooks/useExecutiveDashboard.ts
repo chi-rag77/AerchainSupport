@@ -31,7 +31,7 @@ export function useExecutiveDashboard() {
   const queryClient = useQueryClient();
   const { dateRange, filters } = useDashboard();
 
-  // 1. Fetch Aggregated Metrics
+  // 1. Fetch Aggregated Metrics - Cached for 5 mins
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
@@ -42,7 +42,7 @@ export function useExecutiveDashboard() {
     staleTime: 5 * 60 * 1000, 
   });
 
-  // 2. Fetch AI Insights
+  // 2. Fetch AI Insights - Manual trigger or long cache
   const { data: aiRaw, isLoading: isLoadingAI } = useQuery({
     queryKey: ['dashboardInsights'],
     queryFn: async () => {
@@ -50,8 +50,8 @@ export function useExecutiveDashboard() {
       if (error) throw error;
       return data;
     },
-    staleTime: 30 * 60 * 1000,
-    enabled: false,
+    staleTime: 30 * 60 * 1000, // Cache for 30 mins
+    enabled: false, // Don't run automatically on every mount
     retry: false,
   });
 
@@ -70,7 +70,7 @@ export function useExecutiveDashboard() {
     }
   });
 
-  // 3. Fetch tickets for calculations
+  // 3. Fetch tickets for calculations - Cached for 2 mins
   const { data: recentTickets = [], isLoading: isLoadingTickets, isFetching } = useQuery<Ticket[]>({
     queryKey: ['recentTicketsForDashboard'],
     queryFn: async () => {
@@ -95,6 +95,7 @@ export function useExecutiveDashboard() {
     staleTime: 10 * 60 * 1000,
   });
 
+  // Calculate Live Ticker Metrics
   const tickerMetrics = useMemo(() => {
     const createdToday = recentTickets.filter(t => isToday(parseISO(t.created_at))).length;
     const createdYesterday = recentTickets.filter(t => isYesterday(parseISO(t.created_at))).length;
@@ -117,6 +118,7 @@ export function useExecutiveDashboard() {
 
   const filteredTickets = useMemo(() => {
     let current = recentTickets;
+    
     if (dateRange.from && dateRange.to) {
       current = current.filter(ticket => {
         try {
@@ -125,27 +127,47 @@ export function useExecutiveDashboard() {
         } catch (e) { return false; }
       });
     }
+
     if (filters.company) {
       current = current.filter(t => t.cf_company === filters.company);
     }
+
     return current;
   }, [recentTickets, dateRange, filters.company]);
 
+  // Calculate Geography Data
   const geographyData = useMemo((): GeographySummary => {
     const countryMap = new Map<string, { total: number; resolved: number; open: number }>();
+    
     filteredTickets.forEach(t => {
       const country = t.cf_country || 'Unidentified Region';
-      if (!countryMap.has(country)) countryMap.set(country, { total: 0, resolved: 0, open: 0 });
+      if (!countryMap.has(country)) {
+        countryMap.set(country, { total: 0, resolved: 0, open: 0 });
+      }
       const stats = countryMap.get(country)!;
       stats.total++;
-      if (['resolved', 'closed'].includes(t.status.toLowerCase())) stats.resolved++;
-      else stats.open++;
+      if (['resolved', 'closed'].includes(t.status.toLowerCase())) {
+        stats.resolved++;
+      } else {
+        stats.open++;
+      }
     });
+
     const distribution: GeographicData[] = Array.from(countryMap.entries()).map(([name, stats]) => {
       const registryEntry = COUNTRY_REGISTRY[name];
-      return { countryName: name, countryCode: registryEntry ? registryEntry.id : 'UNKNOWN', ...stats };
+      return {
+        countryName: name,
+        countryCode: registryEntry ? registryEntry.id : 'UNKNOWN', 
+        ...stats
+      };
     }).sort((a, b) => b.total - a.total);
-    return { activeCountries: countryMap.size, totalGlobalTickets: filteredTickets.length, topRegion: distribution[0]?.countryName || 'N/A', distribution };
+
+    return {
+      activeCountries: countryMap.size,
+      totalGlobalTickets: filteredTickets.length,
+      topRegion: distribution[0]?.countryName || 'N/A',
+      distribution
+    };
   }, [filteredTickets]);
 
   const dashboardData: DashboardData = useMemo(() => {
@@ -162,67 +184,36 @@ export function useExecutiveDashboard() {
 
     const kpis: KPIMetric[] = [
       { 
-        id: 'tickets',
-        title: "Tickets Overview", 
-        value: metrics?.totalTickets || 2575, 
-        trend: 87, 
-        microInsight: "Total Tickets", 
+        title: "Total Tickets", 
+        value: metrics?.totalTickets || 0, 
+        trend: 12, 
+        microInsight: "vs last week", 
         archetype: 'volume',
-        sparklineData: generateSparkline(),
-        insights: {
-          insight: "Payment failures caused 45% of new tickets this week.",
-          impact: [{ name: "Acme Corp", risk: "high" }, { name: "Beta Inc", risk: "medium" }],
-          confidence: 94,
-          actions: [{ label: "Investigate payment issue", type: "primary", action_id: "inv_pay" }]
-        }
+        sparklineData: generateSparkline()
       },
       { 
-        id: 'backlog',
         title: "Open Backlog", 
-        value: metrics?.openTickets || 261, 
-        trend: 36, 
-        microInsight: "Active Backlog", 
+        value: metrics?.openTickets || 0, 
+        trend: -5, 
+        microInsight: "vs last week", 
         archetype: 'backlog',
-        sparklineData: generateSparkline(),
-        status_label: "At Risk",
-        insights: {
-          insight: "SLA breach likely within 48 hours for 12 critical tickets.",
-          prediction: "Backlog may increase by 30% this week if current velocity continues.",
-          confidence: 88,
-          actions: [{ label: "Assign Owner", type: "primary", action_id: "assign" }, { label: "View Backlog", type: "secondary", action_id: "view" }]
-        }
+        sparklineData: generateSparkline()
       },
       { 
-        id: 'performance',
-        title: "Resolution Performance", 
-        value: metrics?.resolvedTickets || 2216, 
-        trend: 89, 
-        microInsight: "Resolved", 
+        title: "Resolved", 
+        value: metrics?.resolvedTickets || 0, 
+        trend: 15, 
+        microInsight: "vs last week", 
         archetype: 'resolved',
-        sparklineData: generateSparkline(),
-        insights: {
-          insight: "Average resolution time is currently 4.2 hrs.",
-          target: 2500,
-          current_progress: 89,
-          confidence: 96,
-          actions: [{ label: "Speed Up Resolution", type: "primary", action_id: "speed" }, { label: "View Bugs", type: "secondary", action_id: "bugs" }]
-        }
+        sparklineData: generateSparkline()
       },
       { 
-        id: 'bugs',
-        title: "Bug Intelligence", 
-        value: metrics?.bugTickets || 178, 
+        title: "Bugs", 
+        value: metrics?.bugTickets || 0, 
         trend: 8, 
-        microInsight: "Bugs Detected", 
+        microInsight: "vs last week", 
         archetype: 'attention',
-        sparklineData: generateSparkline(),
-        status_label: "Anomaly",
-        insights: {
-          insight: "Unexpected spike in bug count (+8%) driven by API failures.",
-          impact: [{ name: "Global API", risk: "high" }],
-          confidence: 92,
-          actions: [{ label: "Investigate API Failures", type: "primary", action_id: "inv_api" }]
-        }
+        sparklineData: generateSparkline()
       }
     ];
 
