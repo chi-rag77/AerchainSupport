@@ -68,7 +68,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const CustomLegend = ({ payload }: any) => {
   return (
-    <div className="flex justify-center gap-8 mt-6">
+    <div className="flex justify-center gap-8 mt-4">
       {payload.map((entry: any, index: number) => (
         <div key={`item-${index}`} className="flex items-center gap-2 group cursor-default">
           <div 
@@ -130,7 +130,7 @@ const VolumeSlaTrendChart = ({ tickets, startDate, endDate }: VolumeSlaTrendChar
   return (
     <div className="w-full h-full flex flex-col">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={processedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+        <AreaChart data={processedData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.2}/>
@@ -157,7 +157,6 @@ const VolumeSlaTrendChart = ({ tickets, startDate, endDate }: VolumeSlaTrendChar
             fontSize={10}
             fontWeight="bold"
             tick={{ fill: 'hsl(var(--muted-foreground))' }}
-            dy={10}
           />
           
           <YAxis
@@ -168,6 +167,7 @@ const VolumeSlaTrendChart = ({ tickets, startDate, endDate }: VolumeSlaTrendChar
             fontWeight="bold"
             tick={{ fill: 'hsl(var(--muted-foreground))' }}
             domain={[0, 'auto']}
+            width={40}
           />
           
           <YAxis
@@ -180,6 +180,7 @@ const VolumeSlaTrendChart = ({ tickets, startDate, endDate }: VolumeSlaTrendChar
             tick={{ fill: 'hsl(var(--muted-foreground))' }}
             domain={[0, 100]}
             tickFormatter={(val) => `${val}%`}
+            width={40}
           />
           
           <Tooltip 

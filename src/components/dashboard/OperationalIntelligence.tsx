@@ -24,13 +24,13 @@ const OperationalIntelligence = ({ summary, tickets, startDate, endDate, onViewD
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
       {/* Left: Chart Section */}
       <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden flex flex-col">
-        <CardHeader className="p-8 pb-0">
+        <CardHeader className="p-6 pb-0">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-blue-500" />
             Volume & SLA Performance
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-8 h-[400px]">
+        <CardContent className="p-6 h-[400px]">
           {tickets && tickets.length > 0 ? (
             <VolumeSlaTrendChart tickets={tickets} startDate={startDate} endDate={endDate} />
           ) : (
@@ -55,7 +55,6 @@ const OperationalIntelligence = ({ summary, tickets, startDate, endDate, onViewD
           <CardTitle className="text-2xl font-bold tracking-tight">AI Executive Summary</CardTitle>
         </CardHeader>
         
-        {/* Scrollable Content Area with fixed height matching the chart */}
         <ScrollArea className="h-[400px]">
           <CardContent className="p-8 pt-0 space-y-6">
             {summary ? (
@@ -64,7 +63,6 @@ const OperationalIntelligence = ({ summary, tickets, startDate, endDate, onViewD
                   <p className="text-sm font-medium leading-relaxed">{summary.summary}</p>
                 </div>
 
-                {/* Key Risk Drivers */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-200">Key Risk Drivers</h4>
                   <div className="space-y-2">
@@ -84,7 +82,6 @@ const OperationalIntelligence = ({ summary, tickets, startDate, endDate, onViewD
                   </div>
                 </div>
 
-                {/* Suggested Action */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-200">Suggested Action</h4>
                   <div className="flex items-start gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
