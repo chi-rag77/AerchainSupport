@@ -8,34 +8,26 @@ import { useExecutiveDashboard } from "@/features/dashboard/hooks/useExecutiveDa
 import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
 import DashboardSubbar from "@/components/dashboard/DashboardSubbar";
 import KPISection from "@/components/dashboard/KPISection";
-import AIInsightStrip from "@/components/dashboard/AIInsightStrip";
+import AIInsightStack from "@/components/dashboard/AIInsightStack";
+import OperationsOverview from "@/components/dashboard/OperationsOverview";
+import CustomerRiskIntelligence from "@/components/dashboard/CustomerRiskIntelligence";
+import ProductIntelligence from "@/components/dashboard/ProductIntelligence";
 import LiveActivityCenter from "@/components/dashboard/LiveActivityCenter";
-import ViewModeSelector from "@/components/dashboard/ViewModeSelector";
-import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
+import PredictiveForecast from "@/components/dashboard/PredictiveForecast";
 import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
-import TicketDetailModal from "@/components/TicketDetailModal";
-import TicketTypeByCustomerChart from "@/components/TicketTypeByCustomerChart";
-import CustomerTypeSummary from "@/components/dashboard/CustomerTypeSummary";
-import DeterministicSummary from "@/components/dashboard/DeterministicSummary";
 import DashboardAssistant from "@/components/assistant/DashboardAssistant";
-import { Loader2, Users2, BarChart3 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const DashboardContent = () => {
   const { session } = useSupabase();
   const queryClient = useQueryClient();
-  const { viewMode, dateRange, filters, setFilters } = useDashboard();
-  const { data, tickets, uniqueCompanies, isLoading, isFetching, isGeneratingAI, generateAI, hasAI } = useExecutiveDashboard();
+  const { dateRange, filters, setFilters } = useDashboard();
+  const { data, tickets, uniqueCompanies, isLoading, isFetching, generateAI } = useExecutiveDashboard();
   
-  const [showInsight, setShowInsight] = useState(true);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
   const user = session?.user;
   const selectedCustomer = filters.company || 'All';
 
@@ -66,22 +58,11 @@ const DashboardContent = () => {
     }
   }, [filters, setFilters]);
 
-  const filteredTicketsForSummary = useMemo(() => {
-    if (selectedCustomer === 'All') return tickets;
-    return tickets.filter(t => t.cf_company === selectedCustomer);
-  }, [tickets, selectedCustomer]);
-
-  const activeInsight = useMemo(() => {
-    return (showInsight && data.insights && data.insights.length > 0) 
-      ? data.insights[0] 
-      : null;
-  }, [showInsight, data.insights]);
-
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
         <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
-        <p className="text-lg font-medium text-muted-foreground">Initializing Executive Intelligence...</p>
+        <p className="text-lg font-black uppercase tracking-widest text-muted-foreground">Initializing Executive Intelligence...</p>
       </div>
     );
   }
@@ -97,86 +78,45 @@ const DashboardContent = () => {
         onCustomerChange={handleCustomerFilterChange}
       />
 
-      <div className="flex-1 flex flex-col p-8 space-y-10 overflow-y-auto">
-        <ExecutiveHero 
-          tickerMetrics={data.tickerMetrics}
-          lastSync={data.lastSync}
-        />
-
-        <KPISection metrics={data.kpis} isLoading={isLoading} />
-
-        <div className="flex justify-center">
-          <ViewModeSelector />
-        </div>
-
-        <DeterministicSummary 
-          tickets={tickets}
-          dateRange={dateRange}
-          onTriggerAI={generateAI}
-          isGeneratingAI={isGeneratingAI}
-          showAIButton={!hasAI}
-        />
-
-        {hasAI && activeInsight && (
-          <AIInsightStrip 
-            insight={activeInsight}
-            onDismiss={() => setShowInsight(false)}
+      <div className="flex-1 flex flex-col p-8 space-y-16 overflow-y-auto pb-32">
+        
+        {/* TIER 1: EXECUTIVE BRIEFING */}
+        <section className="space-y-10">
+          <ExecutiveHero 
+            tickerMetrics={data.tickerMetrics}
+            lastSync={data.lastSync}
           />
-        )}
-
-        <DashboardFilterBar uniqueCompanies={uniqueCompanies} />
-
-        <Separator className="bg-gray-200 dark:bg-gray-800" />
-
-        <section className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-              <Users2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <h2 className="text-2xl font-black tracking-tight text-foreground">Customer Intelligence</h2>
-          </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <Card className="lg:col-span-2 rounded-[28px] border-none bg-white dark:bg-gray-800 shadow-glass overflow-hidden">
-              <CardHeader className="p-8 pb-0">
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-500" />
-                  Ticket Type Distribution by Customer
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8 h-[400px]">
-                <TicketTypeByCustomerChart 
-                  tickets={tickets} 
-                  selectedCustomer={selectedCustomer}
-                  topNCustomers={10}
-                />
-              </CardContent>
-            </Card>
+          <AIInsightStack insights={data.insights} />
 
-            <CustomerTypeSummary 
-              customerName={selectedCustomer} 
-              tickets={filteredTicketsForSummary} 
-            />
-          </div>
+          <KPISection metrics={data.kpis} isLoading={isLoading} />
         </section>
 
-        <AnimatePresence mode="wait">
-          <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
-            {(viewMode === 'overview' || viewMode === 'performance') && (
-              <LiveActivityCenter 
-                tickets={tickets} 
-                startDate={dateRange.from!} 
-                endDate={dateRange.to!} 
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
+        <Separator className="opacity-50" />
+
+        {/* TIER 2: OPERATIONAL INTELLIGENCE */}
+        <section className="space-y-20">
+          <OperationsOverview />
+          
+          <CustomerRiskIntelligence />
+          
+          <ProductIntelligence />
+        </section>
+
+        <Separator className="opacity-50" />
+
+        {/* TIER 3: DEEP DIVES & FORECAST */}
+        <section className="space-y-20">
+          <LiveActivityCenter 
+            tickets={tickets} 
+            startDate={dateRange.from!} 
+            endDate={dateRange.to!} 
+          />
+
+          <PredictiveForecast data={data.forecast} />
+        </section>
 
         <SystemHealthPanel data={data.systemHealth} />
-
-        {selectedTicket && (
-          <TicketDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ticket={selectedTicket} />
-        )}
 
         {/* AI Assistant */}
         <DashboardAssistant />

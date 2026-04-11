@@ -1,11 +1,13 @@
 import { Ticket, Insight } from "@/types";
 
+export type KPIArchetype = 'volume' | 'backlog' | 'resolved' | 'attention' | 'risk' | 'health' | 'recurrence' | 'quality';
+
 export interface KPIMetric {
   title: string;
   value: number | string;
   trend: number;
   microInsight: string;
-  archetype: 'volume' | 'backlog' | 'resolved' | 'attention';
+  archetype: KPIArchetype;
   sparklineData: { value: number }[];
 }
 
