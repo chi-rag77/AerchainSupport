@@ -1,10 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { Users, Layers, ArrowRight, ShieldAlert, Clock, UserPlus, Zap } from 'lucide-react';
+import { Users, BarChart3, AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { AgentCapacity } from '@/features/dashboard/types';
@@ -25,107 +24,132 @@ const OperationsOverview = ({ capacity = [], queueMetrics }: OperationsOverviewP
     ? Math.round(capacity.reduce((acc, curr) => acc + curr.capacityPercent, 0) / capacity.length)
     : 0;
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Left: Team Capacity */}
-      <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden">
-        <CardHeader className="p-8 pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-500/20">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-              <CardTitle className="text-xl font-black tracking-tight">Team Load & Utilization</CardTitle>
-            </div>
-            <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-none font-bold text-[10px]">{aggregateLoad}% Aggregate</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-8 pt-4 space-y-8">
-          <div className="space-y-5">
-            {capacity.slice(0, 5).map((agent) => (
-              <div key={agent.name} className="space-y-2">
-                <div className="flex justify-between items-end">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-foreground">{agent.name}</span>
-                    <span className={cn(
-                      "text-[9px] font-black uppercase tracking-widest",
-                      agent.status === 'Critical' ? "text-rose-600" : agent.status === 'Overloaded' ? "text-amber-600" : "text-green-600"
-                    )}>• {agent.status}</span>
-                  </div>
-                  <span className="text-xs font-black text-indigo-600">{agent.capacityPercent}%</span>
-                </div>
-                <Progress value={agent.capacityPercent} className="h-1.5" indicatorClassName={agent.capacityPercent > 90 ? "bg-rose-500" : "bg-indigo-600"} />
-              </div>
-            ))}
-          </div>
-          <div className="p-5 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-border/50 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Performance Insight</p>
-              <p className="text-sm font-bold">Avg Resolution Time: {capacity[0]?.avgResolutionTime || 'N/A'}</p>
-            </div>
-            <Button variant="ghost" size="sm" className="rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 text-indigo-600">
-              Reassign <ArrowRight className="h-3 w-3" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+  const getLoadColor = (percent: number) => {
+    if (percent >= 85) return "bg-red-500";
+    if (percent >= 60) return "bg-orange-500";
+    return "bg-emerald-500";
+  };
 
-      {/* Right: Queue Health */}
-      <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden">
-        <CardHeader className="p-8 pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-500/20">
-                <Layers className="h-5 w-5 text-white" />
-              </div>
-              <CardTitle className="text-xl font-black tracking-tight">Queue Breakdown</CardTitle>
+  const getLoadStatusColor = (percent: number) => {
+    if (percent >= 85) return "text-red-500";
+    if (percent >= 60) return "text-orange-500";
+    return "text-emerald-500";
+  };
+
+  const totalQueue = queueMetrics.urgent + queueMetrics.high + queueMetrics.medium + queueMetrics.low;
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-[13px] font-black uppercase tracking-widest text-slate-500 px-1">
+        Support Operations Health
+      </h3>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Team Load & Utilization */}
+        <Card className="border-none shadow-sm bg-white dark:bg-gray-900 rounded-[16px] overflow-hidden">
+          <CardContent className="p-8 space-y-8">
+            <div className="flex items-center gap-2 text-indigo-600">
+              <Users className="h-5 w-5" />
+              <h4 className="text-base font-bold text-slate-900 dark:text-white">Team Load & Utilization</h4>
             </div>
-            <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-none font-bold text-[10px]">Live Metrics</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-8 pt-4 space-y-8">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Priority Distribution</h4>
-              <div className="space-y-3">
+
+            <div className="space-y-6">
+              {capacity.slice(0, 4).map((agent) => (
+                <div key={agent.name} className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{agent.name}</span>
+                    <span className={cn("text-xs font-bold", getLoadStatusColor(agent.capacityPercent))}>
+                      {agent.capacityPercent}% · {agent.status}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={cn("h-full rounded-full transition-all duration-1000", getLoadColor(agent.capacityPercent))} 
+                      style={{ width: `${agent.capacityPercent}%` }} 
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-slate-400">Aggregate</span>
+                <span className="text-sm font-bold text-orange-500">{aggregateLoad}% (Optimal)</span>
+              </div>
+              <p className="text-xs font-medium text-slate-400">
+                Bottleneck: Complex tickets ({capacity[0]?.avgResolutionTime || '2.3h'} avg vs 1.8h baseline)
+              </p>
+              <div className="flex gap-3 pt-2">
+                <Button variant="secondary" className="h-9 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs">
+                  Reassign
+                </Button>
+                <Button variant="secondary" className="h-9 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs">
+                  Add Agent
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Right: Queue Breakdown */}
+        <Card className="border-none shadow-sm bg-white dark:bg-gray-900 rounded-[16px] overflow-hidden">
+          <CardContent className="p-8 space-y-8">
+            <div className="flex items-center gap-2 text-indigo-600">
+              <BarChart3 className="h-5 w-5" />
+              <h4 className="text-base font-bold text-slate-900 dark:text-white">Queue Breakdown</h4>
+            </div>
+
+            <div className="space-y-6">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Priority Distribution</p>
+              <div className="space-y-4">
                 {[
-                  { label: 'Urgent', count: queueMetrics.urgent, color: 'bg-rose-500' },
+                  { label: 'Urgent', count: queueMetrics.urgent, color: 'bg-red-500' },
                   { label: 'High', count: queueMetrics.high, color: 'bg-orange-500' },
-                  { label: 'Medium', count: queueMetrics.medium, color: 'bg-amber-500' },
-                  { label: 'Low', count: queueMetrics.low, color: 'bg-gray-400' },
-                ].map(p => (
-                  <div key={p.label} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={cn("h-1.5 w-1.5 rounded-full", p.color)} />
-                      <span className="text-xs font-bold text-muted-foreground">{p.label}</span>
+                  { label: 'Medium', count: queueMetrics.medium, color: 'bg-yellow-500' },
+                  { label: 'Low', count: queueMetrics.low, color: 'bg-slate-300' },
+                ].map((p) => (
+                  <div key={p.label} className="flex items-center gap-4">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white w-16">{p.label}</span>
+                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full relative">
+                      <div 
+                        className={cn("absolute left-0 top-1/2 -translate-y-1/2 h-3 w-3 rounded-full shadow-sm", p.color)}
+                        style={{ left: `${Math.min(95, (p.count / (totalQueue || 1)) * 100)}%` }}
+                      />
                     </div>
-                    <span className="text-xs font-black">{p.count}</span>
+                    <span className="text-sm font-bold text-slate-400 w-8 text-right">{p.count}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Aging Analysis</h4>
+
+            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aging Analysis</p>
               <div className="space-y-3">
-                {queueMetrics.aging.map(a => (
-                  <div key={a.label} className="flex items-center justify-between">
-                    <span className={cn("text-xs font-bold", a.alert ? "text-rose-600" : "text-muted-foreground")}>{a.label}</span>
-                    <span className={cn("text-xs font-black", a.alert && "text-rose-600")}>{a.count}</span>
+                {queueMetrics.aging.map((a) => (
+                  <div key={a.label} className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-slate-400">{a.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-sm font-bold", a.alert ? "text-red-500" : "text-slate-900 dark:text-white")}>
+                        {a.count} tickets
+                      </span>
+                      {a.alert && <AlertTriangle className="h-3.5 w-3.5 text-red-500" />}
+                    </div>
                   </div>
                 ))}
               </div>
+              <div className="flex gap-3 pt-2">
+                <Button variant="secondary" className="h-9 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs">
+                  View Queue
+                </Button>
+                <Button variant="secondary" className="h-9 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs">
+                  Prioritize
+                </Button>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest h-11 gap-2">
-              <Zap className="h-4 w-4" /> Prioritize
-            </Button>
-            <Button variant="outline" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest h-11 gap-2">
-              <Clock className="h-4 w-4" /> SLA View
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
