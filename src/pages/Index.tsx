@@ -43,6 +43,8 @@ const DashboardContent = () => {
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
       queryClient.invalidateQueries({ queryKey: ['recentTicketsForDashboard'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['operationalIntelligence'] });
+      queryClient.invalidateQueries({ queryKey: ['activeRisks'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
@@ -66,6 +68,19 @@ const DashboardContent = () => {
       </div>
     );
   }
+
+  // Prepare queue metrics for OperationsOverview
+  const queueMetrics = {
+    urgent: tickets.filter(t => t.priority === 'Urgent').length,
+    high: tickets.filter(t => t.priority === 'High').length,
+    medium: tickets.filter(t => t.priority === 'Medium').length,
+    low: tickets.filter(t => t.priority === 'Low').length,
+    aging: [
+      { label: '> 48h', count: tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()) && (new Date().getTime() - new Date(t.created_at).getTime()) > 172800000).length, alert: true },
+      { label: '> 24h', count: tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()) && (new Date().getTime() - new Date(t.created_at).getTime()) > 86400000).length, alert: false },
+      { label: '< 24h', count: tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()) && (new Date().getTime() - new Date(t.created_at).getTime()) <= 86400000).length, alert: false },
+    ]
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F6F8FB] dark:bg-gray-950">
@@ -96,9 +111,12 @@ const DashboardContent = () => {
 
         {/* TIER 2: OPERATIONAL INTELLIGENCE */}
         <section className="space-y-20">
-          <OperationsOverview />
+          <OperationsOverview 
+            capacity={data.agentCapacity} 
+            queueMetrics={queueMetrics}
+          />
           
-          <CustomerRiskIntelligence />
+          <CustomerRiskIntelligence risks={data.customerRisks} />
           
           <ProductIntelligence />
         </section>

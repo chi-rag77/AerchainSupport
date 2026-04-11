@@ -30,7 +30,8 @@ export function useExecutiveDashboard() {
   const queryClient = useQueryClient();
   const { dateRange, filters } = useDashboard();
 
-  const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
+  // 1. Basic Metrics
+  const { data: metrics } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-dashboard-metrics', { method: 'POST' });
@@ -40,6 +41,29 @@ export function useExecutiveDashboard() {
     staleTime: 5 * 60 * 1000, 
   });
 
+  // 2. Operational Intelligence (Bottlenecks, Forecast, Capacity)
+  const { data: opsData, isLoading: isLoadingOps } = useQuery({
+    queryKey: ['operationalIntelligence'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-operational-intelligence', { method: 'POST' });
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // 3. Active Risks (Escalations, SLA Risks)
+  const { data: riskData, isLoading: isLoadingRisks } = useQuery({
+    queryKey: ['activeRisks'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-active-risks', { method: 'POST' });
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // 4. AI Insights
   const { data: aiRaw, isLoading: isLoadingAI } = useQuery({
     queryKey: ['dashboardInsights'],
     queryFn: async () => {
@@ -48,22 +72,6 @@ export function useExecutiveDashboard() {
       return data;
     },
     staleTime: 30 * 60 * 1000,
-    enabled: true,
-  });
-
-  const generateAIMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { method: 'POST', params: { force: 'true' } });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['dashboardInsights'], data);
-      toast.success("AI Insights refreshed!");
-    },
-    onError: (err: any) => {
-      toast.error(`AI Analysis failed: ${err.message}`);
-    }
   });
 
   const { data: recentTickets = [], isLoading: isLoadingTickets, isFetching } = useQuery<Ticket[]>({
@@ -148,10 +156,10 @@ export function useExecutiveDashboard() {
 
     const kpis: KPIMetric[] = [
       { title: "Ticket Volume", value: metrics?.totalTickets || 0, trend: 12, microInsight: "23% above avg", archetype: 'volume', sparklineData: generateSparkline() },
-      { title: "Resolution Rate", value: "89%", trend: 5, microInsight: "123m avg time", archetype: 'resolved', sparklineData: generateSparkline() },
+      { title: "Resolution Rate", value: `${Math.round((metrics?.resolvedTickets / metrics?.totalTickets) * 100) || 0}%`, trend: 5, microInsight: "123m avg time", archetype: 'resolved', sparklineData: generateSparkline() },
       { title: "Backlog Health", value: metrics?.openTickets || 0, trend: -8, microInsight: "45 tickets aging", archetype: 'backlog', sparklineData: generateSparkline() },
-      { title: "SLA Adherence", value: "94%", trend: -2, microInsight: "95% target", archetype: 'attention', sparklineData: generateSparkline() },
-      { title: "Escalation Velocity", value: 7, trend: 30, microInsight: "↑ vs baseline", archetype: 'risk', sparklineData: generateSparkline() },
+      { title: "SLA Adherence", value: `${metrics?.slaCompliance || 0}%`, trend: -2, microInsight: "95% target", archetype: 'attention', sparklineData: generateSparkline() },
+      { title: "Escalation Velocity", value: riskData?.metrics?.escalationRisk?.count || 0, trend: 30, microInsight: "↑ vs baseline", archetype: 'risk', sparklineData: generateSparkline() },
       { title: "Customer Health", value: "82%", trend: -5, microInsight: "82% in green", archetype: 'health', sparklineData: generateSparkline() },
       { title: "Issue Recurrence", value: "18%", trend: 12, microInsight: "3 major clusters", archetype: 'recurrence', sparklineData: generateSparkline() },
       { title: "First Contact Res", value: "67%", trend: 2, microInsight: "70% target", archetype: 'quality', sparklineData: generateSparkline() },
@@ -162,33 +170,27 @@ export function useExecutiveDashboard() {
       kpis,
       geography: geographyData,
       risks: aiRaw?.risks || [],
-      bottlenecks: aiRaw?.bottlenecks || [],
-      forecast: aiRaw?.forecast || { forecastVolume: 950, forecastSLA: 82, breachProbability: 0.38, aiNarrative: "Volume spike likely in Invoice module." },
-      customerRisks: [],
-      agentCapacity: [],
+      bottlenecks: opsData?.bottlenecks || [],
+      forecast: opsData?.forecast || { forecastVolume: 0, forecastSLA: 0, breachProbability: 0, aiNarrative: "Calculating..." },
+      customerRisks: opsData?.customerRisks || [],
+      agentCapacity: opsData?.agentCapacity || [],
       clusters: [],
       slaTimeline: [],
-      actions: aiRaw?.actions || [],
-      systemHealth: { aiConfidence: aiRaw?.confidence || 94, dataFreshness: "2m ago", syncIntegrity: "Healthy" },
+      actions: opsData?.actions || [],
+      systemHealth: opsData?.systemHealth || { aiConfidence: 0, dataFreshness: "N/A", syncIntegrity: "Healthy" },
       lastSync: aiRaw?.updated_at || new Date().toISOString(),
-      insights: aiRaw?.insights || [
-        { id: '1', message: 'Acme Corp trending toward churn: 5 escalations in 3 days.', severity: 'critical', type: 'risk' },
-        { id: '2', message: 'API Integration tickets spiking: 12 tickets this week.', severity: 'warning', type: 'trend' },
-        { id: '3', message: 'Support team capacity at optimal 74%.', severity: 'info', type: 'info' }
-      ],
-      slaRiskScore: (metrics?.urgentTickets || 0) > 5 ? 85 : 20,
+      insights: aiRaw?.insights || [],
+      slaRiskScore: riskData?.metrics?.slaRisk?.count > 5 ? 85 : 20,
       tickerMetrics
     };
-  }, [metrics, aiRaw, tickerMetrics, geographyData]);
+  }, [metrics, aiRaw, tickerMetrics, geographyData, opsData, riskData]);
 
   return {
     data: dashboardData,
     tickets: filteredTickets,
     uniqueCompanies,
-    isLoading: isLoadingMetrics || isLoadingTickets,
+    isLoading: isLoadingMetrics || isLoadingTickets || isLoadingOps || isLoadingRisks,
     isFetching,
-    isGeneratingAI: generateAIMutation.isPending,
-    generateAI: generateAIMutation.mutate,
     hasAI: !!aiRaw,
   };
 }

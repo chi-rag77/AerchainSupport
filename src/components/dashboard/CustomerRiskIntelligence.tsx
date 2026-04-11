@@ -10,16 +10,21 @@ import {
   Tooltip, ResponsiveContainer, Cell 
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { CustomerRisk } from '@/features/dashboard/types';
 
-const RISK_DATA = [
-  { name: 'Acme Corp', escalations: 5, daysSinceContact: 12, risk: 87, arv: 180000 },
-  { name: 'TechFlow', escalations: 3, daysSinceContact: 8, risk: 72, arv: 120000 },
-  { name: 'Global Inc', escalations: 2, daysSinceContact: 4, risk: 61, arv: 250000 },
-  { name: 'DataHub', escalations: 1, daysSinceContact: 2, risk: 48, arv: 95000 },
-  { name: 'CloudScale', escalations: 4, daysSinceContact: 15, risk: 82, arv: 150000 },
-];
+interface CustomerRiskIntelligenceProps {
+  risks: CustomerRisk[];
+}
 
-const CustomerRiskIntelligence = () => {
+const CustomerRiskIntelligence = ({ risks = [] }: CustomerRiskIntelligenceProps) => {
+  const scatterData = risks.map(r => ({
+    name: r.company,
+    escalations: r.urgentCount,
+    openTickets: r.openCount,
+    risk: r.riskScore,
+    sla: r.slaMetPercent
+  }));
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between px-2">
@@ -32,7 +37,9 @@ const CustomerRiskIntelligence = () => {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-rose-600">8 High Risk Accounts</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-rose-600">
+              {risks.filter(r => r.riskLevel === 'HIGH').length} High Risk Accounts
+            </span>
           </div>
         </div>
       </div>
@@ -43,18 +50,18 @@ const CustomerRiskIntelligence = () => {
           <CardHeader className="p-8 pb-0">
             <CardTitle className="text-lg font-bold flex items-center gap-2">
               <Target className="h-5 w-5 text-indigo-500" />
-              Risk Radar (Escalations vs. Silence)
+              Risk Radar (Urgent vs. Open)
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8 h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                <XAxis type="number" dataKey="escalations" name="Escalations" unit="" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" label={{ value: 'Total Escalations', position: 'bottom', offset: 0, fontSize: 10, fontWeight: 'black' }} />
-                <YAxis type="number" dataKey="daysSinceContact" name="Days Since Contact" unit="d" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" label={{ value: 'Days Since Contact', angle: -90, position: 'left', fontSize: 10, fontWeight: 'black' }} />
-                <ZAxis type="number" dataKey="arv" range={[100, 1000]} name="ARV" />
+                <XAxis type="number" dataKey="openTickets" name="Open Tickets" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" label={{ value: 'Open Tickets', position: 'bottom', offset: 0, fontSize: 10, fontWeight: 'black' }} />
+                <YAxis type="number" dataKey="escalations" name="Urgent Tickets" axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" label={{ value: 'Urgent Tickets', angle: -90, position: 'left', fontSize: 10, fontWeight: 'black' }} />
+                <ZAxis type="number" dataKey="risk" range={[100, 1000]} name="Risk Score" />
                 <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }} />
-                <Scatter name="Customers" data={RISK_DATA}>
-                  {RISK_DATA.map((entry, index) => (
+                <Scatter name="Customers" data={scatterData}>
+                  {scatterData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.risk > 80 ? '#ef4444' : entry.risk > 60 ? '#f59e0b' : '#10b981'} />
                   ))}
                 </Scatter>
@@ -70,19 +77,19 @@ const CustomerRiskIntelligence = () => {
           </CardHeader>
           <CardContent className="p-8 pt-0 flex-grow overflow-y-auto">
             <div className="space-y-4">
-              {RISK_DATA.sort((a, b) => b.risk - a.risk).map((item) => (
-                <div key={item.name} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-border/50 group hover:border-rose-200 transition-all">
+              {risks.sort((a, b) => b.riskScore - a.riskScore).slice(0, 5).map((item) => (
+                <div key={item.company} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-border/50 group hover:border-rose-200 transition-all">
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "h-10 w-10 rounded-full flex items-center justify-center text-sm font-black shadow-sm",
-                      item.risk > 80 ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
+                      item.riskLevel === 'HIGH' ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
                     )}>
-                      {item.name[0]}
+                      {item.company[0]}
                     </div>
                     <div className="space-y-0.5">
-                      <h5 className="font-bold text-sm">{item.name}</h5>
+                      <h5 className="font-bold text-sm">{item.company}</h5>
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        Score: {item.risk}/100 • {item.escalations} Esc.
+                        Score: {Math.round(item.riskScore)}/100 • {item.urgentCount} Urgent
                       </p>
                     </div>
                   </div>
@@ -97,7 +104,7 @@ const CustomerRiskIntelligence = () => {
             <div className="flex items-start gap-3">
               <Sparkles className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
               <p className="text-[11px] font-bold text-rose-900 dark:text-rose-200 leading-relaxed">
-                Risk is increasing 15% faster than resolution rate. Recommend CSM outreach for top 3 accounts within 24h.
+                Risk is concentrated in {risks[0]?.company || 'top accounts'}. Recommend CSM outreach for high-risk accounts within 24h.
               </p>
             </div>
           </div>
