@@ -173,10 +173,6 @@ export function useExecutiveDashboard() {
       { title: "Resolution Rate", value: `${Math.round((metrics?.resolvedTickets / metrics?.totalTickets) * 100) || 0}%`, trend: 5, microInsight: "123m avg time", archetype: 'resolved', sparklineData: generateSparkline() },
       { title: "Backlog Health", value: metrics?.openTickets || 0, trend: -8, microInsight: "45 tickets aging", archetype: 'backlog', sparklineData: generateSparkline() },
       { title: "SLA Adherence", value: `${metrics?.slaCompliance || 0}%`, trend: -2, microInsight: "95% target", archetype: 'attention', sparklineData: generateSparkline() },
-      { title: "Escalation Velocity", value: riskData?.metrics?.escalationRisk?.count || 0, trend: 30, microInsight: "↑ vs baseline", archetype: 'risk', sparklineData: generateSparkline() },
-      { title: "Customer Health", value: "82%", trend: -5, microInsight: "82% in green", archetype: 'health', sparklineData: generateSparkline() },
-      { title: "Issue Recurrence", value: `${radarData?.clusters?.length || 0}`, trend: 12, microInsight: "Active clusters", archetype: 'recurrence', sparklineData: generateSparkline() },
-      { title: "First Contact Res", value: "67%", trend: 2, microInsight: "70% target", archetype: 'quality', sparklineData: generateSparkline() },
     ];
 
     // Map real risks to the new UI structure
