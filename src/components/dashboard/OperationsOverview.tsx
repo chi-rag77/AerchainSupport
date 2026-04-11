@@ -39,30 +39,30 @@ const OperationsOverview = ({ capacity = [], queueMetrics }: OperationsOverviewP
   const totalQueue = queueMetrics.urgent + queueMetrics.high + queueMetrics.medium + queueMetrics.low;
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-[13px] font-black uppercase tracking-widest text-slate-500 px-1">
+    <div className="space-y-4">
+      <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-500 px-1">
         Support Operations Health
       </h3>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left: Team Load & Utilization */}
         <Card className="border-none shadow-sm bg-white dark:bg-gray-900 rounded-[16px] overflow-hidden">
-          <CardContent className="p-8 space-y-8">
+          <CardContent className="p-6 space-y-5">
             <div className="flex items-center gap-2 text-indigo-600">
-              <Users className="h-5 w-5" />
-              <h4 className="text-base font-bold text-slate-900 dark:text-white">Team Load & Utilization</h4>
+              <Users className="h-4 w-4" />
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Team Load & Utilization</h4>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {capacity.slice(0, 4).map((agent) => (
-                <div key={agent.name} className="space-y-2">
+                <div key={agent.name} className="space-y-1.5">
                   <div className="flex justify-between items-end">
-                    <span className="text-sm font-bold text-slate-900 dark:text-white">{agent.name}</span>
-                    <span className={cn("text-xs font-bold", getLoadStatusColor(agent.capacityPercent))}>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">{agent.name}</span>
+                    <span className={cn("text-[10px] font-bold", getLoadStatusColor(agent.capacityPercent))}>
                       {agent.capacityPercent}% · {agent.status}
                     </span>
                   </div>
-                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div 
                       className={cn("h-full rounded-full transition-all duration-1000", getLoadColor(agent.capacityPercent))} 
                       style={{ width: `${agent.capacityPercent}%` }} 
@@ -72,19 +72,19 @@ const OperationsOverview = ({ capacity = [], queueMetrics }: OperationsOverviewP
               ))}
             </div>
 
-            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-slate-400">Aggregate</span>
-                <span className="text-sm font-bold text-orange-500">{aggregateLoad}% (Optimal)</span>
+                <span className="text-xs font-medium text-slate-400">Aggregate</span>
+                <span className="text-xs font-bold text-orange-500">{aggregateLoad}% (Optimal)</span>
               </div>
-              <p className="text-xs font-medium text-slate-400">
+              <p className="text-[10px] font-medium text-slate-400">
                 Bottleneck: Complex tickets ({capacity[0]?.avgResolutionTime || '2.3h'} avg vs 1.8h baseline)
               </p>
-              <div className="flex gap-3 pt-2">
-                <Button variant="secondary" className="h-9 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs">
+              <div className="flex gap-2 pt-1">
+                <Button variant="secondary" className="h-8 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-[10px] uppercase tracking-wider">
                   Reassign
                 </Button>
-                <Button variant="secondary" className="h-9 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs">
+                <Button variant="secondary" className="h-8 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-[10px] uppercase tracking-wider">
                   Add Agent
                 </Button>
               </div>
@@ -94,15 +94,15 @@ const OperationsOverview = ({ capacity = [], queueMetrics }: OperationsOverviewP
 
         {/* Right: Queue Breakdown */}
         <Card className="border-none shadow-sm bg-white dark:bg-gray-900 rounded-[16px] overflow-hidden">
-          <CardContent className="p-8 space-y-8">
+          <CardContent className="p-6 space-y-5">
             <div className="flex items-center gap-2 text-indigo-600">
-              <BarChart3 className="h-5 w-5" />
-              <h4 className="text-base font-bold text-slate-900 dark:text-white">Queue Breakdown</h4>
+              <BarChart3 className="h-4 w-4" />
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Queue Breakdown</h4>
             </div>
 
-            <div className="space-y-6">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Priority Distribution</p>
-              <div className="space-y-4">
+            <div className="space-y-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Priority Distribution</p>
+              <div className="space-y-3">
                 {[
                   { label: 'Urgent', count: queueMetrics.urgent, color: 'bg-red-500' },
                   { label: 'High', count: queueMetrics.high, color: 'bg-orange-500' },
@@ -110,39 +110,39 @@ const OperationsOverview = ({ capacity = [], queueMetrics }: OperationsOverviewP
                   { label: 'Low', count: queueMetrics.low, color: 'bg-slate-300' },
                 ].map((p) => (
                   <div key={p.label} className="flex items-center gap-4">
-                    <span className="text-sm font-bold text-slate-900 dark:text-white w-16">{p.label}</span>
-                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full relative">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white w-14">{p.label}</span>
+                    <div className="flex-1 h-1 bg-slate-100 dark:bg-slate-800 rounded-full relative">
                       <div 
-                        className={cn("absolute left-0 top-1/2 -translate-y-1/2 h-3 w-3 rounded-full shadow-sm", p.color)}
+                        className={cn("absolute left-0 top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full shadow-sm", p.color)}
                         style={{ left: `${Math.min(95, (p.count / (totalQueue || 1)) * 100)}%` }}
                       />
                     </div>
-                    <span className="text-sm font-bold text-slate-400 w-8 text-right">{p.count}</span>
+                    <span className="text-xs font-bold text-slate-400 w-6 text-right">{p.count}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aging Analysis</p>
-              <div className="space-y-3">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aging Analysis</p>
+              <div className="space-y-2">
                 {queueMetrics.aging.map((a) => (
                   <div key={a.label} className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-slate-400">{a.label}</span>
+                    <span className="text-xs font-medium text-slate-400">{a.label}</span>
                     <div className="flex items-center gap-2">
-                      <span className={cn("text-sm font-bold", a.alert ? "text-red-500" : "text-slate-900 dark:text-white")}>
+                      <span className={cn("text-xs font-bold", a.alert ? "text-red-500" : "text-slate-900 dark:text-white")}>
                         {a.count} tickets
                       </span>
-                      {a.alert && <AlertTriangle className="h-3.5 w-3.5 text-red-500" />}
+                      {a.alert && <AlertTriangle className="h-3 w-3 text-red-500" />}
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex gap-3 pt-2">
-                <Button variant="secondary" className="h-9 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs">
+              <div className="flex gap-2 pt-1">
+                <Button variant="secondary" className="h-8 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-[10px] uppercase tracking-wider">
                   View Queue
                 </Button>
-                <Button variant="secondary" className="h-9 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs">
+                <Button variant="secondary" className="h-8 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-[10px] uppercase tracking-wider">
                   Prioritize
                 </Button>
               </div>
