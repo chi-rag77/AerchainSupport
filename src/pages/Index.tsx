@@ -8,6 +8,7 @@ import { useExecutiveDashboard } from "@/features/dashboard/hooks/useExecutiveDa
 import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
 import DashboardSubbar from "@/components/dashboard/DashboardSubbar";
 import KPISection from "@/components/dashboard/KPISection";
+import DashboardIntelligenceBrief from "@/components/dashboard/DashboardIntelligenceBrief";
 import AIInsightStack from "@/components/dashboard/AIInsightStack";
 import OperationsOverview from "@/components/dashboard/OperationsOverview";
 import CustomerRiskIntelligence from "@/components/dashboard/CustomerRiskIntelligence";
@@ -94,7 +95,7 @@ const DashboardContent = () => {
         onCustomerChange={handleCustomerFilterChange}
       />
 
-      <div className="flex-1 flex flex-col p-8 space-y-16 overflow-y-auto pb-32">
+      <div className="flex-1 flex flex-col p-8 space-y-12 overflow-y-auto pb-32">
         
         {/* TIER 1: EXECUTIVE BRIEFING */}
         <section className="space-y-10">
@@ -103,7 +104,7 @@ const DashboardContent = () => {
             lastSync={data.lastSync}
           />
           
-          <AIInsightStack insights={data.insights} />
+          <DashboardIntelligenceBrief data={data} />
 
           <KPISection metrics={data.kpis} isLoading={isLoading} />
         </section>
