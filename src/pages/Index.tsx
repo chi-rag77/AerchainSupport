@@ -9,7 +9,6 @@ import ExecutiveHero from "@/components/dashboard/ExecutiveHero";
 import DashboardSubbar from "@/components/dashboard/DashboardSubbar";
 import KPISection from "@/components/dashboard/KPISection";
 import DashboardIntelligenceBrief from "@/components/dashboard/DashboardIntelligenceBrief";
-import AIInsightStack from "@/components/dashboard/AIInsightStack";
 import OperationsOverview from "@/components/dashboard/OperationsOverview";
 import CustomerRiskIntelligence from "@/components/dashboard/CustomerRiskIntelligence";
 import ProductIntelligence from "@/components/dashboard/ProductIntelligence";
@@ -95,7 +94,7 @@ const DashboardContent = () => {
         onCustomerChange={handleCustomerFilterChange}
       />
 
-      <div className="flex-1 flex flex-col p-8 space-y-12 overflow-y-auto pb-32">
+      <div className="flex-1 flex flex-col p-8 space-y-10 overflow-y-auto pb-32">
         
         {/* TIER 1: EXECUTIVE BRIEFING */}
         <section className="space-y-10">
@@ -112,7 +111,12 @@ const DashboardContent = () => {
         <Separator className="opacity-50" />
 
         {/* TIER 2: OPERATIONAL INTELLIGENCE */}
-        <section className="space-y-20">
+        <section className="space-y-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <ProductIntelligence clusters={data.clusters} />
+            <LiveActivityCenter tickets={tickets} />
+          </div>
+
           <OperationsOverview 
             capacity={data.agentCapacity} 
             queueMetrics={queueMetrics}
@@ -123,20 +127,12 @@ const DashboardContent = () => {
             distribution={data.riskDistribution}
             movement={data.riskMovement}
           />
-          
-          <ProductIntelligence clusters={data.clusters} />
         </section>
 
         <Separator className="opacity-50" />
 
         {/* TIER 3: DEEP DIVES & FORECAST */}
-        <section className="space-y-20">
-          <LiveActivityCenter 
-            tickets={tickets} 
-            startDate={dateRange.from!} 
-            endDate={dateRange.to!} 
-          />
-
+        <section className="space-y-10">
           <PredictiveForecast data={data.forecast} />
         </section>
 

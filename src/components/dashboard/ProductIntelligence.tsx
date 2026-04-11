@@ -1,10 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { Repeat, TrendingUp, TrendingDown, Minus, ArrowRight, Zap, AlertTriangle, Sparkles } from 'lucide-react';
+import { Package, ExternalLink, TrendingUp, TrendingDown, Minus, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IssueCluster } from '@/features/dashboard/types';
 
@@ -13,75 +12,65 @@ interface ProductIntelligenceProps {
 }
 
 const ProductIntelligence = ({ clusters = [] }: ProductIntelligenceProps) => {
-  if (clusters.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 px-2">
-          <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-500/20">
-            <Repeat className="h-5 w-5 text-white" />
-          </div>
-          <h3 className="text-xl font-black tracking-tight">Product Intelligence</h3>
-        </div>
-        <Card className="p-12 text-center bg-white dark:bg-gray-900 rounded-[28px] border border-dashed border-border">
-          <p className="text-muted-foreground font-medium">No recurring issue clusters detected in this period.</p>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between px-2">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-500/20">
-            <Repeat className="h-5 w-5 text-white" />
-          </div>
-          <h3 className="text-xl font-black tracking-tight">Product Intelligence</h3>
+    <Card className="border-none shadow-sm bg-white dark:bg-gray-900 rounded-[16px] overflow-hidden h-full flex flex-col">
+      <div className="p-6 pb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Package className="h-5 w-5 text-blue-600" />
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Top Recurring Issues</h3>
         </div>
-        <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-none font-bold text-[10px] uppercase tracking-widest">
-          <Sparkles className="h-3 w-3 mr-1.5" /> AI Pattern Recognition
-        </Badge>
+        <button className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
+          View All <ExternalLink className="h-3 w-3" />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {clusters.slice(0, 3).map((issue) => (
-          <Card key={issue.id} className="group relative overflow-hidden border-none bg-white dark:bg-gray-900 shadow-glass hover:shadow-md transition-all rounded-[28px]">
-            <CardContent className="p-8 space-y-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <h4 className="text-lg font-black tracking-tight group-hover:text-indigo-600 transition-colors line-clamp-1">{issue.title}</h4>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    {issue.modules?.[0] || 'General'} Module
-                  </p>
-                </div>
-                <Badge className={cn(
-                  "font-black uppercase tracking-widest text-[9px] border-none px-3 py-1 rounded-full flex items-center gap-1",
-                  issue.trend === 'increasing' ? "bg-rose-50 text-rose-600" : issue.trend === 'stable' ? "bg-indigo-50 text-indigo-600" : "bg-green-50 text-green-600"
-                )}>
-                  {issue.trend === 'increasing' ? <TrendingUp className="h-3 w-3" /> : issue.trend === 'decreasing' ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                  {issue.trend}
-                </Badge>
-              </div>
-
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black tracking-tighter">{issue.occurrences}</span>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tickets</span>
-              </div>
-
-              <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <CardContent className="p-6 pt-0 flex-1 flex flex-col justify-between">
+        <div className="space-y-6">
+          {clusters.slice(0, 3).map((issue, idx) => (
+            <div key={issue.id} className="flex gap-4 group">
+              <span className="text-sm font-bold text-slate-400 mt-0.5">{idx + 1}.</span>
+              <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className={cn("h-3.5 w-3.5", issue.impact === 'High' ? "text-rose-500" : "text-amber-500")} />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{issue.impact} Impact</span>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors cursor-pointer">
+                    {issue.title}
+                  </h4>
+                  <span className="text-xs font-medium text-slate-400">({issue.occurrences} tickets)</span>
                 </div>
-                <button className="text-indigo-600 font-black text-[10px] uppercase tracking-widest flex items-center gap-1 hover:gap-2 transition-all">
-                  Details <ArrowRight className="h-3 w-3" />
-                </button>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-medium text-slate-500">
+                  <div className="flex items-center gap-1">
+                    <span>Trend:</span>
+                    {issue.trend === 'increasing' ? (
+                      <span className="text-rose-600 flex items-center gap-0.5 font-bold">
+                        <TrendingUp className="h-3 w-3" /> ↑300%
+                      </span>
+                    ) : issue.trend === 'decreasing' ? (
+                      <span className="text-emerald-600 flex items-center gap-0.5 font-bold">
+                        <TrendingDown className="h-3 w-3" /> ↓20%
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 flex items-center gap-0.5 font-bold">
+                        <Minus className="h-3 w-3" /> Stable
+                      </span>
+                    )}
+                  </div>
+                  <span>Affected: 12 customers</span>
+                  <span className="text-slate-400 italic">{issue.suggestedFix || "Needs product fix"}</span>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3 mt-8">
+          <Button className="h-9 px-6 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs">
+            Alert Product
+          </Button>
+          <Button variant="secondary" className="h-9 px-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs">
+            Stats
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
