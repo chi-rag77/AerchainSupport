@@ -31,7 +31,7 @@ export function useExecutiveDashboard() {
   const { dateRange, filters } = useDashboard();
 
   // 1. Basic Metrics
-  const { data: metrics } = useQuery({
+  const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-dashboard-metrics', { method: 'POST' });
@@ -72,6 +72,25 @@ export function useExecutiveDashboard() {
       return data;
     },
     staleTime: 30 * 60 * 1000,
+  });
+
+  // 5. AI Refresh Mutation
+  const generateAIMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { 
+        method: 'POST', 
+        queryParams: { force: 'true' } 
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['dashboardInsights'], data);
+      toast.success("AI Insights refreshed!");
+    },
+    onError: (err: any) => {
+      toast.error(`AI Analysis failed: ${err.message}`);
+    }
   });
 
   const { data: recentTickets = [], isLoading: isLoadingTickets, isFetching } = useQuery<Ticket[]>({
@@ -180,7 +199,7 @@ export function useExecutiveDashboard() {
       systemHealth: opsData?.systemHealth || { aiConfidence: 0, dataFreshness: "N/A", syncIntegrity: "Healthy" },
       lastSync: aiRaw?.updated_at || new Date().toISOString(),
       insights: aiRaw?.insights || [],
-      slaRiskScore: riskData?.metrics?.slaRisk?.count > 5 ? 85 : 20,
+      slaRiskScore: (riskData?.metrics?.slaRisk?.count || 0) > 5 ? 85 : 20,
       tickerMetrics
     };
   }, [metrics, aiRaw, tickerMetrics, geographyData, opsData, riskData]);
@@ -191,6 +210,8 @@ export function useExecutiveDashboard() {
     uniqueCompanies,
     isLoading: isLoadingMetrics || isLoadingTickets || isLoadingOps || isLoadingRisks,
     isFetching,
+    isGeneratingAI: generateAIMutation.isPending,
+    generateAI: generateAIMutation.mutate,
     hasAI: !!aiRaw,
   };
 }
