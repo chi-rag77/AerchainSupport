@@ -7,7 +7,7 @@ import {
   TrendingUp, CheckCircle2, AlertTriangle, 
   ArrowUpRight, Clock 
 } from 'lucide-react';
-import { formatDistanceToNowStrict, parseISO, isPast } from 'date-fns';
+import { formatDistanceToNowStrict, parseISO, isPast, differenceInHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface LiveActivityCenterProps {
@@ -16,8 +16,14 @@ interface LiveActivityCenterProps {
 
 const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
   const activities = useMemo(() => {
-    // Derive events from real ticket data
-    const events = tickets.slice(0, 5).map(t => {
+    if (!tickets || tickets.length === 0) return [];
+
+    // Sort by updated_at to get the most recent "activity"
+    const sortedTickets = [...tickets].sort((a, b) => 
+      new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
+    );
+
+    return sortedTickets.slice(0, 5).map(t => {
       const status = t.status.toLowerCase();
       const isEscalated = status === 'escalated' || t.priority === 'Urgent';
       const isResolved = status === 'resolved' || status === 'closed';
@@ -27,6 +33,13 @@ const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
       if (isSlaBreach) type = 'sla_breach';
       else if (isEscalated) type = 'escalated';
 
+      // Calculate real resolution time if resolved
+      let resolutionText = "";
+      if (isResolved) {
+        const hours = differenceInHours(parseISO(t.updated_at), parseISO(t.created_at));
+        resolutionText = hours < 1 ? "Resolved in < 1h" : `Resolved in ${hours}h`;
+      }
+
       return {
         id: t.id,
         type,
@@ -34,13 +47,11 @@ const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
                type === 'sla_breach' ? `SLA Breach #${t.id}` : 
                `Ticket resolved #${t.id}`,
         subtitle: type === 'resolved' 
-          ? `Resolution time: 4.2h · Agent: ${t.assignee || 'Sarah'}`
-          : `Customer: ${t.cf_company || 'Global Inc'} · ${t.cf_module || 'General'}`,
+          ? `${resolutionText} · Agent: ${t.assignee || 'Unassigned'}`
+          : `Customer: ${t.cf_company || 'N/A'} · Module: ${t.cf_module || 'General'}`,
         time: formatDistanceToNowStrict(parseISO(t.updated_at || t.created_at)) + ' ago'
       };
     });
-
-    return events;
   }, [tickets]);
 
   return (
@@ -58,33 +69,39 @@ const LiveActivityCenter = ({ tickets }: LiveActivityCenterProps) => {
 
       <CardContent className="p-6 pt-0 flex-1">
         <div className="space-y-5">
-          {activities.map((activity) => (
-            <div key={activity.id} className="flex items-start justify-between gap-4 group">
-              <div className="flex items-start gap-3">
-                <div className={cn(
-                  "p-2 rounded-full shrink-0",
-                  activity.type === 'escalated' && "bg-orange-50 text-orange-500",
-                  activity.type === 'resolved' && "bg-emerald-50 text-emerald-500",
-                  activity.type === 'sla_breach' && "bg-rose-50 text-rose-500"
-                )}>
-                  {activity.type === 'escalated' && <TrendingUp className="h-4 w-4" />}
-                  {activity.type === 'resolved' && <CheckCircle2 className="h-4 w-4" />}
-                  {activity.type === 'sla_breach' && <AlertTriangle className="h-4 w-4" />}
+          {activities.length > 0 ? (
+            activities.map((activity) => (
+              <div key={activity.id} className="flex items-start justify-between gap-4 group">
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "p-2 rounded-full shrink-0",
+                    activity.type === 'escalated' && "bg-orange-50 text-orange-500",
+                    activity.type === 'resolved' && "bg-emerald-50 text-emerald-500",
+                    activity.type === 'sla_breach' && "bg-rose-50 text-rose-500"
+                  )}>
+                    {activity.type === 'escalated' && <TrendingUp className="h-4 w-4" />}
+                    {activity.type === 'resolved' && <CheckCircle2 className="h-4 w-4" />}
+                    {activity.type === 'sla_breach' && <AlertTriangle className="h-4 w-4" />}
+                  </div>
+                  <div className="space-y-0.5">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors cursor-pointer">
+                      {activity.title}
+                    </h4>
+                    <p className="text-xs font-medium text-slate-500 leading-tight">
+                      {activity.subtitle}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors cursor-pointer">
-                    {activity.title}
-                  </h4>
-                  <p className="text-xs font-medium text-slate-500 leading-tight">
-                    {activity.subtitle}
-                  </p>
-                </div>
+                <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap pt-1">
+                  {activity.time}
+                </span>
               </div>
-              <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap pt-1">
-                {activity.time}
-              </span>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground italic text-sm">
+              No recent activity detected.
             </div>
-          ))}
+          )}
         </div>
       </CardContent>
     </Card>
