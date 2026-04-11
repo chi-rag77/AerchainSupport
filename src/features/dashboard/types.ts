@@ -49,7 +49,22 @@ export interface CustomerRisk {
   openCount: number;
   urgentCount: number;
   slaMetPercent: number;
-  sentiment: number; // -1 to 1
+  sentiment: number;
+  escalationTrend: 'up' | 'down' | 'stable';
+  action: 'Urgent' | 'Warn' | 'Monitor' | 'Green';
+}
+
+export interface RiskDistribution {
+  high: number;
+  medium: number;
+  low: number;
+  total: number;
+}
+
+export interface RiskMovement {
+  toRed: number;
+  toGreen: number;
+  stableRed: number;
 }
 
 export interface IssueCluster {
@@ -88,7 +103,9 @@ export interface DashboardData {
   bottlenecks: Bottleneck[];
   forecast: ForecastData;
   customerRisks: CustomerRisk[];
-  agentCapacity: AgentCapacity[];
+  riskDistribution: RiskDistribution;
+  riskMovement: RiskMovement;
+  agentCapacity: any[];
   clusters: IssueCluster[];
   slaTimeline: { date: string; status: 'green' | 'amber' | 'red' }[];
   actions: ExecutiveAction[];

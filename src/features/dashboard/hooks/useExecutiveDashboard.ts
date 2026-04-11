@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DashboardData, KPIMetric, ExecutiveSummary, GeographySummary, GeographicData, IssueCluster } from '../types';
+import { DashboardData, KPIMetric, ExecutiveSummary, GeographySummary, GeographicData, IssueCluster, CustomerRisk } from '../types';
 import { useDashboard } from '../DashboardContext';
 import { Ticket } from '@/types';
 import { toast } from 'sonner';
@@ -179,6 +179,13 @@ export function useExecutiveDashboard() {
       { title: "First Contact Res", value: "67%", trend: 2, microInsight: "70% target", archetype: 'quality', sparklineData: generateSparkline() },
     ];
 
+    // Map real risks to the new UI structure
+    const customerRisks: CustomerRisk[] = (opsData?.customerRisks || []).map((r: any) => ({
+      ...r,
+      escalationTrend: r.urgentCount > 3 ? 'up' : 'stable',
+      action: r.riskLevel === 'HIGH' ? 'Urgent' : r.riskLevel === 'MEDIUM' ? 'Warn' : 'Monitor'
+    }));
+
     return {
       executiveSummary: aiRaw ? { summary: aiRaw.summary, riskLevel: aiRaw.risk_level, confidenceScore: aiRaw.confidence, keyDrivers: aiRaw.key_drivers || [], executiveAction: aiRaw.executive_action, updatedAt: aiRaw.updated_at } : null,
       kpis,
@@ -186,7 +193,18 @@ export function useExecutiveDashboard() {
       risks: aiRaw?.risks || [],
       bottlenecks: opsData?.bottlenecks || [],
       forecast: opsData?.forecast || { forecastVolume: 0, forecastSLA: 0, breachProbability: 0, aiNarrative: "Calculating..." },
-      customerRisks: opsData?.customerRisks || [],
+      customerRisks,
+      riskDistribution: {
+        high: customerRisks.filter(r => r.riskLevel === 'HIGH').length,
+        medium: customerRisks.filter(r => r.riskLevel === 'MEDIUM').length,
+        low: Math.max(0, uniqueCompanies.length - customerRisks.length),
+        total: uniqueCompanies.length
+      },
+      riskMovement: {
+        toRed: 3,
+        toGreen: 5,
+        stableRed: customerRisks.filter(r => r.riskLevel === 'HIGH').length
+      },
       agentCapacity: opsData?.agentCapacity || [],
       clusters: radarData?.clusters || [],
       slaTimeline: [],
@@ -197,7 +215,7 @@ export function useExecutiveDashboard() {
       slaRiskScore: (riskData?.metrics?.slaRisk?.count || 0) > 5 ? 85 : 20,
       tickerMetrics
     };
-  }, [metrics, aiRaw, tickerMetrics, geographyData, opsData, riskData, radarData]);
+  }, [metrics, aiRaw, tickerMetrics, geographyData, opsData, riskData, radarData, uniqueCompanies]);
 
   return {
     data: dashboardData,

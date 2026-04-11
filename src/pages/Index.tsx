@@ -117,7 +117,11 @@ const DashboardContent = () => {
             queueMetrics={queueMetrics}
           />
           
-          <CustomerRiskIntelligence risks={data.customerRisks} />
+          <CustomerRiskIntelligence 
+            risks={data.customerRisks} 
+            distribution={data.riskDistribution}
+            movement={data.riskMovement}
+          />
           
           <ProductIntelligence clusters={data.clusters} />
         </section>
