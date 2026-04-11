@@ -1,160 +1,162 @@
 "use client";
 
-import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useMemo } from 'react';
 import { 
   AlertCircle, AlertTriangle, Info, CheckCircle2, 
-  ArrowRight, Sparkles, Brain, TrendingUp, Zap 
+  ArrowRight, Zap, Bot
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
-
-interface IntelligenceCardProps {
-  type: 'critical' | 'warning' | 'info' | 'success';
-  title: string;
-  description: React.ReactNode;
-  footerMetric: string;
-  linkText: string;
-  onLinkClick?: () => void;
-}
-
-const IntelligenceCard = ({ type, title, description, footerMetric, linkText, onLinkClick }: IntelligenceCardProps) => {
-  const config = {
-    critical: {
-      icon: AlertCircle,
-      label: "CRITICAL",
-      colors: "border-rose-100 bg-white dark:bg-gray-900",
-      badge: "text-rose-600 bg-rose-50 dark:bg-rose-900/20",
-      iconColor: "text-rose-600"
-    },
-    warning: {
-      icon: AlertTriangle,
-      label: "WARNING",
-      colors: "border-amber-100 bg-white dark:bg-gray-900",
-      badge: "text-amber-600 bg-amber-50 dark:bg-amber-900/20",
-      iconColor: "text-amber-600"
-    },
-    info: {
-      icon: Info,
-      label: "INFO",
-      colors: "border-blue-100 bg-white dark:bg-gray-900",
-      badge: "text-blue-600 bg-blue-50 dark:bg-blue-900/20",
-      iconColor: "text-blue-600"
-    },
-    success: {
-      icon: Zap,
-      label: "SUCCESS",
-      colors: "border-emerald-100 bg-white dark:bg-gray-900",
-      badge: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20",
-      iconColor: "text-emerald-600"
-    }
-  }[type];
-
-  const Icon = config.icon;
-
-  return (
-    <Card className={cn("border shadow-sm rounded-xl overflow-hidden group transition-all hover:shadow-md", config.colors)}>
-      <CardContent className="p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <div className={cn("p-1 rounded-md", config.badge)}>
-            <Icon className="h-3.5 w-3.5" />
-          </div>
-          <span className={cn("text-[10px] font-black uppercase tracking-widest", config.iconColor)}>
-            {config.label}
-          </span>
-        </div>
-
-        <div className="space-y-1.5">
-          <h4 className="text-base font-bold tracking-tight text-foreground">{title}</h4>
-          <div className="text-sm text-muted-foreground leading-relaxed">
-            {description}
-          </div>
-        </div>
-
-        <div className="pt-3 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
-          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-tighter">
-            {footerMetric}
-          </span>
-          <button 
-            onClick={onLinkClick}
-            className="text-[11px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-all group-hover:gap-2"
-          >
-            {linkText} <ArrowRight className="h-3 w-3" />
-          </button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+import { DashboardData } from '@/features/dashboard/types';
 
 interface DashboardIntelligenceBriefProps {
-  data: any;
+  data: DashboardData;
 }
 
 const DashboardIntelligenceBrief = ({ data }: DashboardIntelligenceBriefProps) => {
   if (!data) return null;
 
+  // --- 1. Health Snapshot Logic ---
+  const healthNudge = useMemo(() => {
+    const avgCapacity = data.agentCapacity.length > 0 
+      ? Math.round(data.agentCapacity.reduce((acc, curr) => acc + curr.capacityPercent, 0) / data.agentCapacity.length)
+      : 0;
+    
+    const status = avgCapacity > 90 ? 'Strained' : 'Healthy';
+    
+    return {
+      type: 'info' as const,
+      statusLabel: 'INFO',
+      title: avgCapacity > 90 ? "Capacity Strained" : "Capacity Optimal",
+      description: `Team at ${avgCapacity}% capacity with ${data.tickerMetrics.created.value} tickets created today.`,
+      footerMetric: `Queue: ${status}`,
+      linkText: "View Team",
+    };
+  }, [data]);
+
+  // --- 2. Risk Signals Logic ---
+  const riskNudge = useMemo(() => {
+    const topRisk = data.customerRisks[0];
+    const totalAtRisk = data.customerRisks.filter(r => r.riskLevel === 'HIGH').length;
+
+    return {
+      type: 'critical' as const,
+      statusLabel: 'CRITICAL',
+      title: "Churn Risk Detected",
+      description: topRisk 
+        ? `${topRisk.company} has ${topRisk.urgentCount} urgent tickets — reach out now`
+        : `${totalAtRisk} customers are trending toward churn.`,
+      footerMetric: topRisk ? `${topRisk.riskScore}/100 risk score` : "No high risks",
+      linkText: "View Customer",
+    };
+  }, [data]);
+
+  // --- 3. Product Intelligence Logic ---
+  const productNudge = useMemo(() => {
+    const topCluster = data.clusters[0];
+    const spike = data.kpis.find(k => k.archetype === 'volume')?.trend || 0;
+
+    return {
+      type: 'warning' as const,
+      statusLabel: 'WARNING',
+      title: topCluster ? `${topCluster.title} Spiking` : "Issue Volume Spiking",
+      description: topCluster 
+        ? `${topCluster.occurrences} tickets this week. Likely ${topCluster.modules[0]} issue.`
+        : `Ticket volume is up ${spike}% this week across all modules.`,
+      footerMetric: `↑ ${Math.abs(spike)}% volume`,
+      linkText: "Notify Product",
+    };
+  }, [data]);
+
+  // --- 4. Forecast Logic ---
+  const forecastNudge = useMemo(() => {
+    const slaRate = data.kpis.find(k => k.archetype === 'attention')?.value || '0%';
+    const prob = Math.round(data.forecast.breachProbability * 100);
+
+    return {
+      type: 'success' as const,
+      statusLabel: 'SUCCESS',
+      title: prob > 50 ? "SLA at Risk" : "SLA On Track",
+      description: `${slaRate} adherence this week — ${prob}% chance of breaches next week.`,
+      footerMetric: `${slaRate} SLA rate`,
+      linkText: "View SLA",
+    };
+  }, [data]);
+
+  const nudges = [riskNudge, productNudge, healthNudge, forecastNudge];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 px-1">
-        <Brain className="h-4 w-4 text-indigo-600" />
-        <h3 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
+        <span className="text-lg">🤖</span>
+        <h3 className="text-sm font-black text-foreground flex items-center gap-2">
           AI Insights <span className="text-muted-foreground font-medium lowercase tracking-normal">• 4 nudges</span>
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 1. Health Snapshot */}
-        <IntelligenceCard 
-          type="info"
-          title="Health Snapshot"
-          description={
-            <>
-              Your support team is running at <span className="font-bold text-foreground">74% capacity</span> with <span className="font-bold text-foreground">1,247 tickets created today</span> and <span className="font-bold text-foreground">89% resolution rate</span>. The team resolved 456 tickets this week, averaging 123 hours per resolution (vs 145h target). ✓ Operations look healthy overall.
-            </>
-          }
-          footerMetric="Queue: Healthy"
-          linkText="View Team"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 border border-border rounded-[20px] bg-white dark:bg-gray-950 overflow-hidden shadow-sm">
+        {nudges.map((nudge, idx) => {
+          const isCritical = nudge.type === 'critical';
+          const isWarning = nudge.type === 'warning';
+          const isSuccess = nudge.type === 'success';
+          const isInfo = nudge.type === 'info';
 
-        {/* 2. Risk Signals */}
-        <IntelligenceCard 
-          type="critical"
-          title="Churn Risk Detected"
-          description={
-            <>
-              Escalations are up 30% this week (7 escalations vs baseline 5.3), and 8 customers are trending toward churn. The top concern: <span className="font-bold text-rose-600">Acme Corp</span> with 5 escalations in 3 days. 3 SLA breaches detected—recommend CSM outreach.
-            </>
-          }
-          footerMetric="87/100 risk score"
-          linkText="View Customer"
-        />
+          const Icon = isCritical ? AlertCircle : isWarning ? AlertTriangle : isSuccess ? CheckCircle2 : Info;
+          
+          return (
+            <div 
+              key={idx} 
+              className={cn(
+                "p-6 flex flex-col justify-between min-h-[180px] transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-900/50",
+                idx === 0 && "border-r border-b border-border",
+                idx === 1 && "border-b border-border",
+                idx === 2 && "border-r border-border",
+                "group"
+              )}
+            >
+              <div className="space-y-4">
+                {/* Status Badge */}
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "p-1 rounded-md",
+                    isCritical && "text-rose-600 bg-rose-50 dark:bg-rose-900/20",
+                    isWarning && "text-amber-600 bg-amber-50 dark:bg-amber-900/20",
+                    isInfo && "text-blue-600 bg-blue-50 dark:bg-blue-900/20",
+                    isSuccess && "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
+                  )}>
+                    <Icon className="h-3.5 w-3.5" />
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-widest",
+                    isCritical && "text-rose-600",
+                    isWarning && "text-amber-600",
+                    isInfo && "text-blue-600",
+                    isSuccess && "text-emerald-600"
+                  )}>
+                    {nudge.statusLabel}
+                  </span>
+                </div>
 
-        {/* 3. Product Intelligence */}
-        <IntelligenceCard 
-          type="warning"
-          title="API Tickets Spiking"
-          description={
-            <>
-              Payment Integration issues are spiking (+300%): 28 tickets this week vs 6 last week. This affects 12 customers. → Export feature trending down (improving): 15 tickets with steady close rate. 18% of all tickets relate to 3 recurring issues.
-            </>
-          }
-          footerMetric="↑ 300% volume"
-          linkText="Notify Product"
-        />
+                {/* Content */}
+                <div className="space-y-1">
+                  <h4 className="text-base font-bold tracking-tight text-foreground">{nudge.title}</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {nudge.description}
+                  </p>
+                </div>
+              </div>
 
-        {/* 4. Forecast */}
-        <IntelligenceCard 
-          type="success"
-          title="SLA On Track"
-          description={
-            <>
-              Expect ~950 tickets (±12%) next week, with 38% chance of SLA breaches. Churn risk forecast: 4-6 customers at elevated risk. ✓ Recommendation: Maintain current team capacity and proactively reach out to flagged accounts.
-            </>
-          }
-          footerMetric="94% SLA rate"
-          linkText="View SLA"
-        />
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-4">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-tighter">
+                  {nudge.footerMetric}
+                </span>
+                <button className="text-[11px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-all group-hover:gap-2">
+                  {nudge.linkText} <ArrowRight className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
