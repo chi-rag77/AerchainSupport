@@ -4,15 +4,30 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Repeat, TrendingUp, ArrowRight, Zap, AlertTriangle, Sparkles } from 'lucide-react';
+import { Repeat, TrendingUp, TrendingDown, Minus, ArrowRight, Zap, AlertTriangle, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { IssueCluster } from '@/features/dashboard/types';
 
-const ProductIntelligence = () => {
-  const issues = [
-    { title: 'Payment Integration', count: 28, trend: 'spiking', affected: 12, status: 'Needs Fix' },
-    { title: 'Export Feature', count: 15, trend: 'stable', affected: 8, status: 'Workaround' },
-    { title: 'SSO Setup', count: 12, trend: 'improving', affected: 6, status: 'Docs Update' },
-  ];
+interface ProductIntelligenceProps {
+  clusters: IssueCluster[];
+}
+
+const ProductIntelligence = ({ clusters = [] }: ProductIntelligenceProps) => {
+  if (clusters.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 px-2">
+          <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-500/20">
+            <Repeat className="h-5 w-5 text-white" />
+          </div>
+          <h3 className="text-xl font-black tracking-tight">Product Intelligence</h3>
+        </div>
+        <Card className="p-12 text-center bg-white dark:bg-gray-900 rounded-[28px] border border-dashed border-border">
+          <p className="text-muted-foreground font-medium">No recurring issue clusters detected in this period.</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -29,31 +44,34 @@ const ProductIntelligence = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {issues.map((issue, idx) => (
-          <Card key={issue.title} className="group relative overflow-hidden border-none bg-white dark:bg-gray-900 shadow-glass hover:shadow-md transition-all rounded-[28px]">
+        {clusters.slice(0, 3).map((issue) => (
+          <Card key={issue.id} className="group relative overflow-hidden border-none bg-white dark:bg-gray-900 shadow-glass hover:shadow-md transition-all rounded-[28px]">
             <CardContent className="p-8 space-y-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <h4 className="text-lg font-black tracking-tight group-hover:text-indigo-600 transition-colors">{issue.title}</h4>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{issue.affected} Customers Affected</p>
+                  <h4 className="text-lg font-black tracking-tight group-hover:text-indigo-600 transition-colors line-clamp-1">{issue.title}</h4>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    {issue.modules?.[0] || 'General'} Module
+                  </p>
                 </div>
                 <Badge className={cn(
-                  "font-black uppercase tracking-widest text-[9px] border-none px-3 py-1 rounded-full",
-                  issue.trend === 'spiking' ? "bg-rose-50 text-rose-600" : issue.trend === 'stable' ? "bg-indigo-50 text-indigo-600" : "bg-green-50 text-green-600"
+                  "font-black uppercase tracking-widest text-[9px] border-none px-3 py-1 rounded-full flex items-center gap-1",
+                  issue.trend === 'increasing' ? "bg-rose-50 text-rose-600" : issue.trend === 'stable' ? "bg-indigo-50 text-indigo-600" : "bg-green-50 text-green-600"
                 )}>
+                  {issue.trend === 'increasing' ? <TrendingUp className="h-3 w-3" /> : issue.trend === 'decreasing' ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
                   {issue.trend}
                 </Badge>
               </div>
 
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black tracking-tighter">{issue.count}</span>
+                <span className="text-4xl font-black tracking-tighter">{issue.occurrences}</span>
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tickets</span>
               </div>
 
-              <div className="pt-4 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className={cn("h-3.5 w-3.5", issue.status === 'Needs Fix' ? "text-rose-500" : "text-amber-500")} />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{issue.status}</span>
+                  <AlertTriangle className={cn("h-3.5 w-3.5", issue.impact === 'High' ? "text-rose-500" : "text-amber-500")} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{issue.impact} Impact</span>
                 </div>
                 <button className="text-indigo-600 font-black text-[10px] uppercase tracking-widest flex items-center gap-1 hover:gap-2 transition-all">
                   Details <ArrowRight className="h-3 w-3" />

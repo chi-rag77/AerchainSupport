@@ -52,19 +52,15 @@ export interface CustomerRisk {
   sentiment: number; // -1 to 1
 }
 
-export interface AgentCapacity {
-  name: string;
-  capacityPercent: number;
-  urgentLoadPercent: number;
-  avgResolutionTime: string;
-  status: 'Underutilized' | 'Balanced' | 'Overloaded' | 'Critical';
-}
-
 export interface IssueCluster {
-  name: string;
-  count: number;
-  trend: number;
-  severity: 'info' | 'warning' | 'critical';
+  id: string;
+  title: string;
+  occurrences: number;
+  trend: 'increasing' | 'stable' | 'decreasing';
+  impact: 'High' | 'Medium' | 'Low';
+  modules: string[];
+  rootCause: string;
+  suggestedFix: string;
 }
 
 export interface ExecutiveAction {

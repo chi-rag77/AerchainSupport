@@ -45,6 +45,7 @@ const DashboardContent = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
       queryClient.invalidateQueries({ queryKey: ['operationalIntelligence'] });
       queryClient.invalidateQueries({ queryKey: ['activeRisks'] });
+      queryClient.invalidateQueries({ queryKey: ['recurringIssueRadar'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
@@ -118,7 +119,7 @@ const DashboardContent = () => {
           
           <CustomerRiskIntelligence risks={data.customerRisks} />
           
-          <ProductIntelligence />
+          <ProductIntelligence clusters={data.clusters} />
         </section>
 
         <Separator className="opacity-50" />

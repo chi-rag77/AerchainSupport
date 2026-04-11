@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DashboardData, KPIMetric, ExecutiveSummary, GeographySummary, GeographicData } from '../types';
+import { DashboardData, KPIMetric, ExecutiveSummary, GeographySummary, GeographicData, IssueCluster } from '../types';
 import { useDashboard } from '../DashboardContext';
 import { Ticket } from '@/types';
 import { toast } from 'sonner';
@@ -41,7 +41,7 @@ export function useExecutiveDashboard() {
     staleTime: 5 * 60 * 1000, 
   });
 
-  // 2. Operational Intelligence (Bottlenecks, Forecast, Capacity)
+  // 2. Operational Intelligence
   const { data: opsData, isLoading: isLoadingOps } = useQuery({
     queryKey: ['operationalIntelligence'],
     queryFn: async () => {
@@ -52,7 +52,7 @@ export function useExecutiveDashboard() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // 3. Active Risks (Escalations, SLA Risks)
+  // 3. Active Risks
   const { data: riskData, isLoading: isLoadingRisks } = useQuery({
     queryKey: ['activeRisks'],
     queryFn: async () => {
@@ -63,7 +63,21 @@ export function useExecutiveDashboard() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // 4. AI Insights
+  // 4. Product Intelligence (Radar)
+  const { data: radarData, isLoading: isLoadingRadar } = useQuery({
+    queryKey: ['recurringIssueRadar', filters.company || 'All'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-recurring-issue-radar', { 
+        method: 'POST',
+        body: { customerName: filters.company || 'All' }
+      });
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // 5. AI Insights
   const { data: aiRaw, isLoading: isLoadingAI } = useQuery({
     queryKey: ['dashboardInsights'],
     queryFn: async () => {
@@ -72,25 +86,6 @@ export function useExecutiveDashboard() {
       return data;
     },
     staleTime: 30 * 60 * 1000,
-  });
-
-  // 5. AI Refresh Mutation
-  const generateAIMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('generate-dashboard-insights', { 
-        method: 'POST', 
-        queryParams: { force: 'true' } 
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['dashboardInsights'], data);
-      toast.success("AI Insights refreshed!");
-    },
-    onError: (err: any) => {
-      toast.error(`AI Analysis failed: ${err.message}`);
-    }
   });
 
   const { data: recentTickets = [], isLoading: isLoadingTickets, isFetching } = useQuery<Ticket[]>({
@@ -180,7 +175,7 @@ export function useExecutiveDashboard() {
       { title: "SLA Adherence", value: `${metrics?.slaCompliance || 0}%`, trend: -2, microInsight: "95% target", archetype: 'attention', sparklineData: generateSparkline() },
       { title: "Escalation Velocity", value: riskData?.metrics?.escalationRisk?.count || 0, trend: 30, microInsight: "↑ vs baseline", archetype: 'risk', sparklineData: generateSparkline() },
       { title: "Customer Health", value: "82%", trend: -5, microInsight: "82% in green", archetype: 'health', sparklineData: generateSparkline() },
-      { title: "Issue Recurrence", value: "18%", trend: 12, microInsight: "3 major clusters", archetype: 'recurrence', sparklineData: generateSparkline() },
+      { title: "Issue Recurrence", value: `${radarData?.clusters?.length || 0}`, trend: 12, microInsight: "Active clusters", archetype: 'recurrence', sparklineData: generateSparkline() },
       { title: "First Contact Res", value: "67%", trend: 2, microInsight: "70% target", archetype: 'quality', sparklineData: generateSparkline() },
     ];
 
@@ -193,7 +188,7 @@ export function useExecutiveDashboard() {
       forecast: opsData?.forecast || { forecastVolume: 0, forecastSLA: 0, breachProbability: 0, aiNarrative: "Calculating..." },
       customerRisks: opsData?.customerRisks || [],
       agentCapacity: opsData?.agentCapacity || [],
-      clusters: [],
+      clusters: radarData?.clusters || [],
       slaTimeline: [],
       actions: opsData?.actions || [],
       systemHealth: opsData?.systemHealth || { aiConfidence: 0, dataFreshness: "N/A", syncIntegrity: "Healthy" },
@@ -202,16 +197,15 @@ export function useExecutiveDashboard() {
       slaRiskScore: (riskData?.metrics?.slaRisk?.count || 0) > 5 ? 85 : 20,
       tickerMetrics
     };
-  }, [metrics, aiRaw, tickerMetrics, geographyData, opsData, riskData]);
+  }, [metrics, aiRaw, tickerMetrics, geographyData, opsData, riskData, radarData]);
 
   return {
     data: dashboardData,
     tickets: filteredTickets,
     uniqueCompanies,
-    isLoading: isLoadingMetrics || isLoadingTickets || isLoadingOps || isLoadingRisks,
+    isLoading: isLoadingMetrics || isLoadingTickets || isLoadingOps || isLoadingRisks || isLoadingRadar,
     isFetching,
-    isGeneratingAI: generateAIMutation.isPending,
-    generateAI: generateAIMutation.mutate,
+    generateAI: () => queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] }),
     hasAI: !!aiRaw,
   };
 }
