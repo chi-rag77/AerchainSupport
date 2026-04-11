@@ -84,6 +84,13 @@ const DashboardIntelligenceBrief = ({ data }: DashboardIntelligenceBriefProps) =
 
   const nudges = [riskNudge, productNudge, healthNudge, forecastNudge];
 
+  const typeGradients = {
+    critical: "bg-gradient-to-br from-rose-50/80 to-white dark:from-rose-950/20 dark:to-gray-950",
+    warning: "bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-950/20 dark:to-gray-950",
+    info: "bg-gradient-to-br from-blue-50/80 to-white dark:from-blue-950/20 dark:to-gray-950",
+    success: "bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-950/20 dark:to-gray-950",
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 px-1">
@@ -106,7 +113,8 @@ const DashboardIntelligenceBrief = ({ data }: DashboardIntelligenceBriefProps) =
             <div 
               key={idx} 
               className={cn(
-                "p-6 flex flex-col justify-between min-h-[180px] transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-900/50",
+                "p-6 flex flex-col justify-between min-h-[180px] transition-all duration-300",
+                typeGradients[nudge.type],
                 idx === 0 && "border-r border-b border-border",
                 idx === 1 && "border-b border-border",
                 idx === 2 && "border-r border-border",
@@ -118,10 +126,10 @@ const DashboardIntelligenceBrief = ({ data }: DashboardIntelligenceBriefProps) =
                 <div className="flex items-center gap-2">
                   <div className={cn(
                     "p-1 rounded-md",
-                    isCritical && "text-rose-600 bg-rose-50 dark:bg-rose-900/20",
-                    isWarning && "text-amber-600 bg-amber-50 dark:bg-amber-900/20",
-                    isInfo && "text-blue-600 bg-blue-50 dark:bg-blue-900/20",
-                    isSuccess && "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
+                    isCritical && "text-rose-600 bg-rose-100 dark:bg-rose-900/40",
+                    isWarning && "text-amber-600 bg-amber-100 dark:bg-amber-900/40",
+                    isInfo && "text-blue-600 bg-blue-100 dark:bg-blue-900/40",
+                    isSuccess && "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40"
                   )}>
                     <Icon className="h-3.5 w-3.5" />
                   </div>
