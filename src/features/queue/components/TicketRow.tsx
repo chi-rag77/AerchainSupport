@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   Brain, Sparkles, Clock, Building2, User, ArrowRight,
-  TrendingUp, ShieldAlert, MessageSquare, Repeat, Link as LinkIcon,
-  AlertCircle, Info, Heart, CheckCircle2, Hourglass
+  ShieldAlert, MessageSquare, Repeat, Zap, Heart,
+  CheckCircle2, Hourglass, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNowStrict, parseISO, differenceInDays, isPast } from 'date-fns';
+import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -22,87 +22,74 @@ interface TicketRowProps {
   onClick: () => void;
 }
 
+const STATUS_SHORT: Record<string, string> = {
+  "Open (Being Processed)": "Open",
+  "Pending (Awaiting your Reply)": "Pending",
+  "On Tech": "On Tech",
+  "Closed": "Closed",
+  "Resolved": "Resolved",
+  "Escalated": "Escalated",
+  "Waiting on Customer": "Waiting",
+};
+
 const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { riskScore, ageDays, aiSignals } = useMemo(() => {
+  const { riskScore, ageDays, aiSignals, healthScore, isBreached } = useMemo(() => {
     const created = parseISO(ticket.created_at);
     const days = differenceInDays(new Date(), created);
+    const breached = ticket.due_by && isPast(parseISO(ticket.due_by)) && !['resolved', 'closed'].includes(ticket.status.toLowerCase());
     
-    let score = 0;
+    // Base score from age
+    let score = days > 3 ? 10 : 0;
     const signals = [];
 
-    // Priority weight
     const p = ticket.priority.toLowerCase();
-    if (p === 'urgent') {
-      score += 40;
-      signals.push({ label: "Likely Escalation", icon: ShieldAlert, color: "text-rose-600 bg-rose-50" });
+    if (p === 'urgent' || breached) {
+      score += 60;
+      signals.push({ label: breached ? "Breached" : "Urgent", icon: ShieldAlert, color: "text-rose-600 bg-rose-50" });
+    } else if (p === 'high') {
+      score += 30;
     }
 
-    // Sentiment/Status logic
     if (ticket.status === 'Escalated') {
-      signals.push({ label: "Negative Sentiment", icon: MessageSquare, color: "text-amber-600 bg-amber-50" });
+      signals.push({ label: "Escalated", icon: MessageSquare, color: "text-amber-600 bg-amber-50" });
     }
 
-    // Recurrence logic (mocked based on module)
-    if (ticket.cf_module === 'Invoice') {
-      signals.push({ label: "Recurring Issue", icon: Repeat, color: "text-indigo-600 bg-indigo-50" });
-    }
+    // Mock health score based on company name
+    const hScore = (ticket.cf_company?.length % 40) + 55;
 
-    // Age weight
-    if (days > 7) score += 40;
-    if (ticket.due_by && isPast(parseISO(ticket.due_by))) {
-      score += 20;
-      signals.push({ label: "SLA Breached", icon: Clock, color: "text-rose-600 bg-rose-50" });
-    }
-
-    return { riskScore: Math.min(100, score), ageDays: days, aiSignals: signals };
+    return { 
+      riskScore: Math.min(100, score), 
+      ageDays: days, 
+      aiSignals: signals,
+      healthScore: hScore,
+      isBreached: breached
+    };
   }, [ticket]);
 
   const getStatusBadgeClasses = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'open (being processed)':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'pending (awaiting your reply)':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'resolved':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-      case 'escalated':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'waiting on customer':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'on tech':
-        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
-      case 'on product':
-        return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
     const s = status.toLowerCase();
-    if (s.includes('open')) return <Hourglass className="h-3 w-3 mr-1" />;
-    if (s.includes('resolved')) return <CheckCircle2 className="h-3 w-3 mr-1" />;
-    if (s.includes('escalated')) return <AlertCircle className="h-3 w-3 mr-1" />;
-    return <Clock className="h-3 w-3 mr-1" />;
+    if (s.includes('open')) return 'bg-blue-50 text-blue-700 border-blue-100';
+    if (s.includes('pending')) return 'bg-amber-50 text-amber-700 border-amber-100';
+    if (s.includes('resolved')) return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    if (s.includes('escalated')) return 'bg-rose-50 text-rose-700 border-rose-100';
+    return 'bg-gray-50 text-gray-600 border-gray-100';
   };
 
   const renderHeatmap = (score: number) => {
     const bars = 5;
-    const activeBars = Math.ceil((score / 100) * bars);
+    const activeBars = Math.max(1, Math.ceil((score / 100) * bars));
+    const color = score > 70 ? "bg-rose-500" : score > 40 ? "bg-amber-500" : "bg-emerald-500";
+    
     return (
       <div className="flex gap-0.5">
         {[...Array(bars)].map((_, i) => (
           <div 
             key={i} 
             className={cn(
-              "h-3 w-1.5 rounded-[1px]",
-              i < activeBars 
-                ? (score > 75 ? "bg-rose-500" : score > 40 ? "bg-amber-500" : "bg-emerald-500") 
-                : "bg-gray-200 dark:bg-gray-800"
+              "h-3 w-1.5 rounded-[1px] transition-colors",
+              i < activeBars ? color : "bg-gray-100 dark:bg-gray-800"
             )} 
           />
         ))}
@@ -110,13 +97,22 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
     );
   };
 
+  const getHealthColor = (score: number) => {
+    if (score >= 75) return "bg-emerald-50 text-emerald-700";
+    if (score >= 50) return "bg-amber-50 text-amber-700";
+    return "bg-rose-50 text-rose-700";
+  };
+
   return (
     <>
       <TableRow 
         className={cn(
-          "group transition-all duration-300 border-b border-gray-50 dark:border-gray-900 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/10",
+          "group transition-all duration-200 border-b border-gray-50 dark:border-gray-900 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/10",
           isSelected && "bg-indigo-50/40 dark:bg-indigo-950/20",
-          isExpanded && "bg-white dark:bg-gray-800 shadow-lg z-10 relative"
+          isExpanded && "bg-white dark:bg-gray-800 shadow-sm z-10 relative",
+          // Left Border Accent
+          (ticket.priority === 'Urgent' || isBreached) ? "border-l-4 border-l-rose-500" : 
+          ticket.priority === 'High' ? "border-l-4 border-l-amber-500" : "border-l-4 border-l-transparent"
         )}
       >
         <TableCell className="w-12 pl-6">
@@ -128,8 +124,11 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
         </TableCell>
 
         <TableCell className="max-w-md">
-          <div className="flex flex-col gap-1">
-            <span className="font-bold text-foreground group-hover:text-indigo-600 transition-colors cursor-pointer" onClick={onClick}>
+          <div className="flex flex-col gap-0.5">
+            <span 
+              className="font-medium text-sm text-foreground truncate max-w-[400px] block group-hover:text-indigo-600 transition-colors cursor-pointer" 
+              onClick={onClick}
+            >
               {ticket.subject}
             </span>
             <div className="flex items-center gap-3">
@@ -138,11 +137,11 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
                 <span className="text-[10px] font-bold text-foreground/80">{ticket.cf_company || 'N/A'}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[8px] font-black uppercase">
-                      <Heart className="h-2 w-2" /> 84
+                    <div className={cn("flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase", getHealthColor(healthScore))}>
+                      <Heart className="h-2 w-2" /> {healthScore}
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent>Customer Health Score: 84/100</TooltipContent>
+                  <TooltipContent>Account Health Score</TooltipContent>
                 </Tooltip>
               </div>
               <div className="h-3 w-px bg-border" />
@@ -162,40 +161,25 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
                 {sig.label}
               </Badge>
             ))}
-            {aiSignals.length === 0 && (
-              <Badge variant="outline" className="h-5 px-2 text-[8px] font-black uppercase tracking-tighter text-muted-foreground border-dashed">
-                Stable
-              </Badge>
-            )}
           </div>
         </TableCell>
 
         <TableCell>
-          <Badge className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border-none", getStatusBadgeClasses(ticket.status))}>
-            {getStatusIcon(ticket.status)}
-            {ticket.status === 'Pending (Awaiting your Reply)' ? 'In Progress' : ticket.status}
+          <Badge className={cn("inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border", getStatusBadgeClasses(ticket.status))}>
+            {STATUS_SHORT[ticket.status] || ticket.status}
           </Badge>
         </TableCell>
 
         <TableCell>
-          <div className="flex flex-col items-end gap-1.5">
+          <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Risk</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Risk</span>
               {renderHeatmap(riskScore)}
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1 text-[9px] font-bold text-muted-foreground uppercase cursor-help">
-                  <Clock className="h-2.5 w-2.5" />
-                  {ageDays}d old
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="p-3 space-y-1">
-                <p className="text-[10px] font-bold uppercase text-muted-foreground">Timeline</p>
-                <p className="text-xs">Created: {format(parseISO(ticket.created_at), 'MMM dd, HH:mm')}</p>
-                <p className="text-xs">Last Update: {format(parseISO(ticket.updated_at), 'MMM dd, HH:mm')}</p>
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-1 text-[9px] font-bold text-muted-foreground uppercase">
+              <Clock className="h-2.5 w-2.5" />
+              {ageDays}d
+            </div>
           </div>
         </TableCell>
 
@@ -205,7 +189,7 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
               variant="ghost" 
               size="icon" 
               onClick={() => setIsExpanded(!isExpanded)}
-              className={cn("h-8 w-8 rounded-full transition-all", isExpanded && "bg-indigo-600 text-white shadow-lg shadow-indigo-200")}
+              className={cn("h-8 w-8 rounded-full transition-all", isExpanded && "bg-indigo-600 text-white shadow-lg")}
             >
               <Brain className={cn("h-4 w-4", !isExpanded && "text-muted-foreground")} />
             </Button>
@@ -226,42 +210,40 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="p-8 pt-0 grid grid-cols-1 md:grid-cols-3 gap-8 border-b border-gray-100 dark:border-gray-700">
-                  <div className="space-y-4 p-5 rounded-[24px] bg-indigo-50/30 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/50">
-                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 flex items-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5" /> Why this matters
+                <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-gray-100 dark:border-gray-700">
+                  <Card className="border-none bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl space-y-2">
+                    <h5 className="text-[9px] font-black uppercase tracking-widest text-indigo-600 flex items-center gap-2">
+                      <Sparkles className="h-3 w-3" /> Why this matters
                     </h5>
-                    <p className="text-sm font-bold leading-relaxed text-foreground/90">
+                    <p className="text-xs font-bold leading-relaxed text-foreground/80">
                       {riskScore > 70 
                         ? "Critical combination of high priority and SLA breach. Customer health is at risk due to repeated module failures." 
                         : "Standard operational request. Sentiment is stable, but requires technical validation."}
                     </p>
-                  </div>
+                  </Card>
 
-                  <div className="space-y-4 p-5 rounded-[24px] bg-rose-50/30 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-900/50">
-                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 flex items-center gap-2">
-                      <ShieldAlert className="h-3.5 w-3.5" /> Predictive Insight
+                  <Card className="border-none bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl space-y-2">
+                    <h5 className="text-[9px] font-black uppercase tracking-widest text-rose-600 flex items-center gap-2">
+                      <ShieldAlert className="h-3 w-3" /> Predictive Insight
                     </h5>
-                    <p className="text-sm font-bold leading-relaxed text-foreground/90">
-                      {ticket.due_by && isPast(parseISO(ticket.due_by)) 
+                    <p className="text-xs font-bold leading-relaxed text-foreground/80">
+                      {isBreached 
                         ? "SLA already breached. High probability of customer follow-up in next 4 hours." 
                         : "Likely to resolve within SLA if technical review is completed today."}
                     </p>
-                  </div>
+                  </Card>
 
-                  <div className="space-y-4 p-5 rounded-[24px] bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/50">
-                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 flex items-center gap-2">
-                      <Zap className="h-3.5 w-3.5" /> Suggested Action
+                  <Card className="border-none bg-indigo-600 p-4 rounded-2xl space-y-3 text-white shadow-lg shadow-indigo-500/20">
+                    <h5 className="text-[9px] font-black uppercase tracking-widest text-indigo-100 flex items-center gap-2">
+                      <Zap className="h-3 w-3" /> Suggested Action
                     </h5>
-                    <div className="space-y-2">
-                      <p className="text-sm font-bold leading-snug">
-                        {riskScore > 70 ? "Escalate to Engineering Lead" : "Draft technical update for customer"}
-                      </p>
-                      <Button size="sm" className="h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase tracking-widest w-full">
-                        Execute Action
-                      </Button>
-                    </div>
-                  </div>
+                    <p className="text-xs font-black leading-snug">
+                      {riskScore > 70 ? "Escalate to Engineering Lead" : "Draft technical update for customer"}
+                    </p>
+                    <Button size="sm" className="h-8 rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 font-black text-[9px] uppercase tracking-widest w-full">
+                      Execute Now
+                    </Button>
+                  </Card>
                 </div>
               </motion.div>
             </TableCell>
