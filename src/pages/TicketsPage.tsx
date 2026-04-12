@@ -210,30 +210,32 @@ const TicketsPage = () => {
             >
               {(queueState.viewMode === 'list' || queueState.viewMode === 'focus') && (
                 <div className="rounded-[28px] border border-white/20 dark:border-gray-800/30 bg-white dark:bg-gray-900 shadow-glass overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50 dark:bg-gray-800 border-none shadow-sm">
-                        <TableHead className="w-12 pl-6"></TableHead>
-                        <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
-                        <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
-                        <TableHead className="font-bold text-[10px] uppercase tracking-widest">AI Signals</TableHead>
-                        <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
-                        <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
-                        <TableHead className="w-24 pr-6"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(queueState.viewMode === 'focus' ? criticalTickets : tickets).map((ticket) => (
-                        <TicketRow 
-                          key={ticket.id}
-                          ticket={ticket}
-                          isSelected={queueState.selectedTicketIds.includes(ticket.id)}
-                          onToggleSelect={() => queueState.toggleSelection(ticket.id)}
-                          onClick={() => { setSelectedTicket(ticket); }}
-                        />
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="max-h-[calc(100vh-380px)] overflow-y-auto relative">
+                    <Table>
+                      <TableHeader className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-800 shadow-sm">
+                        <TableRow className="border-none">
+                          <TableHead className="w-12 pl-6"></TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Code</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Subject & Context</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">AI Signals</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest">Status</TableHead>
+                          <TableHead className="font-bold text-[10px] uppercase tracking-widest text-right">Risk & Age</TableHead>
+                          <TableHead className="w-24 pr-6"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(queueState.viewMode === 'focus' ? criticalTickets : tickets).map((ticket) => (
+                          <TicketRow 
+                            key={ticket.id}
+                            ticket={ticket}
+                            isSelected={queueState.selectedTicketIds.includes(ticket.id)}
+                            onToggleSelect={() => queueState.toggleSelection(ticket.id)}
+                            onClick={() => { setSelectedTicket(ticket); }}
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               )}
 
