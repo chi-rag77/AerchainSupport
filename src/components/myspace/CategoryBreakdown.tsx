@@ -1,64 +1,55 @@
 "use client";
 
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from '@/lib/utils';
-import { Tag, TrendingUp, Sparkles } from 'lucide-react';
+import { Tag, TrendingUp } from 'lucide-react';
 
 interface CategoryBreakdownProps {
-  categories: {
-    label: string;
-    count: number;
-    color: string;
-    percent: number;
-  }[];
-  trendingIssue: string;
+  categories: any[];
 }
 
-const CategoryBreakdown = ({ categories, trendingIssue }: CategoryBreakdownProps) => {
+const CategoryBreakdown = ({ categories }: CategoryBreakdownProps) => {
   return (
-    <div className="space-y-3">
-      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-2">Tickets by Category</h3>
-      
-      <Card className="border-none shadow-glass rounded-[28px] bg-white dark:bg-gray-900 overflow-hidden h-full">
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-3">
-            {categories.map((cat) => (
-              <div key={cat.label} className="space-y-1.5">
-                <div className="flex justify-between items-end">
-                  <div className="flex items-center gap-2">
-                    <div className={cn("h-1.5 w-1.5 rounded-full", cat.color)} />
-                    <span className="text-[11px] font-bold text-foreground/80">{cat.label}</span>
-                  </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-xs font-black">{cat.count}</span>
-                    <span className="text-[9px] font-bold text-muted-foreground">{cat.percent}%</span>
-                  </div>
-                </div>
-                <div className="h-1 w-full bg-gray-50 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div className={cn("h-full rounded-full", cat.color)} style={{ width: `${cat.percent}%` }} />
-                </div>
-              </div>
-            ))}
+    <Card className="border border-border/50 bg-white dark:bg-gray-900 rounded-[16px] shadow-sm overflow-hidden">
+      <CardHeader className="p-5 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-indigo-600 text-white shadow-sm">
+            <Tag className="h-4 w-4" />
           </div>
+          <div>
+            <CardTitle className="text-sm font-bold">Tickets by Category</CardTitle>
+            <p className="text-[10px] font-medium text-muted-foreground">Distribution across your queue</p>
+          </div>
+        </div>
+      </CardHeader>
 
-          <div className="p-4 rounded-[20px] bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 space-y-2">
-            <div className="flex items-center gap-2 text-indigo-600">
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span className="text-[9px] font-black uppercase tracking-widest">Trending Issue</span>
+      <CardContent className="p-5 pt-0 space-y-5">
+        {categories.map((cat) => (
+          <div key={cat.label} className="space-y-1.5">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className={cn("h-2 w-2 rounded-full", cat.color)} />
+                <span className="text-xs font-bold text-foreground/80">{cat.label}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold text-muted-foreground">{cat.percent}%</span>
+                <span className="text-xs font-black text-foreground">{cat.count}</span>
+              </div>
             </div>
-            <p className="text-[11px] font-bold text-indigo-900 dark:text-indigo-200 leading-tight">
-              {trendingIssue}
-            </p>
-            <div className="flex items-center gap-1.5 text-[8px] font-black text-indigo-400 uppercase tracking-tighter">
-              <Sparkles className="h-2.5 w-2.5" />
-              Detected in 42% of recent tickets
+            <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div className={cn("h-full rounded-full", cat.color)} style={{ width: `${cat.percent}%` }} />
             </div>
+            {cat.trending && (
+              <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase tracking-tighter pl-4">
+                <TrendingUp className="h-2.5 w-2.5 text-indigo-500" />
+                Trending: {cat.trending}
+              </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 };
 

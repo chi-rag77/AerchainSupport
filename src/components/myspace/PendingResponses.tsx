@@ -4,15 +4,17 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, ArrowRight, Clock, MessageSquare, Bell } from 'lucide-react';
+import { MessageSquare, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PendingTicket {
   id: string;
   subject: string;
+  customer: string;
   waitDuration: string;
   priority: string;
   needsFollowUp: boolean;
+  autoRemind?: boolean;
 }
 
 interface PendingResponsesProps {
@@ -22,66 +24,66 @@ interface PendingResponsesProps {
 
 const PendingResponses = ({ tickets, onView }: PendingResponsesProps) => {
   return (
-    <Card className="border-none shadow-glass rounded-[28px] bg-white dark:bg-gray-900 overflow-hidden">
-      <CardHeader className="p-6 pb-2">
+    <Card className="border border-border/50 bg-white dark:bg-gray-900 rounded-[16px] shadow-sm overflow-hidden">
+      <CardHeader className="p-5 pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
-              <Users className="h-4 w-4" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
+              <MessageSquare className="h-4 w-4" />
             </div>
-            <CardTitle className="text-base font-black tracking-tight">Pending Responses</CardTitle>
+            <div>
+              <CardTitle className="text-sm font-bold">Pending Responses</CardTitle>
+              <p className="text-[10px] font-medium text-muted-foreground">Waiting on customer replies</p>
+            </div>
           </div>
-          <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-none font-bold text-[9px] uppercase tracking-widest">
-            Waiting on Customers
+          <Badge variant="secondary" className="bg-amber-50 text-amber-600 border-none font-black text-[10px] px-3 py-0.5 rounded-full">
+            3 waiting
           </Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="p-6 pt-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <CardContent className="p-0">
+        <div className="divide-y divide-border/50">
           {tickets.map((ticket) => (
             <div 
-              key={ticket.id}
+              key={ticket.id} 
+              className="group flex items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all cursor-pointer"
               onClick={() => onView(ticket.id)}
-              className={cn(
-                "p-4 rounded-[20px] border transition-all duration-300 cursor-pointer group",
-                ticket.needsFollowUp ? "bg-amber-50/30 dark:bg-amber-950/10 border-amber-100 dark:border-amber-900/50" : "bg-white dark:bg-gray-800 border-border/50 hover:border-indigo-200"
-              )}
             >
-              <div className="space-y-3">
-                <div className="flex justify-between items-start">
-                  <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">#{ticket.id}</span>
-                  <Badge variant="outline" className="text-[8px] font-black uppercase tracking-tighter border-none bg-gray-100 dark:bg-gray-700 px-1.5 py-0">
-                    {ticket.priority}
-                  </Badge>
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">#{ticket.id}</span>
+                  <h4 className="text-sm font-bold text-foreground truncate group-hover:text-indigo-600 transition-colors">
+                    {ticket.subject}
+                  </h4>
                 </div>
-
-                <h4 className="text-xs font-bold leading-tight text-foreground line-clamp-2 group-hover:text-indigo-600 transition-colors">
-                  {ticket.subject}
-                </h4>
-
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase">
-                    <Clock className="h-3 w-3" />
-                    Waiting {ticket.waitDuration}
-                  </div>
-                  {ticket.needsFollowUp && (
-                    <div className="flex items-center gap-1 text-amber-600 animate-pulse">
-                      <Bell className="h-3 w-3" />
-                      <span className="text-[8px] font-black uppercase tracking-widest">Follow up</span>
+                <div className="flex items-center gap-3">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-tighter">
+                    {ticket.customer}
+                  </p>
+                  {ticket.autoRemind && (
+                    <div className="flex items-center gap-1 text-[9px] font-bold text-rose-600 uppercase tracking-tighter">
+                      <AlertCircle className="h-2.5 w-2.5" />
+                      Auto-remind suggested
                     </div>
                   )}
                 </div>
               </div>
+
+              <div className="flex items-center gap-4">
+                <Badge variant="outline" className="bg-gray-50 text-muted-foreground border-none font-bold text-[10px] gap-1.5 px-2 py-0.5 rounded-lg">
+                  <Clock className="h-3 w-3" />
+                  {ticket.waitDuration}
+                </Badge>
+                {ticket.needsFollowUp && (
+                  <Button size="sm" variant="outline" className="h-8 rounded-lg border-indigo-200 text-indigo-600 font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-indigo-50">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    Follow up
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
-
-          {tickets.length === 0 && (
-            <div className="col-span-full py-10 text-center opacity-30">
-              <MessageSquare className="h-10 w-10 mx-auto mb-2" />
-              <p className="text-[10px] font-bold uppercase tracking-widest">No pending responses</p>
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>
