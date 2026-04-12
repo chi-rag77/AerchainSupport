@@ -1,12 +1,15 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Settings, HelpCircle, BarChart3, Clock, Zap, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import PreferencesSheet from './PreferencesSheet';
+import SupportDialog from './SupportDialog';
 
 interface AgentHeaderProps {
   name: string;
@@ -23,6 +26,10 @@ interface AgentHeaderProps {
 }
 
 const AgentHeader = ({ name, title, team, status, avatarUrl, stats, backlogCount }: AgentHeaderProps) => {
+  const navigate = useNavigate();
+  const [isPrefsOpen, setIsPrefsOpen] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
@@ -74,13 +81,25 @@ const AgentHeader = ({ name, title, team, status, avatarUrl, stats, backlogCount
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black text-[9px] uppercase tracking-widest gap-2 transition-all">
+            <Button 
+              variant="ghost" size="sm" 
+              onClick={() => setIsPrefsOpen(true)}
+              className="h-9 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black text-[9px] uppercase tracking-widest gap-2 transition-all"
+            >
               <Settings className="h-3.5 w-3.5" /> Preferences
             </Button>
-            <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black text-[9px] uppercase tracking-widest gap-2 transition-all">
+            <Button 
+              variant="ghost" size="sm" 
+              onClick={() => setIsSupportOpen(true)}
+              className="h-9 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black text-[9px] uppercase tracking-widest gap-2 transition-all"
+            >
               <HelpCircle className="h-3.5 w-3.5" /> Support
             </Button>
-            <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-black text-[9px] uppercase tracking-widest gap-2 transition-all shadow-lg">
+            <Button 
+              variant="ghost" size="sm" 
+              onClick={() => navigate('/reports')}
+              className="h-9 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-black text-[9px] uppercase tracking-widest gap-2 transition-all shadow-lg"
+            >
               <BarChart3 className="h-3.5 w-3.5" /> Analytics
             </Button>
           </div>
@@ -106,6 +125,9 @@ const AgentHeader = ({ name, title, team, status, avatarUrl, stats, backlogCount
           </div>
         </div>
       </div>
+
+      <PreferencesSheet isOpen={isPrefsOpen} onClose={() => setIsPrefsOpen(false)} />
+      <SupportDialog isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
     </div>
   );
 };
