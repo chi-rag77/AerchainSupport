@@ -1,4 +1,4 @@
-// v3.0 - AI Dashboard Insights with Gemini 2.5 Flash
+// v3.1 - Optimized AI Dashboard Insights
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -19,77 +19,56 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
-    if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'Supabase environment variables not set.' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    if (!supabaseUrl || !geminiApiKey) throw new Error('Configuration missing.');
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+    const supabase = createClient(supabaseUrl, supabaseAnonKey!, {
+      global: { headers: { Authorization: authHeader! } },
     });
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    // 1. Check Cache
-    const { data: cached } = await supabase
-      .from('ai_dashboard_summary')
-      .select('*')
-      .eq('org_id', user.id)
-      .single();
+    // 1. Fetch Pre-Aggregated Data (Faster than raw tickets)
+    const thirtyDaysAgo = dateFns.subDays(new Date(), 30).toISOString();
+    
+    const [
+      { data: tickets },
+      { data: cached }
+    ] = await Promise.all([
+      supabase.from('freshdesk_tickets').select('status, priority, cf_company, cf_module').gte('created_at', thirtyDaysAgo).limit(1000),
+      supabase.from('ai_dashboard_summary').select('*').eq('org_id', user.id).maybeSingle()
+    ]);
 
-    if (cached) {
+    if (cached && !new URL(req.url).searchParams.get('force')) {
       const lastUpdated = new Date(cached.updated_at);
-      const hoursSinceUpdate = (new Date().getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
-      const url = new URL(req.url);
-      const force = url.searchParams.get('force') === 'true';
-      
-      if (!force && hoursSinceUpdate < 6) {
-        return new Response(JSON.stringify({
-          ...cached,
-          insights: cached.insights || [{ message: "Operational trends are stable.", severity: "info", type: "trend" }]
-        }), { status: 200, headers: corsHeaders });
+      if ((new Date().getTime() - lastUpdated.getTime()) < 3600000) { // 1h cache
+        return new Response(JSON.stringify(cached), { status: 200, headers: corsHeaders });
       }
     }
 
-    // 2. Fetch Data
-    const thirtyDaysAgo = dateFns.subDays(new Date(), 30).toISOString();
-    const { data: tickets } = await supabase
-      .from('freshdesk_tickets')
-      .select('subject, status, priority, created_at, due_by, cf_company')
-      .gte('created_at', thirtyDaysAgo)
-      .limit(500);
+    if (!tickets || tickets.length === 0) throw new Error("No data to analyze.");
 
-    if (!tickets || tickets.length === 0) {
-      return new Response(JSON.stringify({ 
-        summary: "No ticket data available.",
-        risk_level: "Low",
-        confidence: 100,
-        key_drivers: [],
-        executive_action: "Encourage team to log tickets.",
-        insights: []
-      }), { status: 200, headers: corsHeaders });
-    }
+    // 2. Pre-process data for AI (Reduce tokens)
+    const stats = {
+      total: tickets.length,
+      open: tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase())).length,
+      urgent: tickets.filter(t => t.priority === 'Urgent').length,
+      topCompanies: Object.entries(tickets.reduce((acc: any, t) => {
+        acc[t.cf_company || 'N/A'] = (acc[t.cf_company || 'N/A'] || 0) + 1;
+        return acc;
+      }, {})).sort((a: any, b: any) => b[1] - a[1]).slice(0, 5),
+      topModules: Object.entries(tickets.reduce((acc: any, t) => {
+        acc[t.cf_module || 'N/A'] = (acc[t.cf_module || 'N/A'] || 0) + 1;
+        return acc;
+      }, {})).sort((a: any, b: any) => b[1] - a[1]).slice(0, 5)
+    };
 
-    // 3. Call Gemini (Using 2.5-flash via v1beta)
-    const context = `Support data (30 days): Total: ${tickets.length}, Open: ${tickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase())).length}`;
-    const prompt = `Analyze this support data and return STRICT JSON:
-    {
-      "summary": "2 sentence summary",
-      "risk_level": "Low|Medium|High",
-      "confidence": 90-98,
-      "key_drivers": ["driver 1"],
-      "executive_action": "one recommendation",
-      "insights": [{"message": "obs", "severity": "info", "type": "trend"}]
-    }
-    Data: ${context}`;
+    // 3. Call Gemini 1.5 Flash (Fastest)
+    const prompt = `Analyze support ops data: ${JSON.stringify(stats)}. 
+    Return STRICT JSON: { "summary": "2 sentences", "risk_level": "Low|Med|High", "confidence": 95, "key_drivers": [], "executive_action": "", "insights": [{"message": "", "severity": "info", "type": "trend"}] }`;
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -98,30 +77,21 @@ serve(async (req) => {
       }),
     });
 
-    if (geminiResponse.ok) {
-      const geminiData = await geminiResponse.json();
-      const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-      const analysis = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
+    const geminiData = await geminiRes.json();
+    const analysis = JSON.parse(geminiData.candidates[0].content.parts[0].text);
 
-      const dbPayload = {
-        org_id: user.id,
-        summary: analysis.summary,
-        risk_level: analysis.risk_level,
-        confidence: analysis.confidence,
-        key_drivers: analysis.key_drivers,
-        executive_action: analysis.executive_action,
-        updated_at: new Date().toISOString(),
-      };
+    const dbPayload = {
+      org_id: user.id,
+      ...analysis,
+      updated_at: new Date().toISOString(),
+    };
 
-      await supabase.from('ai_dashboard_summary').upsert(dbPayload, { onConflict: 'org_id' });
+    EdgeRuntime.waitUntil(supabase.from('ai_dashboard_summary').upsert(dbPayload, { onConflict: 'org_id' }));
 
-      return new Response(JSON.stringify({ ...dbPayload, insights: analysis.insights }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    throw new Error("AI Service failed to respond correctly.");
+    return new Response(JSON.stringify(dbPayload), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {

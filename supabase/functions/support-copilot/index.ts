@@ -1,4 +1,4 @@
-// v1.1 - Support Copilot Core Engine (Fixed Syntax)
+// v1.2 - Optimized Support Copilot
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -17,8 +17,6 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
-    if (!geminiApiKey) throw new Error("GEMINI_API_KEY is not set.");
-
     const authHeader = req.headers.get('Authorization');
     const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
       global: { headers: { Authorization: authHeader! } },
@@ -26,82 +24,48 @@ serve(async (req) => {
 
     const { query, context = {} } = await req.json();
 
-    // --- STEP 1: INTENT DETECTION ---
-    const intentPrompt = `
-      You are an intent classification engine for a support operations AI assistant.
-      Classify the user's query into ONE of these intents:
-      - insight → user is asking for explanation or analysis
-      - action → user wants to perform an operation
-      - navigation → user wants to view something
-      - knowledge → user is asking how to solve something
+    // 1. Fetch System Context in Parallel
+    const [
+      { count: total }, 
+      { count: open }, 
+      { count: urgent }
+    ] = await Promise.all([
+      supabase.from('freshdesk_tickets').select('*', { count: 'exact', head: true }),
+      supabase.from('freshdesk_tickets').select('*', { count: 'exact', head: true }).not('status', 'in', '("Resolved","Closed")'),
+      supabase.from('freshdesk_tickets').select('*', { count: 'exact', head: true }).eq('priority', 'Urgent')
+    ]);
 
-      Also extract entities: metrics, filters, actions.
-      Return STRICT JSON:
-      {
-        "intent": "insight|action|navigation|knowledge",
-        "entities": { "metric": "", "customer": "", "time_range": "", "priority": "" }
-      }
-      User Query: "${query}"
-    `;
+    const systemData = { total, open, urgent };
 
-    const intentRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: intentPrompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
-      }),
-    });
-
-    const intentData = await intentRes.json();
-    const intent = JSON.parse(intentData.candidates[0].content.parts[0].text);
-
-    // --- STEP 2: DATA FETCHING ---
-    let systemData = {};
-    if (intent.intent === 'insight' || intent.intent === 'navigation') {
-      const [{ count: total }, { count: open }, { count: urgent }] = await Promise.all([
-        supabase.from('freshdesk_tickets').select('*', { count: 'exact', head: true }),
-        supabase.from('freshdesk_tickets').select('*', { count: 'exact', head: true }).not('status', 'in', '("Resolved","Closed")'),
-        supabase.from('freshdesk_tickets').select('*', { count: 'exact', head: true }).eq('priority', 'Urgent')
-      ]);
-      systemData = { total, open, urgent };
-    }
-
-    // --- STEP 3: RESPONSE GENERATION ---
-    const responsePrompt = `
+    // 2. Single AI Call for both Intent and Response (Faster than sequential)
+    const prompt = `
       You are a support operations analyst. 
-      User asked: "${query}"
-      Intent: ${intent.intent}
+      User Query: "${query}"
       System Data: ${JSON.stringify(systemData)}
       Current Page: ${context.current_page || 'dashboard'}
 
-      Explain clearly what is happening and what needs attention.
-      If intent is 'navigation', suggest a filter action.
-      If intent is 'insight', provide data points.
-
+      Analyze intent (insight|action|navigation|knowledge) and provide a helpful response.
       Return STRICT JSON:
       {
-        "type": "${intent.intent}",
+        "type": "intent",
         "title": "Short Title",
         "answer": "Main response text",
-        "bullets": ["point 1", "point 2"],
-        "actions": [
-          { "label": "Action Label", "type": "filter|navigate", "payload": {} }
-        ]
+        "bullets": ["point 1"],
+        "actions": [{ "label": "Action", "type": "filter|navigate", "payload": {} }]
       }
     `;
 
-    const finalRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: responsePrompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { response_mime_type: "application/json", temperature: 0.2 }
       }),
     });
 
-    const finalData = await finalRes.json();
-    const result = JSON.parse(finalData.candidates[0].content.parts[0].text);
+    const data = await res.json();
+    const result = JSON.parse(data.candidates[0].content.parts[0].text);
 
     return new Response(JSON.stringify(result), {
       status: 200,

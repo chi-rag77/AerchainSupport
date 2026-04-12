@@ -1,4 +1,4 @@
-// v3.1 - Ticket AI Analyzer with Gemini 2.5 Flash
+// v3.2 - Optimized Ticket AI Analyzer
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -21,7 +21,7 @@ serve(async (req) => {
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'AI Configuration missing (API Key or Supabase URL).' }), {
+      return new Response(JSON.stringify({ error: 'AI Configuration missing.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -40,66 +40,57 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'ticketId is required' }), { status: 400, headers: corsHeaders });
     }
 
-    // 1. Check Cache
+    // 1. Fast Cache Check
     if (!forceRefresh) {
-      try {
-        const { data: cached } = await supabase
-          .from('ai_ticket_analysis')
-          .select('*')
-          .eq('ticket_id', ticketId)
-          .single();
+      const { data: cached } = await supabase
+        .from('ai_ticket_analysis')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .maybeSingle();
 
-        if (cached) {
-          const lastUpdated = new Date(cached.updated_at);
-          const hoursSinceUpdate = (new Date().getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
-          if (hoursSinceUpdate < 24) {
-            return new Response(JSON.stringify(cached), { status: 200, headers: corsHeaders });
-          }
+      if (cached) {
+        const lastUpdated = new Date(cached.updated_at);
+        const minutesSinceUpdate = (new Date().getTime() - lastUpdated.getTime()) / (1000 * 60);
+        if (minutesSinceUpdate < 1440) { // 24h cache
+          return new Response(JSON.stringify(cached), { status: 200, headers: corsHeaders });
         }
-      } catch (e) {
-        console.warn("[analyze-ticket-ai] Cache check failed:", e.message);
       }
     }
 
-    // 2. Fetch Messages
+    // 2. Fetch only essential messages (last 10 for speed)
     const { data: messages, error: msgError } = await supabase
       .from('ticket_messages')
-      .select('*')
+      .select('body_html, is_agent, created_at')
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(10);
 
     if (msgError) throw msgError;
-
     if (!messages || messages.length === 0) {
-      return new Response(JSON.stringify({ error: 'No conversation found to analyze. Please sync messages first.' }), { status: 404, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'No conversation found.' }), { status: 404, headers: corsHeaders });
     }
 
-    // 3. Call Gemini (Using 2.5-flash via v1beta)
+    // 3. Call Gemini with optimized prompt
     const prompt = getAnalysisPrompt(customerName || 'Unknown', messages.reverse());
     
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { 
           response_mime_type: "application/json",
-          temperature: 0.1
+          temperature: 0.1,
+          max_output_tokens: 800
         }
       }),
     });
 
-    if (!geminiResponse.ok) {
-      const errorBody = await geminiResponse.text();
-      throw new Error(`AI Service Error: ${geminiResponse.status} - ${errorBody}`);
-    }
+    if (!geminiResponse.ok) throw new Error(`AI Service Error: ${geminiResponse.status}`);
 
     const geminiData = await geminiResponse.json();
-    let rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    const analysis = JSON.parse(rawText);
+    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    const analysis = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
 
     const dbPayload = {
       ticket_id: ticketId,
@@ -117,11 +108,8 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
 
-    try {
-      await supabase.from('ai_ticket_analysis').upsert(dbPayload, { onConflict: 'ticket_id' });
-    } catch (dbErr) {
-      console.error("[analyze-ticket-ai] DB save failed:", dbErr.message);
-    }
+    // Background save to not block response
+    EdgeRuntime.waitUntil(supabase.from('ai_ticket_analysis').upsert(dbPayload, { onConflict: 'ticket_id' }));
 
     return new Response(JSON.stringify(dbPayload), {
       status: 200,
@@ -129,7 +117,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('[analyze-ticket-ai] Fatal Error:', error);
+    console.error('[analyze-ticket-ai] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
