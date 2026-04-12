@@ -15,13 +15,14 @@ interface AgentHeaderProps {
   status: 'online' | 'away' | 'offline';
   avatarUrl?: string;
   stats?: {
+    todayTickets: number;
     handledToday: number;
     avgResTime: string;
-    sla: number;
   };
+  backlogCount?: number;
 }
 
-const AgentHeader = ({ name, title, team, status, avatarUrl, stats }: AgentHeaderProps) => {
+const AgentHeader = ({ name, title, team, status, avatarUrl, stats, backlogCount }: AgentHeaderProps) => {
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
@@ -88,23 +89,20 @@ const AgentHeader = ({ name, title, team, status, avatarUrl, stats }: AgentHeade
         {/* Compact Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-5 border-t border-white/10">
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
+            <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Today's Tickets</p>
+            <p className="text-2xl font-black tracking-tighter">{stats?.todayTickets || 0}</p>
+          </div>
+          <div className="bg-white/5 rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
             <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Resolved Today</p>
             <p className="text-2xl font-black tracking-tighter">{stats?.handledToday || 0}</p>
           </div>
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Avg Response</p>
+            <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Total Backlog</p>
+            <p className="text-2xl font-black tracking-tighter">{backlogCount || 0}</p>
+          </div>
+          <div className="bg-white/5 rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
+            <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Avg Resolution</p>
             <p className="text-2xl font-black tracking-tighter">{stats?.avgResTime || '0h'}</p>
-          </div>
-          <div className="bg-white/5 rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">SLA Adherence</p>
-            <p className="text-2xl font-black tracking-tighter">{stats?.sla || 0}%</p>
-          </div>
-          <div className="bg-white/5 rounded-2xl p-3 border border-white/5 hover:bg-white/10 transition-colors">
-            <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Data Integrity</p>
-            <div className="flex items-center gap-2">
-              <p className="text-xl font-black tracking-tight">Verified</p>
-              <ShieldCheck className="h-5 w-5 text-emerald-400" />
-            </div>
           </div>
         </div>
       </div>

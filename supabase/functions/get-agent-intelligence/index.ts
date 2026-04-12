@@ -1,4 +1,4 @@
-// v1.1 - Real-time Agent Intelligence Engine
+// v1.2 - Real-time Agent Intelligence Engine with Today's Tickets
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -35,6 +35,11 @@ serve(async (req) => {
 
     const allTickets = tickets || [];
     const activeTickets = allTickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()));
+    
+    const todayTickets = allTickets.filter(t => 
+      dateFns.isToday(new Date(t.created_at))
+    ).length;
+
     const resolvedToday = allTickets.filter(t => 
       ['resolved', 'closed'].includes(t.status.toLowerCase()) && 
       dateFns.isToday(new Date(t.updated_at))
@@ -140,6 +145,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       ...aiResult,
       stats: {
+        todayTickets,
         handledToday: resolvedToday.length,
         avgResTime: avgResTimeStr,
         sla: slaAdherence,

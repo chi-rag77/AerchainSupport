@@ -95,6 +95,7 @@ const MySpace = () => {
               team="Enterprise Support"
               status="online"
               stats={intelligence.stats}
+              backlogCount={intelligence.queue.total}
             />
 
             {/* Section 2: AI Briefing */}
