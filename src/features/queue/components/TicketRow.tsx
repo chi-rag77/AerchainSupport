@@ -11,7 +11,7 @@ import {
   CheckCircle2, Hourglass, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, parseISO, differenceInDays, isPast } from 'date-fns';
+import { format, parseISO, differenceInDays, isPast, isToday, differenceInHours } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -35,11 +35,17 @@ const STATUS_SHORT: Record<string, string> = {
 const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { riskScore, ageDays, aiSignals, healthScore, isBreached } = useMemo(() => {
+  const { riskScore, ageDays, aiSignals, healthScore, isBreached, isAboutToBreach, isNormal, isWaiting } = useMemo(() => {
     const created = parseISO(ticket.created_at);
     const days = differenceInDays(new Date(), created);
-    const breached = ticket.due_by && isPast(parseISO(ticket.due_by)) && !['resolved', 'closed'].includes(ticket.status.toLowerCase());
+    const statusLower = ticket.status.toLowerCase();
+    const isResolved = ['resolved', 'closed'].includes(statusLower);
     
+    const breached = ticket.due_by && isPast(parseISO(ticket.due_by)) && !isResolved;
+    const aboutToBreach = !breached && ticket.due_by && !isResolved && differenceInHours(parseISO(ticket.due_by), new Date()) < 4;
+    const normal = isToday(created) && !breached && !aboutToBreach;
+    const waiting = ['on tech', 'on product', 'waiting on customer'].includes(statusLower);
+
     // Base score from age
     let score = days > 3 ? 10 : 0;
     const signals = [];
@@ -64,7 +70,10 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
       ageDays: days, 
       aiSignals: signals,
       healthScore: hScore,
-      isBreached: breached
+      isBreached: breached,
+      isAboutToBreach: aboutToBreach,
+      isNormal: normal,
+      isWaiting: waiting
     };
   }, [ticket]);
 
@@ -103,11 +112,20 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
     return "bg-rose-50 text-rose-700";
   };
 
+  const getRowGradient = () => {
+    if (isBreached) return "bg-gradient-to-r from-rose-50/50 to-transparent dark:from-rose-950/20";
+    if (isAboutToBreach) return "bg-gradient-to-r from-amber-50/50 to-transparent dark:from-amber-950/20";
+    if (isNormal) return "bg-gradient-to-r from-emerald-50/50 to-transparent dark:from-emerald-950/20";
+    if (isWaiting) return "bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-950/20";
+    return "";
+  };
+
   return (
     <>
       <TableRow 
         className={cn(
           "group transition-all duration-200 border-b border-gray-50 dark:border-gray-900 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/10",
+          getRowGradient(),
           isSelected && "bg-indigo-50/40 dark:bg-indigo-950/20",
           isExpanded && "bg-white dark:bg-gray-800 shadow-sm z-10 relative",
           // Left Border Accent
