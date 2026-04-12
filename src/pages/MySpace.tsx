@@ -27,7 +27,6 @@ const MySpace = () => {
   const { data: intelligence, isLoading: isIntelLoading } = useAgentIntelligence();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
-  // Fetch full ticket details for the modal
   const { data: selectedTicket } = useQuery<Ticket | null>({
     queryKey: ['ticketDetail', selectedTicketId],
     queryFn: async () => {
@@ -68,9 +67,9 @@ const MySpace = () => {
 
   return (
     <TooltipProvider>
-      <div className="flex-1 flex flex-col p-8 space-y-10 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
+      <div className="flex-1 flex flex-col p-6 space-y-6 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
         
-        {/* Section 1: Header */}
+        {/* Section 1: Header - Compact */}
         <AgentHeader 
           name={fullName}
           title="Senior Support Engineer"
@@ -78,31 +77,31 @@ const MySpace = () => {
           status="online"
         />
 
-        {/* Section 2: AI Briefing */}
+        {/* Section 2: AI Briefing - High Impact */}
         <AIDailyBriefing briefing={intelligence.briefing} />
 
-        {/* Section 3: Recommended Actions */}
+        {/* Section 3: Recommended Actions - High Density */}
         <RecommendedActions 
           actions={intelligence.actions.map((a, i) => ({ ...a, id: `action-${i}`, done: false }))} 
           onToggle={(id) => toast.success("Action marked as done!")}
         />
 
-        {/* Section 4 & 5: Stats & Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Section 4 & 5: Stats & Breakdown - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <QuickStats stats={intelligence.stats} />
           <QueueBreakdown data={intelligence.queue} />
         </div>
 
-        {/* Section 6 & 7: Urgent & Categories */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Section 6 & 7: Urgent & Categories - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <UrgentTickets tickets={urgentTickets} onView={setSelectedTicketId} />
           <CategoryBreakdown categories={categories} trendingIssue="Recurring timeout in RFQ module" />
         </div>
 
-        {/* Section 8: Pending Responses */}
+        {/* Section 8: Pending Responses - Full Width */}
         <PendingResponses tickets={pendingResponses} onView={setSelectedTicketId} />
 
-        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
           <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-30">End of Personal Workspace</p>
         </div>
 

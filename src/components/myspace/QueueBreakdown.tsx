@@ -29,7 +29,7 @@ const QueueBreakdown = ({ data }: QueueBreakdownProps) => {
   const getHealthLabel = (score: number) => {
     if (score >= 80) return "Excellent";
     if (score >= 60) return "Good";
-    if (score >= 40) return "Needs Attention";
+    if (score >= 40) return "Attention";
     return "Critical";
   };
 
@@ -41,49 +41,40 @@ const QueueBreakdown = ({ data }: QueueBreakdownProps) => {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-2">Queue Breakdown</h3>
       
-      <Card className="border-none shadow-glass rounded-[32px] bg-white dark:bg-gray-900 overflow-hidden">
-        <CardContent className="p-8 space-y-8">
-          {/* Health Score Header */}
+      <Card className="border-none shadow-glass rounded-[28px] bg-white dark:bg-gray-900 overflow-hidden h-full">
+        <CardContent className="p-6 space-y-6">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Queue Health</p>
+            <div className="space-y-0.5">
+              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Queue Health</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black tracking-tighter text-foreground">{data.healthScore}%</span>
-                <Badge className={cn("font-black uppercase tracking-widest text-[9px] border-2 px-3 py-0.5 rounded-full", getHealthColor(data.healthScore))}>
+                <span className="text-3xl font-black tracking-tighter text-foreground">{data.healthScore}%</span>
+                <Badge className={cn("font-black uppercase tracking-widest text-[8px] border-none px-2 py-0.5 rounded-full", getHealthColor(data.healthScore))}>
                   {getHealthLabel(data.healthScore)}
                 </Badge>
               </div>
             </div>
-            <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600">
-              <Activity className="h-6 w-6" />
+            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+              <Activity className="h-5 w-5" />
             </div>
           </div>
 
-          <Progress value={data.healthScore} className="h-2" indicatorClassName="bg-indigo-600" />
+          <Progress value={data.healthScore} className="h-1.5" indicatorClassName="bg-indigo-600" />
 
-          {/* Status Rows */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center px-1">
-              <span className="text-xs font-bold text-foreground">Open Tickets</span>
-              <span className="text-lg font-black text-foreground">{data.total}</span>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-2">
-              {items.map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-3 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 border border-border/30 group hover:border-indigo-100 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className={cn("h-1.5 w-1.5 rounded-full", item.color)} />
-                    <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors">{item.label}</span>
-                  </div>
-                  <Badge variant="secondary" className={cn("font-black text-[10px] border-none px-2.5 py-0.5", item.color.replace('bg-', 'text-'), item.color.replace('bg-', 'bg-').replace('500', '50'))}>
-                    {item.count}
-                  </Badge>
+          <div className="grid grid-cols-2 gap-2">
+            {items.map((item) => (
+              <div key={item.label} className="flex items-center justify-between p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 border border-border/30 group hover:border-indigo-100 transition-all">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", item.color)} />
+                  <span className="text-[10px] font-bold text-muted-foreground group-hover:text-foreground transition-colors truncate">{item.label}</span>
                 </div>
-              ))}
-            </div>
+                <span className={cn("font-black text-[11px] ml-2", item.color.replace('bg-', 'text-'))}>
+                  {item.count}
+                </span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

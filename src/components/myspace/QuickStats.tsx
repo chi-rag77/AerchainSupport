@@ -18,21 +18,21 @@ interface StatRowProps {
 }
 
 const StatRow = ({ label, value, trend, icon: Icon, color }: StatRowProps) => (
-  <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-800/50 border border-border/50 group hover:border-indigo-200 transition-all">
-    <div className="flex items-center gap-4">
-      <div className={cn("p-2.5 rounded-xl shadow-sm", color)}>
+  <div className="flex items-center justify-between p-4 rounded-[20px] bg-gray-50/50 dark:bg-gray-800/50 border border-border/50 group hover:border-indigo-200 transition-all">
+    <div className="flex items-center gap-3">
+      <div className={cn("p-2 rounded-xl shadow-sm", color)}>
         <Icon className="h-4 w-4" />
       </div>
       <div className="space-y-0.5">
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
         <p className="text-xl font-black tracking-tighter text-foreground">{value}</p>
       </div>
     </div>
     <div className={cn(
-      "flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter",
+      "flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
       trend > 0 ? "bg-green-50 text-green-700" : trend < 0 ? "bg-rose-50 text-rose-700" : "bg-gray-100 text-gray-500"
     )}>
-      {trend > 0 ? <TrendingUp className="h-3 w-3" /> : trend < 0 ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+      {trend > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : trend < 0 ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
       {Math.abs(trend)}%
     </div>
   </div>
@@ -55,7 +55,7 @@ interface QuickStatsProps {
 
 const QuickStats = ({ stats }: QuickStatsProps) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between px-2">
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Today's Numbers</h3>
         <div className="flex items-center gap-1.5 text-[9px] font-bold text-indigo-600">
@@ -64,30 +64,30 @@ const QuickStats = ({ stats }: QuickStatsProps) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <StatRow 
-          label="Tickets Handled" 
+          label="Handled" 
           value={stats.handledToday} 
           trend={stats.trends.handled} 
           icon={CheckCircle2} 
           color="bg-blue-50 text-blue-600" 
         />
         <StatRow 
-          label="Avg Resolution" 
+          label="Avg Res" 
           value={stats.avgResTime} 
           trend={stats.trends.resTime} 
           icon={Clock} 
           color="bg-indigo-50 text-indigo-600" 
         />
         <StatRow 
-          label="Customer Satisfaction" 
+          label="CSAT" 
           value={`${stats.csat}%`} 
           trend={stats.trends.csat} 
           icon={Heart} 
           color="bg-rose-50 text-rose-600" 
         />
         <StatRow 
-          label="SLA Adherence" 
+          label="SLA" 
           value={`${stats.sla}%`} 
           trend={stats.trends.sla} 
           icon={ShieldCheck} 
