@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Bell, LogOut, Home, Layers, 
   Settings, Users, Brain, Activity,
-  Zap, Command, ShieldCheck, BarChart3
+  Zap, Command, ShieldCheck, BarChart3, User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -60,6 +60,7 @@ const TopNavigation = () => {
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
+    { icon: User, label: "My Space", path: "/myspace" },
     { icon: Layers, label: "Queue", path: "/tickets" },
     { icon: Users, label: "Customer 360", path: "/customer360" },
     { icon: Activity, label: "Pulse", path: "/pulse" },
@@ -147,6 +148,12 @@ const TopNavigation = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-800" />
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer p-3">
+                  <Link to="/myspace" className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"><User className="h-4 w-4" /></div>
+                    <span className="font-bold text-sm">My Space</span>
+                  </Link>
+                </DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem asChild className="rounded-xl cursor-pointer p-3">
                     <Link to="/team" className="flex items-center gap-3">

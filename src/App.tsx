@@ -16,6 +16,7 @@ import AcceptInvite from "./pages/AcceptInvite";
 import KnowledgeHub from "./pages/KnowledgeHub";
 import CustomerPulse from "./pages/CustomerPulse";
 import Reports from "./pages/Reports";
+import MySpace from "./pages/MySpace";
 import { SupabaseProvider } from "./components/SupabaseProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./hooks/use-theme";
@@ -47,6 +48,7 @@ const App = () => (
                   <Route path="/team" element={<ProtectedRoute><TeamPage /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                   <Route path="/knowledge" element={<ProtectedRoute><KnowledgeHub /></ProtectedRoute>} />
+                  <Route path="/myspace" element={<ProtectedRoute><MySpace /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
