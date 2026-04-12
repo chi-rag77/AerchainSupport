@@ -35,14 +35,14 @@ const STATUS_SHORT: Record<string, string> = {
 const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { riskScore, ageDays, aiSignals, healthScore, isBreached, isAboutToBreach, isNormal, isWaiting } = useMemo(() => {
+  const { riskScore, ageDays, aiSignals, healthScore, isBreached, isAboutToBreach, isNormal, isWaiting, isResolved } = useMemo(() => {
     const created = parseISO(ticket.created_at);
     const days = differenceInDays(new Date(), created);
     const statusLower = ticket.status.toLowerCase();
-    const isResolved = ['resolved', 'closed'].includes(statusLower);
+    const resolved = ['resolved', 'closed'].includes(statusLower);
     
-    const breached = ticket.due_by && isPast(parseISO(ticket.due_by)) && !isResolved;
-    const aboutToBreach = !breached && ticket.due_by && !isResolved && differenceInHours(parseISO(ticket.due_by), new Date()) < 4;
+    const breached = ticket.due_by && isPast(parseISO(ticket.due_by)) && !resolved;
+    const aboutToBreach = !breached && ticket.due_by && !resolved && differenceInHours(parseISO(ticket.due_by), new Date()) < 4;
     const normal = isToday(created) && !breached && !aboutToBreach;
     const waiting = ['on tech', 'on product', 'waiting on customer'].includes(statusLower);
 
@@ -73,7 +73,8 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
       isBreached: breached,
       isAboutToBreach: aboutToBreach,
       isNormal: normal,
-      isWaiting: waiting
+      isWaiting: waiting,
+      isResolved: resolved
     };
   }, [ticket]);
 
@@ -113,10 +114,16 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
   };
 
   const getRowGradient = () => {
-    if (isBreached) return "bg-gradient-to-r from-rose-50/50 to-transparent dark:from-rose-950/20";
-    if (isAboutToBreach) return "bg-gradient-to-r from-amber-50/50 to-transparent dark:from-amber-950/20";
-    if (isNormal) return "bg-gradient-to-r from-emerald-50/50 to-transparent dark:from-emerald-950/20";
-    if (isWaiting) return "bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-950/20";
+    // Priority 1: Success (Resolved/Closed or New Today)
+    if (isResolved || isNormal) return "bg-gradient-to-r from-emerald-100/70 to-transparent dark:from-emerald-900/30";
+    
+    // Priority 2: Critical Risks
+    if (isBreached) return "bg-gradient-to-r from-rose-100/70 to-transparent dark:from-rose-900/30";
+    if (isAboutToBreach) return "bg-gradient-to-r from-amber-100/70 to-transparent dark:from-amber-950/30";
+    
+    // Priority 3: Waiting States
+    if (isWaiting) return "bg-gradient-to-r from-blue-100/70 to-transparent dark:from-blue-950/30";
+    
     return "";
   };
 
