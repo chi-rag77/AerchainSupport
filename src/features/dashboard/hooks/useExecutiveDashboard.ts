@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardData, KPIMetric, ExecutiveSummary, GeographySummary, GeographicData, IssueCluster, CustomerRisk } from '../types';
 import { useDashboard } from '../DashboardContext';
 import { Ticket } from '@/types';
-import { toast } from 'sonner';
 import { isWithinInterval, parseISO, isToday, isYesterday } from 'date-fns';
 
 const COUNTRY_REGISTRY: Record<string, { iso: string; id: string }> = {
@@ -30,7 +29,7 @@ export function useExecutiveDashboard() {
   const queryClient = useQueryClient();
   const { dateRange, filters } = useDashboard();
 
-  // 1. Basic Metrics
+  // 1. Basic Metrics (Fast Path)
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
@@ -41,7 +40,7 @@ export function useExecutiveDashboard() {
     staleTime: 5 * 60 * 1000, 
   });
 
-  // 2. Operational Intelligence
+  // 2. Operational Intelligence (Medium Path)
   const { data: opsData, isLoading: isLoadingOps } = useQuery({
     queryKey: ['operationalIntelligence'],
     queryFn: async () => {
@@ -49,10 +48,10 @@ export function useExecutiveDashboard() {
       if (error) throw error;
       return data;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 
-  // 3. Active Risks
+  // 3. Active Risks (Medium Path)
   const { data: riskData, isLoading: isLoadingRisks } = useQuery({
     queryKey: ['activeRisks'],
     queryFn: async () => {
@@ -60,10 +59,10 @@ export function useExecutiveDashboard() {
       if (error) throw error;
       return data;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 
-  // 4. Product Intelligence (Radar)
+  // 4. Product Intelligence (Slow Path - AI)
   const { data: radarData, isLoading: isLoadingRadar } = useQuery({
     queryKey: ['recurringIssueRadar', filters.company || 'All'],
     queryFn: async () => {
@@ -74,10 +73,10 @@ export function useExecutiveDashboard() {
       if (error) throw error;
       return data;
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 30 * 60 * 1000, // Cache AI results for 30 mins
   });
 
-  // 5. AI Insights
+  // 5. AI Insights (Slow Path - AI)
   const { data: aiRaw, isLoading: isLoadingAI } = useQuery({
     queryKey: ['dashboardInsights'],
     queryFn: async () => {
@@ -85,7 +84,7 @@ export function useExecutiveDashboard() {
       if (error) throw error;
       return data;
     },
-    staleTime: 30 * 60 * 1000,
+    staleTime: 60 * 60 * 1000, // Cache AI insights for 1 hour
   });
 
   const { data: recentTickets = [], isLoading: isLoadingTickets, isFetching } = useQuery<Ticket[]>({
@@ -95,21 +94,21 @@ export function useExecutiveDashboard() {
         .from('freshdesk_tickets')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(1000); 
+        .limit(500); // Reduced limit for faster load
       if (error) throw error;
       return data.map(t => ({ ...t, id: t.freshdesk_id })) as Ticket[];
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: uniqueCompanies = [] } = useQuery<string[]>({
     queryKey: ['uniqueCompaniesList'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('freshdesk_tickets').select('cf_company').limit(1000);
+      const { data, error } = await supabase.from('freshdesk_tickets').select('cf_company').limit(500);
       if (error) throw error;
       return Array.from(new Set((data || []).map(t => t.cf_company).filter(Boolean))) as string[];
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 
   const tickerMetrics = useMemo(() => {
@@ -175,7 +174,6 @@ export function useExecutiveDashboard() {
       { title: "SLA Adherence", value: `${metrics?.slaCompliance || 0}%`, trend: -2, microInsight: "95% target", archetype: 'attention', sparklineData: generateSparkline() },
     ];
 
-    // Map real risks to the new UI structure
     const customerRisks: CustomerRisk[] = (opsData?.customerRisks || []).map((r: any) => ({
       ...r,
       escalationTrend: r.urgentCount > 3 ? 'up' : 'stable',
@@ -217,7 +215,8 @@ export function useExecutiveDashboard() {
     data: dashboardData,
     tickets: filteredTickets,
     uniqueCompanies,
-    isLoading: isLoadingMetrics || isLoadingTickets || isLoadingOps || isLoadingRisks || isLoadingRadar,
+    isLoading: isLoadingMetrics || isLoadingTickets, // Only block on core data
+    isAILoading: isLoadingRadar || isLoadingAI || isLoadingOps || isLoadingRisks, // Background loading for AI
     isFetching,
     generateAI: () => queryClient.invalidateQueries({ queryKey: ['dashboardInsights'] }),
     hasAI: !!aiRaw,

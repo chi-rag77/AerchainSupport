@@ -16,17 +16,18 @@ import LiveActivityCenter from "@/components/dashboard/LiveActivityCenter";
 import PredictiveForecast from "@/components/dashboard/PredictiveForecast";
 import SystemHealthPanel from "@/components/dashboard/SystemHealthPanel";
 import DashboardAssistant from "@/components/assistant/DashboardAssistant";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const DashboardContent = () => {
   const { session } = useSupabase();
   const queryClient = useQueryClient();
   const { dateRange, filters, setFilters } = useDashboard();
-  const { data, tickets, uniqueCompanies, isLoading, isFetching, generateAI } = useExecutiveDashboard();
+  const { data, tickets, uniqueCompanies, isLoading, isAILoading, isFetching, generateAI } = useExecutiveDashboard();
   
   const user = session?.user;
   const selectedCustomer = filters.company || 'All';
@@ -43,9 +44,6 @@ const DashboardContent = () => {
       queryClient.invalidateQueries({ queryKey: ['freshdeskTickets'] });
       queryClient.invalidateQueries({ queryKey: ['recentTicketsForDashboard'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
-      queryClient.invalidateQueries({ queryKey: ['operationalIntelligence'] });
-      queryClient.invalidateQueries({ queryKey: ['activeRisks'] });
-      queryClient.invalidateQueries({ queryKey: ['recurringIssueRadar'] });
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`, { id: "sync-dashboard" });
     }
@@ -70,7 +68,6 @@ const DashboardContent = () => {
     );
   }
 
-  // Prepare queue metrics for OperationsOverview
   const queueMetrics = {
     urgent: tickets.filter(t => t.priority === 'Urgent').length,
     high: tickets.filter(t => t.priority === 'High').length,
@@ -103,7 +100,14 @@ const DashboardContent = () => {
             lastSync={data.lastSync}
           />
           
-          <DashboardIntelligenceBrief data={data} />
+          <div className="relative">
+            {isAILoading && (
+              <div className="absolute top-0 right-0 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 animate-pulse z-10">
+                <Sparkles className="h-3 w-3" /> AI Synthesizing...
+              </div>
+            )}
+            <DashboardIntelligenceBrief data={data} />
+          </div>
 
           <KPISection metrics={data.kpis} isLoading={isLoading} />
         </section>
@@ -111,7 +115,7 @@ const DashboardContent = () => {
         <Separator className="opacity-50" />
 
         {/* TIER 2: OPERATIONAL INTELLIGENCE */}
-        <section className="space-y-10">
+        <section className={cn("space-y-10 transition-opacity duration-500", isAILoading ? "opacity-60" : "opacity-100")}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <ProductIntelligence clusters={data.clusters} />
             <LiveActivityCenter tickets={tickets} />
@@ -132,7 +136,7 @@ const DashboardContent = () => {
         <Separator className="opacity-50" />
 
         {/* TIER 3: DEEP DIVES & FORECAST */}
-        <section className="space-y-10">
+        <section className={cn("space-y-10 transition-opacity duration-500", isAILoading ? "opacity-60" : "opacity-100")}>
           <PredictiveForecast data={data.forecast} />
         </section>
 
