@@ -149,14 +149,14 @@ const TicketRow = ({ ticket, isSelected, onToggleSelect, onClick }: TicketRowPro
         </TableCell>
 
         <TableCell className="max-w-md">
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 py-1">
             <span 
-              className="font-medium text-sm text-foreground truncate max-w-[400px] block group-hover:text-indigo-600 transition-colors cursor-pointer" 
+              className="font-medium text-sm text-foreground block group-hover:text-indigo-600 transition-colors cursor-pointer whitespace-normal break-words leading-snug" 
               onClick={onClick}
             >
               {ticket.subject}
             </span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mt-1">
               <div className="flex items-center gap-1.5">
                 <Building2 className="h-3 w-3 text-muted-foreground" />
                 <span className="text-[10px] font-bold text-foreground/80">{ticket.cf_company || 'N/A'}</span>
