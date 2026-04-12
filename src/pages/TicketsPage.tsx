@@ -41,7 +41,7 @@ const TicketsPage = () => {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
-  const itemsPerPage = 20;
+  const itemsPerPage = 15; // Updated to 15
 
   const [filters, setFilters] = useState<TicketFilters>({
     searchTerm: "",
@@ -169,7 +169,7 @@ const TicketsPage = () => {
   const criticalTickets = tickets.filter(t => t.priority.toLowerCase() === 'urgent' || t.status.toLowerCase() === 'escalated');
   
   return (
-    <div className="flex-1 flex flex-col p-8 space-y-8 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
+    <div className="flex-1 flex flex-col p-8 space-y-4 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
       
       {/* Section 1: Live Intelligence Strip */}
       <AIPriorityStrip onApplyFilter={handleApplyAlertFilter} />
@@ -210,7 +210,7 @@ const TicketsPage = () => {
             >
               {(queueState.viewMode === 'list' || queueState.viewMode === 'focus') && (
                 <div className="rounded-[28px] border border-white/20 dark:border-gray-800/30 bg-white dark:bg-gray-900 shadow-glass overflow-hidden">
-                  <div className="max-h-[calc(100vh-380px)] overflow-y-auto relative">
+                  <div className="max-h-[calc(100vh-320px)] overflow-y-auto relative">
                     <Table>
                       <TableHeader className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-800 shadow-sm">
                         <TableRow className="border-none">

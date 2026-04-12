@@ -31,7 +31,7 @@ const AIPriorityStrip = ({ onApplyFilter }: AIPriorityStripProps) => {
 
   if (isLoading) {
     return (
-      <div className="h-11 w-full bg-[#0B1220] rounded-xl flex items-center justify-center gap-3 text-white/40 mb-6">
+      <div className="h-11 w-full bg-[#0B1220] rounded-xl flex items-center justify-center gap-3 text-white/40 mb-2">
         <Loader2 className="h-3 w-3 animate-spin" />
         <span className="text-[9px] font-black uppercase tracking-[0.2em]">Scanning Queue...</span>
       </div>
@@ -50,7 +50,7 @@ const AIPriorityStrip = ({ onApplyFilter }: AIPriorityStripProps) => {
   ].filter(a => a.title);
 
   return (
-    <div className="h-11 w-full bg-[#0B1220] rounded-xl flex items-center px-4 gap-6 mb-6 border border-white/5 shadow-2xl">
+    <div className="h-11 w-full bg-[#0B1220] rounded-xl flex items-center px-4 gap-6 mb-2 border border-white/5 shadow-2xl">
       <div className="flex items-center gap-2 pr-4 border-r border-white/10 shrink-0">
         <Brain className="h-3.5 w-3.5 text-indigo-400" />
         <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Live Signals</span>

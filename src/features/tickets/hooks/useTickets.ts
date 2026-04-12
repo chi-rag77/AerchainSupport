@@ -7,10 +7,10 @@ import { supabase } from '@/integrations/supabase/client';
 const TICKET_QUERY_KEY = "freshdeskTickets";
 
 export function useTickets(filters: TicketFilters, page: number = 1) {
-  // 1. Fetch Paginated Tickets
+  // 1. Fetch Paginated Tickets (Updated to 15 per page)
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: [TICKET_QUERY_KEY, page, filters.searchTerm],
-    queryFn: () => fetchTicketsPaginated(page, 50),
+    queryFn: () => fetchTicketsPaginated(page, 15),
     staleTime: 30000,
   });
 
@@ -34,9 +34,9 @@ export function useTickets(filters: TicketFilters, page: number = 1) {
       const { data: types } = await supabase.from('freshdesk_tickets').select('type').limit(1000);
       
       return {
-        companies: Array.from(new Set(companies?.map(t => t.cf_company).filter(Boolean) || [])).sort(),
-        assignees: Array.from(new Set(assignees?.map(t => t.assignee).filter(Boolean) || [])).sort(),
-        types: Array.from(new Set(types?.map(t => t.type).filter(Boolean) || [])).sort(),
+        companies: Array.from(new Set((companies || []).map(t => t.cf_company).filter(Boolean) || [])).sort(),
+        assignees: Array.from(new Set((assignees || []).map(t => t.assignee).filter(Boolean) || [])).sort(),
+        types: Array.from(new Set((types || []).map(t => t.type).filter(Boolean) || [])).sort(),
         statuses: ['Open (Being Processed)', 'On Tech', 'Pending (Awaiting your Reply)', 'Escalated', 'Resolved', 'Closed'],
         priorities: ['Low', 'Medium', 'High', 'Urgent'],
         dependencies: ['None', 'Tech', 'Product', 'Customer']

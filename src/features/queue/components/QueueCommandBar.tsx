@@ -47,7 +47,7 @@ const QueueCommandBar = ({
   onSortChange
 }: QueueCommandBarProps) => {
   return (
-    <div className="sticky top-0 z-30 w-full p-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-white/20 dark:border-gray-800/30 shadow-glass rounded-[24px] mb-6">
+    <div className="sticky top-0 z-30 w-full p-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-white/20 dark:border-gray-800/30 shadow-glass rounded-[24px] mb-4">
       <div className="flex items-center justify-between gap-4 px-2">
         {/* Left: Spotlight Search & Smart Sort */}
         <div className="flex-1 flex items-center gap-3">
