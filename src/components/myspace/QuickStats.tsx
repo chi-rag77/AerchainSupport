@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from '@/lib/utils';
 import { 
   TrendingUp, TrendingDown, Minus, 
-  Ticket, Clock, Smile, Shield, BarChart3
+  Ticket, Clock, Shield, BarChart3
 } from 'lucide-react';
 
 interface StatItemProps {
@@ -28,7 +28,7 @@ const StatItem = ({ label, value, trend, icon: Icon, color }: StatItemProps) => 
       <p className="text-3xl font-black tracking-tighter text-foreground">{value}</p>
       <div className={cn(
         "flex items-center gap-1 text-[10px] font-bold uppercase tracking-tighter",
-        trend.includes('+') || trend.includes('target') ? "text-emerald-600" : "text-rose-600"
+        trend.includes('+') || trend.includes('target') || trend.includes('-') ? "text-emerald-600" : "text-rose-600"
       )}>
         {trend.includes('+') ? <TrendingUp className="h-3 w-3" /> : trend.includes('-') ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
         {trend}
@@ -57,31 +57,24 @@ const QuickStats = ({ stats }: QuickStatsProps) => {
       </CardHeader>
 
       <CardContent className="p-0">
-        <div className="grid grid-cols-2 divide-x divide-y divide-border/50">
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-x divide-y divide-border/50">
           <StatItem 
             label="Tickets Handled" 
-            value="8" 
-            trend="+2 vs yesterday" 
+            value={stats?.handledToday || 0} 
+            trend={`${stats?.trends?.handled > 0 ? '+' : ''}${stats?.trends?.handled || 0} vs yesterday`} 
             icon={Ticket} 
             color="text-indigo-600" 
           />
           <StatItem 
             label="Avg Resolution" 
-            value="2.3h" 
-            trend="-0.5h vs last week" 
+            value={stats?.avgResTime || '0h'} 
+            trend={`${stats?.trends?.resTime || 0}h vs last week`} 
             icon={Clock} 
             color="text-indigo-600" 
           />
           <StatItem 
-            label="CSAT Score" 
-            value="94%" 
-            trend="+2% this week" 
-            icon={Smile} 
-            color="text-indigo-600" 
-          />
-          <StatItem 
             label="SLA Adherence" 
-            value="100%" 
+            value={`${stats?.sla || 0}%`} 
             trend="On target" 
             icon={Shield} 
             color="text-indigo-600" 

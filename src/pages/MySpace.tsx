@@ -94,6 +94,7 @@ const MySpace = () => {
               title="Support Professional"
               team="Enterprise Support"
               status="online"
+              stats={intelligence.stats}
             />
 
             {/* Section 2: AI Briefing */}
@@ -116,7 +117,6 @@ const MySpace = () => {
               <UrgentTickets tickets={intelligence.urgentTickets || []} onView={setSelectedTicketId} />
               <CategoryBreakdown 
                 categories={intelligence.categories || []} 
-                trendingIssue={intelligence.categories?.[0]?.label ? `Spike in ${intelligence.categories[0].label} issues` : "Stable queue"} 
               />
             </div>
 

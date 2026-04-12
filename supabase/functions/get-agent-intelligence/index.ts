@@ -40,11 +40,29 @@ serve(async (req) => {
       dateFns.isToday(new Date(t.updated_at))
     );
 
-    // 2. Calculate Deterministic Metrics
+    // 2. Calculate Real-time Metrics
     const now = new Date();
+    
+    // Avg Resolution Time (Today)
+    let avgResTimeStr = "0h";
+    if (resolvedToday.length > 0) {
+      const totalHours = resolvedToday.reduce((acc, t) => {
+        return acc + dateFns.differenceInHours(new Date(t.updated_at), new Date(t.created_at));
+      }, 0);
+      avgResTimeStr = (totalHours / resolvedToday.length).toFixed(1) + "h";
+    }
+
+    // SLA Adherence (Today's Resolved)
+    let slaAdherence = 100;
+    const ticketsWithSla = resolvedToday.filter(t => t.due_by);
+    if (ticketsWithSla.length > 0) {
+      const metSla = ticketsWithSla.filter(t => new Date(t.updated_at) <= new Date(t.due_by)).length;
+      slaAdherence = Math.round((metSla / ticketsWithSla.length) * 100);
+    }
+
     const urgentCount = activeTickets.filter(t => {
       const hoursOpen = dateFns.differenceInHours(now, new Date(t.created_at));
-      return t.priority === 'Urgent' || hoursOpen > 24; // Urgent or open > 24h
+      return t.priority === 'Urgent' || hoursOpen > 24; 
     }).length;
 
     const pendingCount = activeTickets.filter(t => t.status.toLowerCase().includes('pending') || t.status.toLowerCase().includes('waiting')).length;
@@ -66,7 +84,7 @@ serve(async (req) => {
       color: label === 'Bug' ? 'bg-rose-500' : label === 'Task' ? 'bg-blue-500' : 'bg-indigo-500'
     })).sort((a, b) => b.count - a.count);
 
-    // 3. AI Synthesis (Gemini 2.5 Flash)
+    // 3. AI Synthesis
     let aiResult = {
       briefing: { text: "Data aggregated successfully.", mood: "📊", recommendation: "Review your queue." },
       actions: []
@@ -79,8 +97,9 @@ serve(async (req) => {
         urgent_count: urgentCount,
         pending_count: pendingCount,
         resolved_today: resolvedToday.length,
-        categories: categories.slice(0, 3),
-        oldest_ticket: activeTickets.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0]
+        avg_res_time: avgResTimeStr,
+        sla_adherence: slaAdherence,
+        categories: categories.slice(0, 3)
       };
 
       const prompt = `
@@ -122,10 +141,9 @@ serve(async (req) => {
       ...aiResult,
       stats: {
         handledToday: resolvedToday.length,
-        avgResTime: "2.4h",
-        csat: 94,
-        sla: 98,
-        trends: { handled: 12, resTime: -5, csat: 2, sla: 0 }
+        avgResTime: avgResTimeStr,
+        sla: slaAdherence,
+        trends: { handled: 12, resTime: -5, sla: 0 }
       },
       queue: {
         total: activeTickets.length,

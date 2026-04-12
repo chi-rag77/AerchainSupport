@@ -13,9 +13,14 @@ interface AgentHeaderProps {
   team: string;
   status: 'online' | 'away' | 'offline';
   avatarUrl?: string;
+  stats?: {
+    handledToday: number;
+    avgResTime: string;
+    sla: number;
+  };
 }
 
-const AgentHeader = ({ name, title, team, status, avatarUrl }: AgentHeaderProps) => {
+const AgentHeader = ({ name, title, team, status, avatarUrl, stats }: AgentHeaderProps) => {
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
@@ -79,20 +84,20 @@ const AgentHeader = ({ name, title, team, status, avatarUrl }: AgentHeaderProps)
         {/* Header Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-6 border-t border-white/10">
           <div className="space-y-1">
-            <p className="text-2xl font-black tracking-tighter">8</p>
+            <p className="text-2xl font-black tracking-tighter">{stats?.handledToday || 0}</p>
             <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">Resolved Today</p>
           </div>
           <div className="space-y-1">
-            <p className="text-2xl font-black tracking-tighter">2.3h</p>
+            <p className="text-2xl font-black tracking-tighter">{stats?.avgResTime || '0h'}</p>
             <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">Avg Response</p>
           </div>
           <div className="space-y-1">
-            <p className="text-2xl font-black tracking-tighter">94%</p>
-            <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">CSAT Score</p>
+            <p className="text-2xl font-black tracking-tighter">{stats?.sla || 0}%</p>
+            <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">SLA Rate</p>
           </div>
           <div className="space-y-1">
-            <p className="text-2xl font-black tracking-tighter">100%</p>
-            <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">SLA Rate</p>
+            <p className="text-2xl font-black tracking-tighter">Verified</p>
+            <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">Data Integrity</p>
           </div>
         </div>
       </div>
