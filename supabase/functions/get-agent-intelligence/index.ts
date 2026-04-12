@@ -1,4 +1,4 @@
-// v1.0 - Agent Intelligence Engine
+// v1.1 - Real-time Agent Intelligence Engine
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -24,17 +24,18 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader! } },
     });
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    const { agentName } = await req.json();
+    if (!agentName) throw new Error("agentName is required.");
 
     // 1. Fetch Agent's Tickets
     const { data: tickets } = await supabase
       .from('freshdesk_tickets')
       .select('*')
-      .eq('assignee', user.user_metadata?.full_name || user.email?.split('@')[0]);
+      .eq('assignee', agentName);
 
-    const activeTickets = (tickets || []).filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()));
-    const resolvedToday = (tickets || []).filter(t => 
+    const allTickets = tickets || [];
+    const activeTickets = allTickets.filter(t => !['resolved', 'closed'].includes(t.status.toLowerCase()));
+    const resolvedToday = allTickets.filter(t => 
       ['resolved', 'closed'].includes(t.status.toLowerCase()) && 
       dateFns.isToday(new Date(t.updated_at))
     );
@@ -43,60 +44,82 @@ serve(async (req) => {
     const now = new Date();
     const urgentCount = activeTickets.filter(t => {
       const hoursOpen = dateFns.differenceInHours(now, new Date(t.created_at));
-      return t.priority === 'Urgent' || hoursOpen > 4;
+      return t.priority === 'Urgent' || hoursOpen > 24; // Urgent or open > 24h
     }).length;
 
-    const pendingCount = activeTickets.filter(t => t.status.includes('Pending') || t.status.includes('Waiting')).length;
-    const readyCount = activeTickets.filter(t => t.status.includes('Resolved') || t.status.includes('Ready')).length;
+    const pendingCount = activeTickets.filter(t => t.status.toLowerCase().includes('pending') || t.status.toLowerCase().includes('waiting')).length;
+    const readyCount = activeTickets.filter(t => t.status.toLowerCase().includes('resolved') || t.status.toLowerCase().includes('ready')).length;
     const inProgressCount = activeTickets.length - urgentCount - pendingCount - readyCount;
 
     const healthScore = Math.round(((readyCount + inProgressCount) / (activeTickets.length || 1)) * 100);
 
+    // Category Breakdown
+    const categoryMap: Record<string, number> = {};
+    activeTickets.forEach(t => {
+      const cat = t.type || 'Other';
+      categoryMap[cat] = (categoryMap[cat] || 0) + 1;
+    });
+    const categories = Object.entries(categoryMap).map(([label, count]) => ({
+      label,
+      count,
+      percent: Math.round((count / (activeTickets.length || 1)) * 100),
+      color: label === 'Bug' ? 'bg-rose-500' : label === 'Task' ? 'bg-blue-500' : 'bg-indigo-500'
+    })).sort((a, b) => b.count - a.count);
+
     // 3. AI Synthesis (Gemini 2.5 Flash)
-    const context = {
-      agent_name: user.user_metadata?.full_name || user.email?.split('@')[0],
-      open_count: activeTickets.length,
-      urgent_count: urgentCount,
-      pending_count: pendingCount,
-      ready_count: readyCount,
-      resolved_today: resolvedToday.length,
-      oldest_ticket: activeTickets.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0]
+    let aiResult = {
+      briefing: { text: "Data aggregated successfully.", mood: "📊", recommendation: "Review your queue." },
+      actions: []
     };
 
-    const prompt = `
-      You are an AI assistant helping a support agent plan their day.
-      Data: ${JSON.stringify(context)}
+    if (geminiApiKey && allTickets.length > 0) {
+      const context = {
+        agent_name: agentName,
+        open_count: activeTickets.length,
+        urgent_count: urgentCount,
+        pending_count: pendingCount,
+        resolved_today: resolvedToday.length,
+        categories: categories.slice(0, 3),
+        oldest_ticket: activeTickets.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0]
+      };
 
-      Generate a 2-3 sentence briefing. Assess workload (light/moderate/busy), highlight the most urgent issue, and give a recommendation.
-      Also suggest 3 prioritized actions.
+      const prompt = `
+        You are an AI assistant helping a support agent plan their day.
+        Data: ${JSON.stringify(context)}
 
-      Return STRICT JSON:
-      {
-        "briefing": {
-          "text": "string",
-          "mood": "emoji",
-          "recommendation": "string"
-        },
-        "actions": [
-          { "action": "string", "why": "string", "priority": "urgent|high|medium|low", "impactMinutes": number }
-        ]
+        Generate a 2-3 sentence briefing. Assess workload, highlight the most urgent issue, and give a recommendation.
+        Also suggest 3-5 prioritized actions.
+
+        Return STRICT JSON:
+        {
+          "briefing": {
+            "text": "string",
+            "mood": "emoji",
+            "recommendation": "string"
+          },
+          "actions": [
+            { "action": "string", "why": "string", "priority": "urgent|high|medium|low", "impactMinutes": number }
+          ]
+        }
+      `;
+
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { response_mime_type: "application/json", temperature: 0.2 }
+        }),
+      });
+
+      if (geminiRes.ok) {
+        const aiData = await geminiRes.json();
+        aiResult = JSON.parse(aiData.candidates[0].content.parts[0].text);
       }
-    `;
-
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "application/json", temperature: 0.2 }
-      }),
-    });
-
-    const aiData = await geminiRes.json();
-    const result = JSON.parse(aiData.candidates[0].content.parts[0].text);
+    }
 
     return new Response(JSON.stringify({
-      ...result,
+      ...aiResult,
       stats: {
         handledToday: resolvedToday.length,
         avgResTime: "2.4h",
@@ -111,7 +134,29 @@ serve(async (req) => {
         readyToClose: readyCount,
         inProgress: inProgressCount,
         healthScore
-      }
+      },
+      urgentTickets: activeTickets
+        .filter(t => t.priority === 'Urgent' || dateFns.differenceInHours(now, new Date(t.created_at)) > 24)
+        .map(t => ({
+          id: t.freshdesk_id,
+          subject: t.subject,
+          customer: t.cf_company || 'N/A',
+          hoursOpen: dateFns.differenceInHours(now, new Date(t.created_at)),
+          category: t.type || 'General'
+        }))
+        .slice(0, 5),
+      categories,
+      pendingResponses: activeTickets
+        .filter(t => t.status.toLowerCase().includes('waiting') || t.status.toLowerCase().includes('pending'))
+        .map(t => ({
+          id: t.freshdesk_id,
+          subject: t.subject,
+          customer: t.cf_company || 'N/A',
+          waitDuration: `${dateFns.differenceInHours(now, new Date(t.updated_at))}h`,
+          priority: t.priority,
+          needsFollowUp: dateFns.differenceInHours(now, new Date(t.updated_at)) > 12
+        }))
+        .slice(0, 5)
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAgentIntelligence } from "@/features/myspace/hooks/useAgentIntelligence";
@@ -17,17 +17,29 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket } from "@/features/tickets/types";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, User, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const MySpace = () => {
   const { session } = useSupabase();
-  const user = session?.user;
-  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sarah Khan';
+  
+  // Fetch unique agents from the tickets table
+  const { data: agents = [] } = useQuery<string[]>({
+    queryKey: ['uniqueAgentsList'],
+    queryFn: async () => {
+      const { data } = await supabase.from('freshdesk_tickets').select('assignee').limit(1000);
+      return Array.from(new Set((data || []).map(t => t.assignee).filter(Boolean))) as string[];
+    }
+  });
 
-  const { data: intelligence, isLoading: isIntelLoading } = useAgentIntelligence();
+  const [selectedAgent, setSelectedAgent] = useState<string>("Admin User");
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
+  const { data: intelligence, isLoading: isIntelLoading } = useAgentIntelligence(selectedAgent);
+
+  // Fetch full ticket details for the modal
   const { data: selectedTicket } = useQuery<Ticket | null>({
     queryKey: ['ticketDetail', selectedTicketId],
     queryFn: async () => {
@@ -43,66 +55,83 @@ const MySpace = () => {
     enabled: !!selectedTicketId
   });
 
-  if (isIntelLoading) return <IntelligenceLoader />;
-  if (!intelligence) return null;
+  if (isIntelLoading && !intelligence) return <IntelligenceLoader />;
 
   return (
     <TooltipProvider>
       <div className="flex-1 flex flex-col p-8 space-y-6 bg-[#F6F8FB] dark:bg-gray-950 min-h-screen overflow-y-auto">
         
-        {/* Back Link */}
-        <div className="flex items-center mb-2">
-          <Link to="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-3 w-3" />
-            Back to Dashboard
-          </Link>
+        {/* Header with Agent Selector */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <Link to="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-3 w-3" />
+              Back
+            </Link>
+            <div className="h-4 w-px bg-border" />
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Viewing Workspace:</span>
+              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                <SelectTrigger className="h-9 w-fit min-w-[180px] border-none bg-white dark:bg-gray-900 shadow-sm rounded-xl text-sm font-bold text-indigo-600 gap-2">
+                  <User className="h-4 w-4" />
+                  <SelectValue placeholder="Select Agent" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-2xl">
+                  {agents.map(agent => (
+                    <SelectItem key={agent} value={agent} className="font-medium">{agent}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
 
-        {/* Section 1: Agent Header */}
-        <AgentHeader 
-          name={fullName}
-          title="Senior Support Engineer"
-          team="Team Alpha"
-          status="online"
-        />
+        {intelligence ? (
+          <>
+            {/* Section 1: Agent Header */}
+            <AgentHeader 
+              name={selectedAgent}
+              title="Support Professional"
+              team="Enterprise Support"
+              status="online"
+            />
 
-        {/* Section 2: AI Briefing */}
-        <AIDailyBriefing briefing={intelligence.briefing} />
+            {/* Section 2: AI Briefing */}
+            <AIDailyBriefing briefing={intelligence.briefing} />
 
-        {/* Section 3: Recommended Actions */}
-        <RecommendedActions 
-          actions={intelligence.actions.map((a, i) => ({ ...a, id: `action-${i}`, done: false }))} 
-          onToggle={() => {}}
-        />
+            {/* Section 3: Recommended Actions */}
+            <RecommendedActions 
+              actions={intelligence.actions.map((a: any, i: number) => ({ ...a, id: `action-${i}`, done: false }))} 
+              onToggle={(id) => toast.success("Action marked as done!")}
+            />
 
-        {/* Section 4 & 5: Stats & Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <QuickStats stats={intelligence.stats} />
-          <QueueBreakdown data={intelligence.queue} />
+            {/* Section 4 & 5: Stats & Breakdown */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <QuickStats stats={intelligence.stats} />
+              <QueueBreakdown data={intelligence.queue} />
+            </div>
+
+            {/* Section 6 & 7: Urgent & Categories */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <UrgentTickets tickets={intelligence.urgentTickets || []} onView={setSelectedTicketId} />
+              <CategoryBreakdown 
+                categories={intelligence.categories || []} 
+                trendingIssue={intelligence.categories?.[0]?.label ? `Spike in ${intelligence.categories[0].label} issues` : "Stable queue"} 
+              />
+            </div>
+
+            {/* Section 8: Pending Responses */}
+            <PendingResponses tickets={intelligence.pendingResponses || []} onView={setSelectedTicketId} />
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-32 text-muted-foreground italic">
+            No data found for this agent.
+          </div>
+        )}
+
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-30">End of Personal Workspace</p>
         </div>
-
-        {/* Section 6 & 7: Urgent & Categories */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <UrgentTickets tickets={[
-            { id: '4521', subject: 'Payment integration failing', customer: 'Acme Corp', hoursOpen: 18, category: 'Technical' },
-            { id: '4518', subject: 'API rate limiting errors', customer: 'TechFlow Inc', hoursOpen: 14, category: 'Technical' },
-            { id: '4515', subject: 'SSO setup blocking onboarding', customer: 'Global Inc', hoursOpen: 12, category: 'Product' },
-          ]} onView={setSelectedTicketId} />
-          <CategoryBreakdown categories={[
-            { label: 'Technical', count: 5, color: 'bg-indigo-500', percent: 42, trending: 'API rate limiting' },
-            { label: 'Product', count: 3, color: 'bg-amber-500', percent: 25, trending: 'Export bug recurring' },
-            { label: 'Billing', count: 2, color: 'bg-emerald-500', percent: 17 },
-            { label: 'Feature Request', count: 1, color: 'bg-blue-500', percent: 8 },
-            { label: 'Other', count: 1, color: 'bg-slate-400', percent: 8 },
-          ]} />
-        </div>
-
-        {/* Section 8: Pending Responses */}
-        <PendingResponses tickets={[
-          { id: '4510', subject: 'Confirm database migration window', customer: 'DataSync Ltd', waitDuration: '6h', priority: 'Medium', needsFollowUp: false },
-          { id: '4508', subject: 'Provide error logs for debugging', customer: 'CloudOps Inc', waitDuration: '8h', priority: 'High', needsFollowUp: true },
-          { id: '4505', subject: 'Confirm new password reset procedure', customer: 'SecureNet', waitDuration: '12h', priority: 'Low', needsFollowUp: true, autoRemind: true },
-        ]} onView={setSelectedTicketId} />
 
         <TicketDetailModal 
           isOpen={!!selectedTicketId}

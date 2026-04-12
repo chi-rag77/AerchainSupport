@@ -2,16 +2,18 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AgentIntelligence } from '../types';
 
-export function useAgentIntelligence() {
-  return useQuery<AgentIntelligence, Error>({
-    queryKey: ['agentIntelligence'],
+export function useAgentIntelligence(agentName: string) {
+  return useQuery<any, Error>({
+    queryKey: ['agentIntelligence', agentName],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-agent-intelligence', {
-        method: 'POST'
+        method: 'POST',
+        body: { agentName }
       });
       if (error) throw error;
       return data;
     },
-    refetchInterval: 1000 * 60 * 15, // Refresh every 15 mins
+    enabled: !!agentName,
+    refetchInterval: 1000 * 60 * 5, // Refresh every 5 mins
   });
 }
